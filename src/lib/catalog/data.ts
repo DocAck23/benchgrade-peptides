@@ -135,27 +135,15 @@ export const CATEGORIES: readonly CatalogCategory[] = [
   },
 ] as const;
 
-/** Default master vial image, used as fallback until per-SKU vials are generated. */
-const MASTER_VIAL = "/brand/vials/cjc-1295-no-dac.jpg";
-
 /**
- * Helper — returns the per-SKU vial path if it exists in public/brand/vials/,
- * otherwise the master. The list of custom vials is the authoritative set
- * of SKUs for which AI renders have been produced and approved.
+ * Returns the per-SKU vial image path. All 56 vial JPEGs are generated
+ * by `scripts/generate-vials.py`, which composites accurate compound
+ * names and molecular data onto a clean copy of the approved master
+ * vial via PIL text-overlay. Re-run that script whenever the catalog
+ * data changes.
  */
-const CUSTOM_VIALS = new Set<string>([
-  "cjc-1295-no-dac",
-  "ipamorelin",
-  "bpc-157",
-  "ghk-cu",
-  "semaglutide",
-  "tb-500",
-  "tesamorelin",
-  "selank",
-]);
-
 function vialPath(slug: string): string {
-  return CUSTOM_VIALS.has(slug) ? `/brand/vials/${slug}.jpg` : MASTER_VIAL;
+  return `/brand/vials/${slug}.jpg`;
 }
 
 /**
