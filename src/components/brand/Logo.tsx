@@ -38,7 +38,7 @@ const WIDTH_CLASSES: Record<NonNullable<LogoProps["size"]>, string> = {
 export function Logo({ size = "md", asStatic = false, priority = false, className }: LogoProps) {
   const imageEl = (
     <Image
-      src="/brand/logo-full.jpg"
+      src="/brand/logo-full.png"
       alt="Bench Grade Peptides"
       width={INTRINSIC_WIDTH}
       height={INTRINSIC_HEIGHT}

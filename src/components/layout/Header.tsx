@@ -18,7 +18,7 @@ export function Header() {
 
   return (
     <header className="border-b rule bg-paper relative">
-      <div className="max-w-[1440px] mx-auto pl-5 pr-6 lg:pl-8 lg:pr-10 py-5 flex items-center justify-between gap-8">
+      <div className="max-w-[1440px] mx-auto pl-3 pr-6 lg:pl-5 lg:pr-10 py-3 lg:py-3.5 flex items-center justify-between gap-8">
         <Logo size="xl" priority />
 
         <nav className="hidden md:flex items-center gap-10" aria-label="Primary">
@@ -26,7 +26,7 @@ export function Header() {
             <Link
               key={item.href}
               href={item.href}
-              className="text-sm text-ink-soft hover:text-teal transition-colors"
+              className="text-[15px] text-ink-soft hover:text-teal transition-colors"
             >
               {item.label}
             </Link>
@@ -36,13 +36,13 @@ export function Header() {
         <div className="flex items-center gap-4">
           <Link
             href="/account"
-            className="hidden md:inline-block text-sm text-ink-soft hover:text-teal transition-colors"
+            className="hidden md:inline-block text-[15px] text-ink-soft hover:text-teal transition-colors"
           >
             Account
           </Link>
           <Link
             href="/cart"
-            className="text-sm px-4 py-2 border rule text-ink hover:bg-paper-soft transition-colors"
+            className="text-[15px] px-4 py-2 border rule text-ink hover:bg-paper-soft transition-colors"
           >
             Cart
           </Link>
