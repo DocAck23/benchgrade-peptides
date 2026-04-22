@@ -142,7 +142,7 @@ export const CATEGORIES: readonly CatalogCategory[] = [
  * public/brand/vials/<slug>.jpg.
  */
 function vialPath(slug: string): string {
-  return `/brand/vials/${slug}.jpg?v=2`;
+  return `/brand/vials/${slug}.jpg?v=3`;
 }
 
 /**
@@ -964,7 +964,7 @@ export const PRODUCTS: readonly CatalogProduct[] = [
   // ========== GLP-1 CLASS ==========
   {
     slug: "semaglutide",
-    name: "Semaglutide",
+    name: "GLP-1 S",
     category_slug: "glp-1",
     cas_number: "910463-68-2",
     molecular_formula: "C187H291N45O59",
@@ -983,7 +983,7 @@ export const PRODUCTS: readonly CatalogProduct[] = [
   },
   {
     slug: "tirzepatide",
-    name: "Tirzepatide",
+    name: "GLP-1 T",
     category_slug: "glp-1",
     cas_number: "2023788-19-2",
     molecular_formula: "C225H348N48O68",
@@ -1003,7 +1003,7 @@ export const PRODUCTS: readonly CatalogProduct[] = [
   },
   {
     slug: "retatrutide",
-    name: "Retatrutide",
+    name: "GLP-1 R",
     category_slug: "glp-1",
     cas_number: "2381089-83-2",
     molecular_formula: "C226H353N63O69",
@@ -1023,7 +1023,7 @@ export const PRODUCTS: readonly CatalogProduct[] = [
   },
   {
     slug: "cagrilintide",
-    name: "Cagrilintide",
+    name: "GLP-1 C",
     category_slug: "glp-1",
     cas_number: "2204783-15-1",
     molecular_formula: "C180H293N53O55",
@@ -1040,7 +1040,7 @@ export const PRODUCTS: readonly CatalogProduct[] = [
   },
   {
     slug: "mazdutide",
-    name: "Mazdutide",
+    name: "GLP-1 M",
     category_slug: "glp-1",
     cas_number: null,
     molecular_formula: null,
@@ -1056,7 +1056,7 @@ export const PRODUCTS: readonly CatalogProduct[] = [
   },
   {
     slug: "survodutide",
-    name: "Survodutide",
+    name: "GLP-1 Surv",
     category_slug: "glp-1",
     cas_number: null,
     molecular_formula: null,
