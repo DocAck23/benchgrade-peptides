@@ -2,7 +2,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
-  /** Size tier. `xl` is responsive — downshifts to lg-equivalent on small screens. */
+  /** Size tier. `xl` is responsive — downshifts on small screens. */
   size?: "sm" | "md" | "lg" | "xl";
   /** When true, renders as plain element (no link). Use in footer where the wrapper is the link. */
   asStatic?: boolean;
@@ -12,17 +12,15 @@ interface LogoProps {
 /**
  * Bench Grade Peptides wordmark — Concept 5 variant.
  *
- * Composition: peptide-bond mark on the left (the canonical —C(=O)—N—
- * peptide bond notation between two residues), ultra-wide letter-spaced
- * "BENCH GRADE / PEPTIDES" wordmark to the right, clinical cyan accent.
+ * Composition: peptide-bond chemistry diagram on the left (labeled atoms
+ * —N—C with =O above and below, plus a cyan checkmark accent), ultra-wide
+ * letter-spaced "BENCH GRADE / PEPTIDES" wordmark to the right.
  *
- * The `xl` tier is responsive: it renders at roughly `lg` scale on
- * narrow mobile widths and grows to full xl at md+. Fixed-size tiers
- * (sm, md, lg) do not downshift.
+ * Modeled directly on the Concept 5 reference image.
  */
 export function Logo({ size = "md", asStatic = false, className }: LogoProps) {
   const wordmark = (
-    <span className={cn("flex items-center gap-3 md:gap-3.5 min-w-0", className)}>
+    <span className={cn("flex items-center gap-3 md:gap-4 min-w-0", className)}>
       <PeptideBondMark size={size} />
       <span className="flex flex-col leading-none min-w-0">
         <span
@@ -61,52 +59,168 @@ export function Logo({ size = "md", asStatic = false, className }: LogoProps) {
 }
 
 /**
- * Peptide-bond mark.
+ * Peptide-bond chemistry mark.
  *
- * Depicts the canonical peptide bond between two amino-acid residues:
+ * Labeled skeletal-formula notation:
  *
- *                  O
- *                  ‖
- *        (Rα)━━━━━C━━━━━(Rα')
- *                        (cyan accent)
+ *               O         ✓  (clinical cyan checkmark accent)
+ *               ‖
+ *        ─N━━━━C
+ *               ‖
+ *               O
  *
- * Scales cleanly from 22px (sm) up to 48px (xl) with the double-bond
- * notation remaining visible. At `xl`, the SVG is responsive — it sizes
- * down on mobile to match the wordmark's responsive downshift.
+ * Atom labels in the display font (Geist) for visual consistency with
+ * the wordmark. Two parallel vertical bond lines render each C=O double
+ * bond. The cyan checkmark sits top-right as the brand accent.
+ *
+ * Renders as this detailed skeletal diagram at xl. At smaller sizes
+ * (sm/md/lg) labels become illegible, so those tiers use a simplified
+ * bond-dot variant without letters.
  */
 function PeptideBondMark({ size }: { size: "sm" | "md" | "lg" | "xl" }) {
-  // Fixed-size tiers: explicit width/height via SVG attributes.
-  if (size !== "xl") {
-    const height = size === "sm" ? 22 : size === "md" ? 26 : 36;
-    const width = Math.round(height * 2.1);
-    const lineStroke = size === "sm" ? 1.2 : size === "md" ? 1.3 : 1.4;
-    const bondStroke = size === "sm" ? 1.0 : 1.2;
-    return <BondSVG width={width} height={height} lineStroke={lineStroke} bondStroke={bondStroke} />;
+  if (size === "xl") {
+    return (
+      <svg
+        viewBox="0 0 80 96"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+        className="shrink-0 h-[48px] w-auto md:h-[58px] lg:h-[72px]"
+      >
+        {/* Left R-group dash */}
+        <line
+          x1="4"
+          y1="48"
+          x2="14"
+          y2="48"
+          stroke="var(--color-ink)"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        />
+
+        {/* N letter */}
+        <text
+          x="23"
+          y="54"
+          fontSize="18"
+          fontWeight="500"
+          fill="var(--color-ink)"
+          textAnchor="middle"
+          style={{ fontFamily: "var(--font-display), sans-serif" }}
+        >
+          N
+        </text>
+
+        {/* Horizontal bond N ── C */}
+        <line
+          x1="31"
+          y1="48"
+          x2="43"
+          y2="48"
+          stroke="var(--color-ink)"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        />
+
+        {/* C letter */}
+        <text
+          x="52"
+          y="54"
+          fontSize="18"
+          fontWeight="500"
+          fill="var(--color-ink)"
+          textAnchor="middle"
+          style={{ fontFamily: "var(--font-display), sans-serif" }}
+        >
+          C
+        </text>
+
+        {/* Upper =O double bond (two parallel vertical lines) */}
+        <line
+          x1="50"
+          y1="38"
+          x2="50"
+          y2="20"
+          stroke="var(--color-ink)"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <line
+          x1="54"
+          y1="38"
+          x2="54"
+          y2="20"
+          stroke="var(--color-ink)"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+
+        {/* Upper O letter */}
+        <text
+          x="52"
+          y="14"
+          fontSize="18"
+          fontWeight="500"
+          fill="var(--color-ink)"
+          textAnchor="middle"
+          style={{ fontFamily: "var(--font-display), sans-serif" }}
+        >
+          O
+        </text>
+
+        {/* Lower =O double bond */}
+        <line
+          x1="50"
+          y1="60"
+          x2="50"
+          y2="78"
+          stroke="var(--color-ink)"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <line
+          x1="54"
+          y1="60"
+          x2="54"
+          y2="78"
+          stroke="var(--color-ink)"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+
+        {/* Lower O letter */}
+        <text
+          x="52"
+          y="92"
+          fontSize="18"
+          fontWeight="500"
+          fill="var(--color-ink)"
+          textAnchor="middle"
+          style={{ fontFamily: "var(--font-display), sans-serif" }}
+        >
+          O
+        </text>
+
+        {/* Cyan checkmark accent — clinical brand accent */}
+        <path
+          d="M 60 20 L 64 24 L 74 10"
+          stroke="#00A5B8"
+          strokeWidth="3"
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
   }
 
-  // xl: responsive via Tailwind classes on the SVG element.
-  return (
-    <BondSVG
-      className="h-[30px] w-[63px] md:h-[38px] md:w-[80px] lg:h-[48px] lg:w-[101px]"
-      lineStroke={1.6}
-      bondStroke={1.2}
-    />
-  );
-}
+  // Smaller sizes use a simplified bond-dot variant (no atom labels — they'd
+  // be unreadable at 22–36px tall).
+  const height = size === "sm" ? 22 : size === "md" ? 26 : 36;
+  const width = Math.round(height * 2.1);
+  const lineStroke = size === "sm" ? 1.2 : size === "md" ? 1.3 : 1.4;
+  const bondStroke = size === "sm" ? 1.0 : 1.2;
 
-function BondSVG({
-  width,
-  height,
-  className,
-  lineStroke,
-  bondStroke,
-}: {
-  width?: number;
-  height?: number;
-  className?: string;
-  lineStroke: number;
-  bondStroke: number;
-}) {
   return (
     <svg
       width={width}
@@ -115,9 +229,8 @@ function BondSVG({
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
-      className={cn("shrink-0", className)}
+      className="shrink-0"
     >
-      {/* Main horizontal bond line */}
       <line
         x1="5"
         y1="17"
@@ -127,11 +240,8 @@ function BondSVG({
         strokeWidth={lineStroke}
         strokeLinecap="round"
       />
-      {/* Residue 1 (alpha-carbon / left side) — filled */}
       <circle cx="5" cy="17" r="3.5" fill="var(--color-ink)" />
-      {/* Carbonyl carbon — filled, slightly smaller than residues */}
       <circle cx="28" cy="17" r="2.8" fill="var(--color-ink)" />
-      {/* Double bond upward from carbonyl carbon to oxygen */}
       <line
         x1="26.3"
         y1="14.2"
@@ -150,7 +260,6 @@ function BondSVG({
         strokeWidth={bondStroke}
         strokeLinecap="round"
       />
-      {/* Oxygen atom above (open circle) */}
       <circle
         cx="28"
         cy="3.8"
@@ -159,7 +268,6 @@ function BondSVG({
         stroke="var(--color-ink)"
         strokeWidth={bondStroke}
       />
-      {/* Residue 2 — open with clinical cyan accent */}
       <circle
         cx="51"
         cy="17"
