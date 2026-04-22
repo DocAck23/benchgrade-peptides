@@ -142,7 +142,7 @@ export const CATEGORIES: readonly CatalogCategory[] = [
  * public/brand/vials/<slug>.jpg.
  */
 function vialPath(slug: string): string {
-  return `/brand/vials/${slug}.jpg`;
+  return `/brand/vials/${slug}.jpg?v=2`;
 }
 
 /**

@@ -75,9 +75,7 @@ export function Header() {
       <nav
         id="mobile-nav"
         aria-label="Primary"
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-expect-error -- `inert` is valid HTML and supported in React 19
-        inert={mobileOpen ? undefined : ""}
+        inert={!mobileOpen}
         className={cn(
           "md:hidden overflow-hidden border-t rule bg-paper transition-[max-height,opacity] duration-200",
           mobileOpen ? "max-h-[320px] opacity-100" : "max-h-0 opacity-0 pointer-events-none"

@@ -55,8 +55,7 @@ export function ProductCarousel() {
           <ul
             className="flex gap-4 lg:gap-5 shrink-0"
             aria-hidden="true"
-            /* @ts-expect-error -- `inert` is valid HTML and supported in React 19 */
-            inert=""
+            inert
           >
             {PRODUCTS.map((product) => (
               <li key={`dup-${product.slug}`}>
