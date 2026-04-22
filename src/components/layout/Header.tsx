@@ -18,8 +18,8 @@ export function Header() {
 
   return (
     <header className="border-b rule bg-paper relative">
-      <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-6 flex items-center justify-between gap-8">
-        <Logo size="md" />
+      <div className="max-w-[1440px] mx-auto pl-5 pr-6 lg:pl-8 lg:pr-10 py-5 flex items-center justify-between gap-8">
+        <Logo size="xl" />
 
         <nav className="hidden md:flex items-center gap-10" aria-label="Primary">
           {PRIMARY_NAV.map((item) => (
@@ -59,10 +59,13 @@ export function Header() {
         </div>
       </div>
 
-      {/* Mobile drawer */}
+      {/* Mobile drawer — `inert` removes it from tab order + assistive tech when closed */}
       <nav
         id="mobile-nav"
         aria-label="Primary"
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error -- `inert` is valid HTML and supported in React 19
+        inert={mobileOpen ? undefined : ""}
         className={cn(
           "md:hidden overflow-hidden border-t rule bg-paper transition-[max-height,opacity] duration-200",
           mobileOpen ? "max-h-[320px] opacity-100" : "max-h-0 opacity-0 pointer-events-none"

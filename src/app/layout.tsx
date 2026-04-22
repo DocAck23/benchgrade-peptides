@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Instrument_Serif, Inter, JetBrains_Mono } from "next/font/google";
+import { Geist, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 import { RUOBanner } from "@/components/layout/RUOBanner";
@@ -12,10 +12,12 @@ const inter = Inter({
   display: "swap",
 });
 
-const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
+/** Geist — Vercel's clinical geometric sans, used for display headings.
+ *  Replaces the editorial Instrument Serif per user feedback: more clear,
+ *  more clinical, closer to Valeria.health / NuScience reference typography. */
+const geist = Geist({
+  variable: "--font-geist",
   subsets: ["latin"],
-  weight: ["400"],
   display: "swap",
 });
 
@@ -53,7 +55,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${geist.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[color:var(--color-paper)] text-[color:var(--color-ink)]">
         <RUOBanner />

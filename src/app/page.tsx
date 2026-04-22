@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CATEGORIES, PRODUCTS } from "@/lib/catalog/data";
+import { ProductCarousel } from "@/components/catalog/ProductCarousel";
 
 /** Derive featured categories from catalog data so counts stay in sync
  *  with the actual SKU list. Shows the top 6 categories by product count. */
@@ -83,6 +84,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Revolving product carousel */}
+      <ProductCarousel />
 
       {/* Trust points */}
       <section className="border-b rule">
