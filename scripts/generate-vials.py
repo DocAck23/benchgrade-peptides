@@ -46,12 +46,16 @@ except ImportError:
 
 
 ROOT = Path(__file__).resolve().parent.parent
-MASTER = ROOT / "public" / "brand" / "vials" / "cjc-1295-no-dac.jpg"
+# Blank-label template — generated once via the amplifier with NO compound
+# text on the label body, only the brand logo at top and RUO footer at
+# bottom. This lets us composite per-SKU text without having to cover up
+# any existing AI-generated label content.
+TEMPLATE = ROOT / "public" / "brand" / "vials" / "_template.jpg"
 OUT_DIR = ROOT / "public" / "brand" / "vials"
 DATA_TS = ROOT / "src" / "lib" / "catalog" / "data.ts"
 
-# Cream label color (matches our brand cream tone closely)
-CREAM = (242, 235, 220)
+# Cream label color — sampled from actual master via sample-cream.py
+CREAM = (240, 238, 225)
 INK = (28, 28, 28)
 INK_MUTED = (90, 80, 65)
 CYAN_ACCENT = (0, 165, 184)
@@ -136,51 +140,57 @@ def parse_products_from_ts(path: Path) -> list[dict]:
     return products
 
 
-def render_vial(product: dict, master: Image.Image) -> Image.Image:
+def render_vial(product: dict, template: Image.Image) -> Image.Image:
     """
-    Paint the SKU's label content onto a fresh copy of the master.
+    Paint the SKU's label content onto a fresh copy of the blank-label
+    template. Because the template's label body is already blank cream
+    paper (brand logo at top, RUO footer at bottom, nothing in between),
+    we don't need to cover any existing text — we just drop new text
+    onto the clean area.
 
-    Label-region coordinates are tuned to the 1376×768 master vial we
-    have on disk. The label is roughly the right-half of the image,
-    centered vertically.
+    Coordinates are tuned to the blank-label template. The label content
+    zone is the middle of the vial's front face.
     """
-    img = master.copy()
+    img = template.copy()
     draw = ImageDraw.Draw(img)
 
-    # ---- Label region (tuned by inspecting the master vial) ----
-    # The master is 1376w × 768h. The vial occupies roughly the center;
-    # the label sits on the front face of the vial. These rectangles
-    # cover the area where compound text should render.
-    label_left = 760
-    label_right = 1180
-    label_content_top = 295    # below the brand logo + rule
-    label_content_bottom = 645 # above the RUO footer line
+    # Handle BAC water separately — it's a volume (mL) not a mass (mg).
+    is_liquid = "water" in product["name"].lower()
+    unit = "mL" if is_liquid else "mg"
 
-    # Paint cream rectangle over the existing AI-generated label content
-    # (preserves the brand logo at top and RUO footer at bottom).
+    # ---- Label content region (tuned to the 1376×768 master) ----
+    # Inspection showed cream label pixels at x∈[557,711], y∈[150,650].
+    # We cover wider than the cream extent to be safe; the brand logo
+    # lives in the top y∈[150,240] area which we preserve.
+    label_left = 540
+    label_right = 770
+    label_content_top = 245
+    label_content_bottom = 640
+
+    # Paint cream rectangle over the existing label content text area.
     draw.rectangle(
         [(label_left, label_content_top), (label_right, label_content_bottom)],
         fill=CREAM,
     )
 
-    # ---- Compound name ----
+    # ---- Compound name (centered, large) ----
     name = product["name"]
-    name_y = label_content_top + 18
+    name_y = label_content_top + 20
     bbox = draw.textbbox((0, 0), name, font=FONT_COMPOUND)
     name_w = bbox[2] - bbox[0]
     name_x = label_left + ((label_right - label_left) - name_w) // 2
     draw.text((name_x, name_y), name, fill=INK, font=FONT_COMPOUND)
 
-    # ---- Dosage (e.g., "5 mg") ----
-    mg_text = f"{product['size_mg']:g} mg"
-    mg_y = name_y + 70
+    # ---- Dosage (e.g., "5 mg" or "10 mL") ----
+    mg_text = f"{product['size_mg']:g} {unit}"
+    mg_y = name_y + 75
     bbox = draw.textbbox((0, 0), mg_text, font=FONT_MG)
     mg_w = bbox[2] - bbox[0]
     mg_x = label_left + ((label_right - label_left) - mg_w) // 2
     draw.text((mg_x, mg_y), mg_text, fill=INK, font=FONT_MG)
 
     # ---- Molecular data block (left-aligned, fine print) ----
-    mono_x = label_left + 30
+    mono_x = label_left + 40
     mono_y = mg_y + 60
     mono_lines: list[str] = []
     if product["mf"]:
@@ -202,23 +212,24 @@ def render_vial(product: dict, master: Image.Image) -> Image.Image:
 
 
 def main() -> None:
-    if not MASTER.exists():
-        print(f"error: master vial not found: {MASTER}", file=sys.stderr)
+    if not TEMPLATE.exists():
+        print(f"error: blank-label template not found: {TEMPLATE}", file=sys.stderr)
+        print("generate one via the amplifier first, save to public/brand/vials/_template.jpg", file=sys.stderr)
         sys.exit(1)
 
     products = parse_products_from_ts(DATA_TS)
     print(f"parsed {len(products)} products from {DATA_TS.name}")
 
-    master = Image.open(MASTER).convert("RGB")
-    print(f"master: {master.size[0]}×{master.size[1]}")
+    template = Image.open(TEMPLATE).convert("RGB")
+    print(f"template: {template.size[0]}×{template.size[1]}")
 
     written = 0
     for product in products:
         out_path = OUT_DIR / f"{product['slug']}.jpg"
-        rendered = render_vial(product, master)
+        rendered = render_vial(product, template)
         rendered.save(out_path, "JPEG", quality=92, optimize=True)
         written += 1
-        print(f"  ✓ {product['slug']}.jpg ({product['name']} {product['size_mg']:g}mg)")
+        print(f"  ✓ {product['slug']}.jpg ({product['name']})")
 
     print(f"\nwrote {written} vial images to {OUT_DIR}")
 

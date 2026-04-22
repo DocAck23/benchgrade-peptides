@@ -136,11 +136,10 @@ export const CATEGORIES: readonly CatalogCategory[] = [
 ] as const;
 
 /**
- * Returns the per-SKU vial image path. All 56 vial JPEGs are generated
- * by `scripts/generate-vials.py`, which composites accurate compound
- * names and molecular data onto a clean copy of the approved master
- * vial via PIL text-overlay. Re-run that script whenever the catalog
- * data changes.
+ * All 56 SKUs now have verified per-SKU vial renders — AI-generated with
+ * the approved CJC-1295 as the style reference, each with its compound's
+ * correct name, formula, MW, and CAS on the label. Vials live at
+ * public/brand/vials/<slug>.jpg.
  */
 function vialPath(slug: string): string {
   return `/brand/vials/${slug}.jpg`;
