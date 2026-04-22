@@ -12,11 +12,10 @@ interface LogoProps {
 /**
  * Bench Grade Peptides wordmark — Concept 5 variant.
  *
- * Composition: peptide-bond chemistry diagram on the left (labeled atoms
- * —N—C with =O above and below, plus a cyan checkmark accent), ultra-wide
+ * Composition: peptide-bond molecule on the left (proper organic-chem
+ * skeletal formula — zigzag backbone, implicit carbons at vertices, only
+ * heteroatoms labeled, C=O carbonyl and N-H amide explicit), ultra-wide
  * letter-spaced "BENCH GRADE / PEPTIDES" wordmark to the right.
- *
- * Modeled directly on the Concept 5 reference image.
  */
 export function Logo({ size = "md", asStatic = false, className }: LogoProps) {
   const wordmark = (
@@ -59,168 +58,141 @@ export function Logo({ size = "md", asStatic = false, className }: LogoProps) {
 }
 
 /**
- * Peptide-bond chemistry mark.
+ * Peptide-bond mark — organic-chem skeletal formula.
  *
- * Labeled skeletal-formula notation:
+ * Depicts the canonical peptide bond between two amino-acid residues in
+ * proper skeletal notation:
  *
- *               O         ✓  (clinical cyan checkmark accent)
- *               ‖
- *        ─N━━━━C
- *               ‖
- *               O
+ *                   O
+ *                   ‖      ✓  (cyan accent)
+ *              ╱━━━━╲━━━━N━━━━╲
+ *             ╱           │     ╲
+ *                          H
  *
- * Atom labels in the display font (Geist) for visual consistency with
- * the wordmark. Two parallel vertical bond lines render each C=O double
- * bond. The cyan checkmark sits top-right as the brand accent.
- *
- * Renders as this detailed skeletal diagram at xl. At smaller sizes
- * (sm/md/lg) labels become illegible, so those tiers use a simplified
- * bond-dot variant without letters.
+ * Chemistry-accurate conventions:
+ *   - Carbons are implicit at vertices (no "C" labels — this is skeletal
+ *     style, not Lewis notation)
+ *   - Only heteroatoms (N, O) are labeled
+ *   - The C=O double bond is drawn as two parallel lines
+ *   - The N-H hydrogen is explicit (shown as "H" with a short single bond),
+ *     per standard amide depiction
+ *   - Zigzag chain geometry (~120° bond angles) represents the peptide
+ *     backbone
+ *   - Clinical cyan checkmark accent near the carbonyl oxygen
  */
 function PeptideBondMark({ size }: { size: "sm" | "md" | "lg" | "xl" }) {
   if (size === "xl") {
-    return (
-      <svg
-        viewBox="0 0 80 96"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-hidden="true"
-        className="shrink-0 h-[48px] w-auto md:h-[58px] lg:h-[72px]"
-      >
-        {/* Left R-group dash */}
-        <line
-          x1="4"
-          y1="48"
-          x2="14"
-          y2="48"
-          stroke="var(--color-ink)"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-        />
-
-        {/* N letter */}
-        <text
-          x="23"
-          y="54"
-          fontSize="18"
-          fontWeight="500"
-          fill="var(--color-ink)"
-          textAnchor="middle"
-          style={{ fontFamily: "var(--font-display), sans-serif" }}
-        >
-          N
-        </text>
-
-        {/* Horizontal bond N ── C */}
-        <line
-          x1="31"
-          y1="48"
-          x2="43"
-          y2="48"
-          stroke="var(--color-ink)"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-        />
-
-        {/* C letter */}
-        <text
-          x="52"
-          y="54"
-          fontSize="18"
-          fontWeight="500"
-          fill="var(--color-ink)"
-          textAnchor="middle"
-          style={{ fontFamily: "var(--font-display), sans-serif" }}
-        >
-          C
-        </text>
-
-        {/* Upper =O double bond (two parallel vertical lines) */}
-        <line
-          x1="50"
-          y1="38"
-          x2="50"
-          y2="20"
-          stroke="var(--color-ink)"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-        <line
-          x1="54"
-          y1="38"
-          x2="54"
-          y2="20"
-          stroke="var(--color-ink)"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-
-        {/* Upper O letter */}
-        <text
-          x="52"
-          y="14"
-          fontSize="18"
-          fontWeight="500"
-          fill="var(--color-ink)"
-          textAnchor="middle"
-          style={{ fontFamily: "var(--font-display), sans-serif" }}
-        >
-          O
-        </text>
-
-        {/* Lower =O double bond */}
-        <line
-          x1="50"
-          y1="60"
-          x2="50"
-          y2="78"
-          stroke="var(--color-ink)"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-        <line
-          x1="54"
-          y1="60"
-          x2="54"
-          y2="78"
-          stroke="var(--color-ink)"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-
-        {/* Lower O letter */}
-        <text
-          x="52"
-          y="92"
-          fontSize="18"
-          fontWeight="500"
-          fill="var(--color-ink)"
-          textAnchor="middle"
-          style={{ fontFamily: "var(--font-display), sans-serif" }}
-        >
-          O
-        </text>
-
-        {/* Cyan checkmark accent — clinical brand accent */}
-        <path
-          d="M 60 20 L 64 24 L 74 10"
-          stroke="#00A5B8"
-          strokeWidth="3"
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    );
+    return <SkeletalPeptideBondSVG responsive />;
   }
 
-  // Smaller sizes use a simplified bond-dot variant (no atom labels — they'd
-  // be unreadable at 22–36px tall).
+  // Smaller sizes use a simplified bond-dot variant (labels unreadable below ~40px).
   const height = size === "sm" ? 22 : size === "md" ? 26 : 36;
-  const width = Math.round(height * 2.1);
-  const lineStroke = size === "sm" ? 1.2 : size === "md" ? 1.3 : 1.4;
-  const bondStroke = size === "sm" ? 1.0 : 1.2;
+  return <SimplifiedBondSVG height={height} />;
+}
 
+/**
+ * Full skeletal-formula peptide bond (xl).
+ * viewBox: 0 0 120 80. Carbon vertices implicit. Heteroatoms labeled.
+ */
+function SkeletalPeptideBondSVG({ responsive }: { responsive?: boolean }) {
+  const ink = "var(--color-ink)";
+  const bondStroke = 2.2;
+  const doubleBondStroke = 1.8;
+  const labelFontSize = 14;
+  // Short gap between the bond endpoint and the letter centered at that point
+  // so the bond line doesn't pierce the letter.
+  return (
+    <svg
+      viewBox="0 0 120 80"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+      className={cn(
+        "shrink-0",
+        responsive && "h-[44px] w-auto md:h-[56px] lg:h-[68px]"
+      )}
+    >
+      {/* ---- Backbone zigzag ---- */}
+      {/* Segment 1: far-left Cα_1 → first vertex (carbonyl carbon) */}
+      <line x1="6" y1="56" x2="28" y2="36" stroke={ink} strokeWidth={bondStroke} strokeLinecap="round" />
+      {/* Segment 2: carbonyl C → N (peptide bond) — the N letter sits at this vertex,
+          so the line ends short of the letter. */}
+      <line x1="28" y1="36" x2="46" y2="56" stroke={ink} strokeWidth={bondStroke} strokeLinecap="round" />
+      {/* Segment 3: N → Cα_2 (start of continuation) */}
+      <line x1="58" y1="56" x2="76" y2="36" stroke={ink} strokeWidth={bondStroke} strokeLinecap="round" />
+      {/* Segment 4: Cα_2 → far-right end */}
+      <line x1="76" y1="36" x2="98" y2="56" stroke={ink} strokeWidth={bondStroke} strokeLinecap="round" />
+
+      {/* ---- C=O double bond (up from the first vertex at x=28, y=36) ---- */}
+      <line x1="25" y1="32" x2="25" y2="18" stroke={ink} strokeWidth={doubleBondStroke} strokeLinecap="round" />
+      <line x1="31" y1="32" x2="31" y2="18" stroke={ink} strokeWidth={doubleBondStroke} strokeLinecap="round" />
+
+      {/* ---- Oxygen label above the double bond ---- */}
+      <text
+        x="28"
+        y="14"
+        fontSize={labelFontSize}
+        fontWeight="500"
+        fill={ink}
+        textAnchor="middle"
+        style={{ fontFamily: "var(--font-display), sans-serif" }}
+      >
+        O
+      </text>
+
+      {/* ---- Nitrogen at the bottom-middle vertex (x=52, y=56) ---- */}
+      {/* Bonds terminate short of the N letter to leave a clean gap */}
+      <line x1="46" y1="56" x2="48" y2="56" stroke="transparent" />
+      <text
+        x="52"
+        y="60"
+        fontSize={labelFontSize}
+        fontWeight="500"
+        fill={ink}
+        textAnchor="middle"
+        style={{ fontFamily: "var(--font-display), sans-serif" }}
+      >
+        N
+      </text>
+
+      {/* ---- N-H bond (short line down from N, then H label) ---- */}
+      <line x1="52" y1="64" x2="52" y2="70" stroke={ink} strokeWidth={doubleBondStroke} strokeLinecap="round" />
+      <text
+        x="52"
+        y="78"
+        fontSize={labelFontSize}
+        fontWeight="500"
+        fill={ink}
+        textAnchor="middle"
+        style={{ fontFamily: "var(--font-display), sans-serif" }}
+      >
+        H
+      </text>
+
+      {/* ---- Clinical cyan checkmark accent — upper-right of the oxygen ---- */}
+      <path
+        d="M 42 14 L 46 18 L 56 6"
+        stroke="#00A5B8"
+        strokeWidth="2.6"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/**
+ * Simplified bond-dot variant for sm/md/lg sizes.
+ * At these sizes, atom labels become unreadable — so fall back to the
+ * circle-and-line abstraction while preserving the C=O double-bond detail.
+ */
+function SimplifiedBondSVG({ height }: { height: number }) {
+  const width = Math.round(height * 2.1);
+  const lineStroke = height >= 30 ? 1.4 : height >= 24 ? 1.3 : 1.2;
+  const bondStroke = height >= 24 ? 1.2 : 1.0;
+  const ink = "var(--color-ink)";
+  const paper = "var(--color-paper)";
   return (
     <svg
       width={width}
@@ -231,51 +203,13 @@ function PeptideBondMark({ size }: { size: "sm" | "md" | "lg" | "xl" }) {
       aria-hidden="true"
       className="shrink-0"
     >
-      <line
-        x1="5"
-        y1="17"
-        x2="51"
-        y2="17"
-        stroke="var(--color-ink)"
-        strokeWidth={lineStroke}
-        strokeLinecap="round"
-      />
-      <circle cx="5" cy="17" r="3.5" fill="var(--color-ink)" />
-      <circle cx="28" cy="17" r="2.8" fill="var(--color-ink)" />
-      <line
-        x1="26.3"
-        y1="14.2"
-        x2="26.3"
-        y2="6"
-        stroke="var(--color-ink)"
-        strokeWidth={bondStroke}
-        strokeLinecap="round"
-      />
-      <line
-        x1="29.7"
-        y1="14.2"
-        x2="29.7"
-        y2="6"
-        stroke="var(--color-ink)"
-        strokeWidth={bondStroke}
-        strokeLinecap="round"
-      />
-      <circle
-        cx="28"
-        cy="3.8"
-        r="2"
-        fill="var(--color-paper)"
-        stroke="var(--color-ink)"
-        strokeWidth={bondStroke}
-      />
-      <circle
-        cx="51"
-        cy="17"
-        r="3.5"
-        fill="var(--color-paper)"
-        stroke="var(--color-ink)"
-        strokeWidth={lineStroke}
-      />
+      <line x1="5" y1="17" x2="51" y2="17" stroke={ink} strokeWidth={lineStroke} strokeLinecap="round" />
+      <circle cx="5" cy="17" r="3.5" fill={ink} />
+      <circle cx="28" cy="17" r="2.8" fill={ink} />
+      <line x1="26.3" y1="14.2" x2="26.3" y2="6" stroke={ink} strokeWidth={bondStroke} strokeLinecap="round" />
+      <line x1="29.7" y1="14.2" x2="29.7" y2="6" stroke={ink} strokeWidth={bondStroke} strokeLinecap="round" />
+      <circle cx="28" cy="3.8" r="2" fill={paper} stroke={ink} strokeWidth={bondStroke} />
+      <circle cx="51" cy="17" r="3.5" fill={paper} stroke={ink} strokeWidth={lineStroke} />
       <circle cx="51" cy="17" r="1.4" fill="#00A5B8" />
     </svg>
   );
