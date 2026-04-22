@@ -1,26 +1,87 @@
 @import "tailwindcss";
 
+/*
+ * Bench Grade Peptides — design tokens.
+ * Editorial "Bench Journal" aesthetic: warm paper base, near-black ink,
+ * deep teal for data/links, oxblood reserved for critical/RUO emphasis.
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Surfaces */
+  --color-paper: #f7f4ee;       /* warm off-white, primary background */
+  --color-paper-soft: #efeae1;  /* slightly deeper paper, card surfaces */
+  --color-rule: #d7d1c4;        /* hairline rules, borders */
+
+  /* Ink */
+  --color-ink: #1a1a1a;         /* primary body text */
+  --color-ink-soft: #4a4a4a;    /* secondary text */
+  --color-ink-muted: #6b6b6b;   /* tertiary text, meta */
+
+  /* Accents */
+  --color-teal: #0a5c7d;        /* data, links, trust signals */
+  --color-teal-hover: #084a65;
+  --color-oxblood: #7a1e1e;     /* RUO banner, critical-state emphasis only */
+  --color-amber: #d6a15c;       /* reserved highlight, used sparingly */
+
+  /* Feedback */
+  --color-success: #2d5a3d;
+  --color-error: #7a1e1e;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-paper: var(--color-paper);
+  --color-paper-soft: var(--color-paper-soft);
+  --color-rule: var(--color-rule);
+  --color-ink: var(--color-ink);
+  --color-ink-soft: var(--color-ink-soft);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-teal: var(--color-teal);
+  --color-teal-hover: var(--color-teal-hover);
+  --color-oxblood: var(--color-oxblood);
+  --color-amber: var(--color-amber);
+  --color-background: var(--color-paper);
+  --color-foreground: var(--color-ink);
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-instrument-serif);
+  --font-mono: var(--font-jetbrains-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: light;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Editorial serif for display headings */
+.font-display {
+  font-family: var(--font-instrument-serif), Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+/* Mono for molecular data, SKUs, CAS numbers */
+.font-mono-data {
+  font-family: var(--font-jetbrains-mono), "SF Mono", Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "ss01", "zero", "ss02";
+}
+
+/* Hairline rule utility */
+.rule {
+  border-color: var(--color-rule);
+}
+
+/* Small-caps, letter-spaced utility for labels */
+.label-eyebrow {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 500;
 }

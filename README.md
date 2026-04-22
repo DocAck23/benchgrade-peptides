@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bench Grade Peptides
 
-## Getting Started
+Research-grade synthetic peptide storefront. Custom Next.js + Supabase + Resend.
 
-First, run the development server:
+## Stack
+
+- **Next.js 16** App Router, TypeScript, Tailwind v4
+- **Supabase** Postgres (products, orders, RUO acknowledgments)
+- **Resend** transactional email (order confirmation, shipping)
+- **Payment** ACH / wire / check (no card processing at launch)
+- **Hosting** TBD (likely Vercel)
+
+## Compliance framework
+
+This project operates under the RUO (research-use-only) compliance framework documented at
+`~/.claude/projects/-Users-ahmed-Research-Only-Peptides/memory/ruo_compliance_framework.md`.
+
+Key protections baked into code:
+
+- **Banned-terms linter** (`src/lib/compliance/banned-terms.ts`) — regex-scans every product page and blog post for therapeutic verbs, disease names, outcome claims, and other language FDA treats as drug-claim evidence. Hard-blocks publish on match.
+- **Required-element validator** (`src/lib/compliance/required-elements.ts`) — asserts every product page renders the RUO statement, molecular data, COA link, and Terms of Sale link.
+- **RUO acknowledgment audit trail** (`ruo_acknowledgments` table) — every checkout stores a timestamped, IP-logged, SHA-hashed customer certification. Retention is permanent.
+- **CI lint script** (`scripts/lint-content.ts`) — run `npm run lint:content` to scan all source files before commit.
+
+Every customer-facing surface must pass the framework before shipping. When adding product pages,
+blog posts, email templates, or ad creative, run the content through `complianceLint()` first.
+
+## Local setup
 
 ```bash
+# Install dependencies
+npm install
+
+# Configure environment
+cp .env.example .env.local
+# Fill in Supabase URL / anon key / service role, Resend API key
+
+# Run dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Scripts
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `npm run dev` — development server
+- `npm run build` — production build
+- `npm run start` — run production build locally
+- `npm run lint` — ESLint
+- `npm run lint:content` — RUO banned-terms scan over `src/` and `content/`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project structure
 
-## Learn More
+```
+src/
+├── app/              # Next.js App Router routes
+│   ├── layout.tsx    # Root layout — RUO banner, header, footer
+│   ├── page.tsx      # Homepage
+│   ├── catalog/      # Catalog + category + product pages (TBD)
+│   ├── compliance/   # Compliance / RUO explainer
+│   └── terms/        # Terms of Sale
+├── components/
+│   └── layout/       # RUOBanner, Header, Footer
+├── lib/
+│   ├── compliance/   # Banned-terms linter, required-element validator, RUO statements
+│   ├── supabase/     # Client factories + DB types
+│   └── utils.ts      # cn, formatPrice, etc.
+└── globals.css       # Tailwind v4 + design tokens
 
-To learn more about Next.js, take a look at the following resources:
+supabase/
+└── schema.sql        # Full DB schema — categories, products, variants, orders, acknowledgments
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+scripts/
+└── lint-content.ts   # CI compliance linter
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Design direction
 
-## Deploy on Vercel
+Editorial "Bench Journal" aesthetic — warm paper base, near-black ink, deep teal for
+data/links, oxblood reserved for the RUO banner and critical-state emphasis. Display type:
+Instrument Serif. Body: Inter. Data/molecular: JetBrains Mono.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Color tokens in `src/app/globals.css`:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `--color-paper`: `#F7F4EE` — primary background
+- `--color-ink`: `#1A1A1A` — primary text
+- `--color-teal`: `#0A5C7D` — data, links, trust
+- `--color-oxblood`: `#7A1E1E` — RUO banner, critical-state only
+
+---
+
+**Bench Grade Peptides LLC** — All products for laboratory research use only. Not for human or veterinary use. Not a drug, supplement, or medical device.
