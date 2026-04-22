@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Breadcrumb, Callout } from "@/components/ui";
@@ -58,14 +59,16 @@ export default async function ProductPage({ params }: PageProps) {
         <div className="mt-8 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_420px] gap-12 lg:gap-16">
           {/* Left column — photo + description + research context */}
           <div>
-            {/* Vial photograph placeholder */}
-            <div className="aspect-[4/5] bg-paper-soft border rule flex items-center justify-center max-w-lg">
-              <div className="text-center">
-                <div className="label-eyebrow text-ink-faint">Vial · photo pending</div>
-                <div className="font-mono-data text-[11px] text-ink-faint mt-2">
-                  {product.variants[0]?.sku}
-                </div>
-              </div>
+            {/* Vial photograph */}
+            <div className="relative aspect-[4/5] bg-paper-soft border rule overflow-hidden max-w-lg">
+              <Image
+                src={product.vial_image}
+                alt={`${product.name} research vial`}
+                fill
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                className="object-cover"
+                priority
+              />
             </div>
 
             <div className="mt-12 max-w-2xl space-y-8">

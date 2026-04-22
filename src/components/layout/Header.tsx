@@ -18,31 +18,43 @@ export function Header() {
 
   return (
     <header className="border-b rule bg-paper relative">
-      <div className="max-w-[1440px] mx-auto pl-3 pr-6 lg:pl-5 lg:pr-10 py-3 lg:py-3.5 flex items-center justify-between gap-8">
+      {/*
+        3-column CSS grid:
+          [auto]  logo hugs the true left edge
+          [1fr]   nav centers in the remaining space, independent of logo width
+          [auto]  Account + Cart hug the true right edge
+
+        No max-width wrapper — the logo and right nav should touch the
+        viewport edges on every breakpoint.
+      */}
+      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4 md:gap-8 pl-3 pr-3 lg:pl-5 lg:pr-5 py-2 md:py-2.5">
         <Logo size="xl" priority />
 
-        <nav className="hidden md:flex items-center gap-10" aria-label="Primary">
+        <nav
+          className="hidden md:flex items-center justify-center gap-10 lg:gap-12"
+          aria-label="Primary"
+        >
           {PRIMARY_NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="text-[15px] text-ink-soft hover:text-teal transition-colors"
+              className="text-base text-ink-soft hover:text-teal transition-colors"
             >
               {item.label}
             </Link>
           ))}
         </nav>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 justify-self-end">
           <Link
             href="/account"
-            className="hidden md:inline-block text-[15px] text-ink-soft hover:text-teal transition-colors"
+            className="hidden md:inline-block text-base text-ink-soft hover:text-teal transition-colors"
           >
             Account
           </Link>
           <Link
             href="/cart"
-            className="text-[15px] px-4 py-2 border rule text-ink hover:bg-paper-soft transition-colors"
+            className="text-base px-4 py-2 border rule text-ink hover:bg-paper-soft transition-colors"
           >
             Cart
           </Link>

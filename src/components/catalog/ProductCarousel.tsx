@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import type { CatalogProduct } from "@/lib/catalog/data";
 import { PRODUCTS, getMinPrice } from "@/lib/catalog/data";
@@ -77,11 +78,15 @@ function ProductCarouselCard({ product }: { product: CatalogProduct }) {
       href={`/catalog/${product.category_slug}/${product.slug}`}
       className="block w-[240px] lg:w-[280px] shrink-0 bg-paper border rule p-5 hover:bg-paper-deep transition-colors"
     >
-      {/* Vial placeholder */}
-      <div className="aspect-square bg-paper-deep border rule mb-4 flex items-center justify-center">
-        <span className="font-mono-data text-[9px] text-ink-faint tracking-[0.2em] uppercase">
-          vial · photo pending
-        </span>
+      {/* Vial photograph */}
+      <div className="relative aspect-square bg-paper-deep border rule mb-4 overflow-hidden">
+        <Image
+          src={product.vial_image}
+          alt={`${product.name} research vial`}
+          fill
+          sizes="280px"
+          className="object-cover"
+        />
       </div>
 
       {product.molecular_formula && (

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { CatalogVariant } from "@/lib/catalog/data";
+import { QUANTITY_TIERS } from "@/lib/catalog/data";
 import { Button } from "@/components/ui";
 import { formatPrice, cn } from "@/lib/utils";
 
@@ -12,23 +13,31 @@ interface VariantPickerProps {
 }
 
 /**
- * Variant selection + qty stepper + add-to-cart.
+ * Variant selection (mg dosage) + quantity tier (1 / 10 / 25 / 50 / 100 vials)
+ * + add-to-cart.
+ *
+ * Quantity tiers come from `QUANTITY_TIERS` in catalog/data.ts — currently
+ * 1 / 10 / 25 / 50 / 100. Unit price multiplies by selected quantity (no
+ * volume-discount math applied yet; that's a future pricing decision).
  *
  * Triggers the RUO gate modal on first cart-add. The modal is owned by
  * the CartProvider upstream; this component only signals intent via `onAddToCart`.
  */
 export function VariantPicker({ variants, productName, onAddToCart }: VariantPickerProps) {
   const [selectedSku, setSelectedSku] = useState(variants[0]?.sku ?? "");
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState<number>(QUANTITY_TIERS[0]);
 
   const selectedVariant = variants.find((v) => v.sku === selectedSku) ?? variants[0];
   if (!selectedVariant) return null;
 
+  const totalPriceCents = Math.round(selectedVariant.retail_price * quantity * 100);
+
   return (
     <div className="flex flex-col gap-6">
+      {/* Dosage selection */}
       <div>
-        <div className="label-eyebrow text-ink-muted mb-3">Size</div>
-        <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={`${productName} size`}>
+        <div className="label-eyebrow text-ink-muted mb-3">Dosage</div>
+        <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={`${productName} dosage`}>
           {variants.map((variant) => {
             const selected = variant.sku === selectedSku;
             return (
@@ -55,37 +64,38 @@ export function VariantPicker({ variants, productName, onAddToCart }: VariantPic
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="label-eyebrow text-ink-muted">Qty</div>
-        <div className="flex items-stretch border rule">
-          <button
-            onClick={() => setQuantity(Math.max(1, quantity - 1))}
-            disabled={quantity <= 1}
-            className="w-10 h-11 flex items-center justify-center text-ink-soft hover:bg-paper-soft disabled:text-ink-faint focus-visible:outline-none focus-visible:bg-paper-soft"
-            aria-label="Decrease quantity"
-          >
-            −
-          </button>
-          <input
-            type="number"
-            min={1}
-            max={99}
-            value={quantity}
-            onChange={(e) => {
-              const n = parseInt(e.target.value, 10);
-              if (!Number.isNaN(n)) setQuantity(Math.max(1, Math.min(99, n)));
-            }}
-            className="w-14 h-11 text-center bg-paper text-ink font-mono-data text-sm border-x rule focus:outline-none"
-            aria-label="Quantity"
-          />
-          <button
-            onClick={() => setQuantity(Math.min(99, quantity + 1))}
-            disabled={quantity >= 99}
-            className="w-10 h-11 flex items-center justify-center text-ink-soft hover:bg-paper-soft disabled:text-ink-faint focus-visible:outline-none focus-visible:bg-paper-soft"
-            aria-label="Increase quantity"
-          >
-            +
-          </button>
+      {/* Quantity tier selection */}
+      <div>
+        <div className="flex items-baseline justify-between mb-3">
+          <span className="label-eyebrow text-ink-muted">Quantity (vials)</span>
+          {quantity > 1 && (
+            <span className="font-mono-data text-xs text-ink-muted">
+              {quantity}× {formatPrice(selectedVariant.retail_price * 100)}
+            </span>
+          )}
+        </div>
+        <div className="grid grid-cols-5 gap-2" role="radiogroup" aria-label="Quantity">
+          {QUANTITY_TIERS.map((tier) => {
+            const selected = tier === quantity;
+            return (
+              <button
+                key={tier}
+                role="radio"
+                aria-checked={selected}
+                onClick={() => setQuantity(tier)}
+                className={cn(
+                  "flex items-center justify-center px-3 py-3 border transition-colors",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2",
+                  selected
+                    ? "border-ink bg-paper-soft"
+                    : "rule bg-paper hover:bg-paper-soft"
+                )}
+                aria-label={`${tier} ${tier === 1 ? "vial" : "vials"}`}
+              >
+                <span className="font-mono-data text-sm text-ink">{tier}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -94,7 +104,7 @@ export function VariantPicker({ variants, productName, onAddToCart }: VariantPic
         onClick={() => onAddToCart?.(selectedVariant, quantity)}
         disabled={!onAddToCart}
       >
-        Add to cart — {formatPrice(selectedVariant.retail_price * quantity * 100)}
+        Add to cart — {formatPrice(totalPriceCents)}
       </Button>
     </div>
   );
