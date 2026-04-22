@@ -1,49 +1,70 @@
 @import "tailwindcss";
 
 /*
- * Bench Grade Peptides — design tokens.
- * Editorial "Bench Journal" aesthetic: warm paper base, near-black ink,
- * deep teal for data/links, oxblood reserved for critical/RUO emphasis.
+ * Bench Grade Peptides — design tokens (Tailwind v4 @theme)
+ *
+ * Editorial "Bench Journal" aesthetic:
+ *   - Warm paper base, near-black ink
+ *   - Deep teal for data/links/interactive
+ *   - Oxblood reserved for RUO banner and destructive states only
+ *
+ * System rules (enforced by convention, reviewed in PR):
+ *   1. Hairline over shadow — 1px rules, no box-shadow
+ *   2. Zero radius by default — flat, catalog-reference aesthetic
+ *   3. Monospace for data (CAS, MW, prices, sequences), sans for prose
+ *   4. Serif (Instrument Serif) for display only — never body
+ *   5. Oxblood is RUO-only — never a CTA color
+ *   6. Teal for data + interactive
+ *   7. `label-eyebrow` utility for section eyebrows
+ *   8. Lucide outline icons only; no filled icons, no emoji
  */
 
-:root {
-  /* Surfaces */
-  --color-paper: #f7f4ee;       /* warm off-white, primary background */
-  --color-paper-soft: #efeae1;  /* slightly deeper paper, card surfaces */
-  --color-rule: #d7d1c4;        /* hairline rules, borders */
+@theme {
+  /* ---- Surfaces ---- */
+  --color-paper: #f7f4ee;          /* primary background */
+  --color-paper-soft: #efeae1;     /* card/elevated surfaces */
+  --color-paper-deep: #e7e0d0;     /* secondary surface, below-fold sections */
+  --color-rule: #d7d1c4;           /* 1px hairline borders */
+  --color-rule-strong: #b8b0a1;    /* emphasis borders, selected state */
 
-  /* Ink */
-  --color-ink: #1a1a1a;         /* primary body text */
-  --color-ink-soft: #4a4a4a;    /* secondary text */
-  --color-ink-muted: #6b6b6b;   /* tertiary text, meta */
+  /* ---- Ink ---- */
+  --color-ink: #1a1a1a;            /* primary body text */
+  --color-ink-soft: #4a4a4a;       /* secondary text */
+  --color-ink-muted: #6b6b6b;      /* tertiary text, meta */
+  --color-ink-faint: #8a8a8a;      /* disabled, placeholder */
 
-  /* Accents */
-  --color-teal: #0a5c7d;        /* data, links, trust signals */
+  /* ---- Accents ---- */
+  --color-teal: #0a5c7d;           /* data, links, trust signals */
   --color-teal-hover: #084a65;
-  --color-oxblood: #7a1e1e;     /* RUO banner, critical-state emphasis only */
-  --color-amber: #d6a15c;       /* reserved highlight, used sparingly */
+  --color-teal-soft: #e7f0f4;      /* teal background tint for highlights */
+  --color-oxblood: #7a1e1e;        /* RUO banner + destructive only */
+  --color-oxblood-hover: #5f1717;
+  --color-amber: #d6a15c;          /* rare highlight, used sparingly */
 
-  /* Feedback */
+  /* ---- Feedback ---- */
   --color-success: #2d5a3d;
+  --color-warn: #8a6d28;
   --color-error: #7a1e1e;
-}
 
-@theme inline {
-  --color-paper: var(--color-paper);
-  --color-paper-soft: var(--color-paper-soft);
-  --color-rule: var(--color-rule);
-  --color-ink: var(--color-ink);
-  --color-ink-soft: var(--color-ink-soft);
-  --color-ink-muted: var(--color-ink-muted);
-  --color-teal: var(--color-teal);
-  --color-teal-hover: var(--color-teal-hover);
-  --color-oxblood: var(--color-oxblood);
-  --color-amber: var(--color-amber);
+  /* ---- Background / foreground aliases for Next scaffold ---- */
   --color-background: var(--color-paper);
   --color-foreground: var(--color-ink);
+
+  /* ---- Typography ---- */
   --font-sans: var(--font-inter);
   --font-serif: var(--font-instrument-serif);
   --font-mono: var(--font-jetbrains-mono);
+
+  /* ---- Radius ---- */
+  --radius-none: 0px;
+  --radius-sm: 2px;
+  --radius-md: 2px;
+
+  /* ---- Motion ---- */
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast: 150ms;
+  --dur-med: 250ms;
+  --dur-slow: 400ms;
 }
 
 html {
@@ -56,7 +77,21 @@ body {
   font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-feature-settings: "ss01", "cv11";
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
+
+/* ---- Focus ring (accessibility) ---- */
+*:focus-visible {
+  outline: 2px solid var(--color-teal);
+  outline-offset: 2px;
+}
+
+/* Remove default outline only when focus-visible styles will apply */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ---- Utilities ---- */
 
 /* Editorial serif for display headings */
 .font-display {
@@ -65,23 +100,32 @@ body {
   letter-spacing: -0.01em;
 }
 
-/* Mono for molecular data, SKUs, CAS numbers */
+/* Mono for molecular data, SKUs, CAS numbers, prices */
 .font-mono-data {
   font-family: var(--font-jetbrains-mono), "SF Mono", Menlo, monospace;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "ss01", "zero", "ss02";
 }
 
-/* Hairline rule utility */
-.rule {
-  border-color: var(--color-rule);
-}
-
-/* Small-caps, letter-spaced utility for labels */
+/* Small-caps, letter-spaced utility for section eyebrows */
 .label-eyebrow {
   font-family: var(--font-inter), sans-serif;
   font-size: 0.6875rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   font-weight: 500;
+}
+
+/* Hairline rule utility (use with border-{side}) */
+.rule {
+  border-color: var(--color-rule);
+}
+.rule-strong {
+  border-color: var(--color-rule-strong);
+}
+
+/* Selection colors — stay on-brand */
+::selection {
+  background: var(--color-teal);
+  color: var(--color-paper);
 }

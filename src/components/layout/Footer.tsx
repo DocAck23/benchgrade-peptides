@@ -33,26 +33,26 @@ const FOOTER_COLUMNS = [
 
 export function Footer() {
   return (
-    <footer className="border-t rule bg-[color:var(--color-paper-soft)] mt-32">
+    <footer className="border-t rule bg-paper-soft mt-32">
       <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-16">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
           <div className="col-span-2 md:col-span-1">
-            <div className="font-display text-2xl text-[color:var(--color-ink)]">Bench Grade</div>
-            <div className="label-eyebrow text-[color:var(--color-ink-muted)] mt-1">Peptides</div>
-            <p className="mt-6 text-sm leading-relaxed text-[color:var(--color-ink-soft)] max-w-xs">
+            <div className="font-display text-2xl text-ink">Bench Grade</div>
+            <div className="label-eyebrow text-ink-muted mt-1">Peptides</div>
+            <p className="mt-6 text-sm leading-relaxed text-ink-soft max-w-xs">
               Research-grade synthetic peptides for laboratory use. HPLC-verified, COA-per-lot, cold-chain shipped.
             </p>
           </div>
 
           {FOOTER_COLUMNS.map((column) => (
             <div key={column.heading}>
-              <h3 className="label-eyebrow text-[color:var(--color-ink)] mb-4">{column.heading}</h3>
+              <h3 className="label-eyebrow text-ink mb-4">{column.heading}</h3>
               <ul className="space-y-2.5">
                 {column.links.map((link) => (
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-sm text-[color:var(--color-ink-soft)] hover:text-[color:var(--color-teal)] transition-colors"
+                      className="text-sm text-ink-soft hover:text-teal transition-colors"
                     >
                       {link.label}
                     </Link>
@@ -66,12 +66,12 @@ export function Footer() {
         <hr className="mt-14 mb-8 rule border-t" />
 
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <p className="text-xs text-[color:var(--color-ink-muted)] max-w-2xl leading-relaxed">
+          <p className="text-xs text-ink-muted max-w-2xl leading-relaxed">
             {RUO_STATEMENTS.banner} Products are not drugs, supplements, or medical devices and are not
             approved by the FDA for any use other than laboratory research. By purchasing, customer certifies
-            research use per our <Link href="/terms" className="underline decoration-[color:var(--color-rule)] hover:decoration-[color:var(--color-teal)]">Terms of Sale</Link>.
+            research use per our <Link href="/terms" className="underline decoration-rule hover:decoration-teal">Terms of Sale</Link>.
           </p>
-          <p className="text-xs text-[color:var(--color-ink-muted)] whitespace-nowrap">
+          <p className="text-xs text-ink-muted whitespace-nowrap">
             © {new Date().getFullYear()} Bench Grade Peptides LLC
           </p>
         </div>

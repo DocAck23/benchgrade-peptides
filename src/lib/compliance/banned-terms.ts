@@ -1,34 +1,48 @@
 /**
- * Bench Grade Peptides — Compliance banned-terms list.
+ * Bench Grade Peptides — compliance banned-terms list.
  *
- * Source: /Users/ahmed/.claude/projects/-Users-ahmed-Research-Only-Peptides/memory/ruo_compliance_framework.md §3
+ * Source: memory/ruo_compliance_framework.md §3
  *
- * These terms must NEVER appear in:
- *   - Product titles, descriptions, or meta tags
- *   - Blog content
- *   - Email templates
- *   - Social copy
- *   - Ad creative
- *   - FAQ answers
+ * These patterns must NEVER appear in customer-facing copy. They represent
+ * language the FDA treats as evidence of drug-claim intent under
+ * 21 USC § 321(g)(1) and the intended-use doctrine at 21 CFR § 201.128.
  *
- * Enforcement: the `complianceLint()` function below is run:
- *   1. Pre-publish on product pages (CI check)
- *   2. On every CMS write via server action
- *   3. On every outbound email render
+ * Design principle after Phase 2 codex review:
  *
- * Any match is a hard block, not a warning.
+ *   Every pattern MUST require claim context (a therapeutic verb paired with
+ *   a body part, disease, outcome, or subject-address).
  *
- * Keep this file ungated — it is intentionally public as an
- * affirmative-defense artifact showing compliance-as-code.
+ *   Standalone disease words, body-part words, or verbs that would also
+ *   appear in legitimate scientific research descriptions are NOT in this
+ *   list. The linter is a backstop against marketing drift, not a
+ *   comprehensive content filter — a scientific research description of
+ *   "bone healing models in rodents" is legitimate and must pass.
+ *
+ * What the linter catches (claim patterns):
+ *   - Therapeutic verbs paired with 2nd-person or disease objects
+ *     ("cures your joints", "treats arthritis", "reduces inflammation")
+ *   - "For [specific disease]" constructions
+ *   - Outcome claims ("weight loss", "muscle growth")
+ *   - Stacking/protocol language
+ *   - First-person testimonial language
+ *   - Branded-drug comparisons
+ *
+ * What it deliberately does NOT catch:
+ *   - Standalone disease names in research context ("cancer cell line",
+ *     "arthritis research literature")
+ *   - Scientific verbs in mechanism descriptions ("binds", "modulates")
+ *   - The word "healing" in wound/tissue research context
+ *   - The word "inflammation" in anti-inflammatory research context
+ *
+ * Enforcement is in `complianceLint()` below. Run pre-publish on every
+ * customer-facing surface.
  */
 
 export type BannedCategory =
-  | "therapeutic_verb"
-  | "disease_name"
-  | "body_part_health_context"
+  | "therapeutic_claim"
+  | "disease_in_claim_context"
   | "outcome_claim"
   | "dosing_language"
-  | "administration_route"
   | "bundling_language"
   | "testimonial_language"
   | "branded_drug_comparison";
@@ -40,53 +54,127 @@ export interface BannedTerm {
 }
 
 /**
- * Terms are matched case-insensitively with word boundaries where applicable.
- * When adding: include the rationale so future reviewers understand why.
+ * Terms are matched case-insensitively. All patterns require claim context.
+ * When adding new patterns: include a note about what scientific usage it
+ * must NOT match (the false-positive surface).
  */
 export const BANNED_TERMS: BannedTerm[] = [
-  // --- Therapeutic verbs (in biological-function context) ---
-  { pattern: /\b(heals?|healing|cures?|treats?|treatment|prevents?|prevention|mitigates?|relieves?|reduces?)\b/i, category: "therapeutic_verb", rationale: "Core FDA drug-claim trigger — 21 USC § 321(g)(1)" },
-  { pattern: /\b(improves?|boosts?|enhances?|supports?)\s+(?:your|the|immune|joint|muscle|skin|brain|liver|gut|mood|memory|libido|sleep|recovery|energy|performance|health|wellness)\b/i, category: "therapeutic_verb", rationale: "Structure-function verbs become drug claims when paired with body systems in marketing context" },
+  // --- Therapeutic verbs in subject/object context ---
+  // "heals your joints", "treats the condition", "cures my pain"
+  {
+    pattern: /\b(heal|heals|cure|cures|treat|treats|prevent|prevents|mitigate|mitigates|relieve|relieves|reduce|reduces|fight|fights|combat|combats)\s+(?:your|my|their|his|her|the|any|a|an)\s+(?:joints?|muscles?|pains?|skin|mood|sleep|anxiety|depression|symptoms?|conditions?|inflammation|swelling|injury|injuries|infections?|illnesses?|diseases?|cold|flu|arthritis|diabetes|obesity)/i,
+    category: "therapeutic_claim",
+    rationale: "Core FDA drug-claim pattern — therapeutic verb + subject body-part/condition. 21 USC § 321(g)(1).",
+  },
+  // "supports your joints", "promotes healthy skin", "boosts your immune system"
+  {
+    pattern: /\b(supports?|promotes?|boosts?|enhances?|improves?|strengthens?)\s+(?:your|my|their|his|her|the|a|an|healthy)\s+(?:joints?|muscles?|skin|brain|liver|gut|mood|memory|libido|sleep|recovery|energy|performance|immune|immunity|digestion|metabolism|health|wellness|vitality|longevity)/i,
+    category: "therapeutic_claim",
+    rationale: "Structure-function claim. Protected in DSHEA for dietary supplements; RUO peptides are NOT supplements and cannot use this framing.",
+  },
+  // "relieves pain", "reduces inflammation" (no 2p qualifier)
+  {
+    pattern: /\b(relieves?|reduces?|eliminates?|fights?)\s+(?:pain|inflammation|swelling|fatigue|stress|anxiety|depression|arthritis|insomnia)\b/i,
+    category: "therapeutic_claim",
+    rationale: "Active-voice outcome claim without 2p qualifier — still a drug claim.",
+  },
 
-  // --- Disease names (common RUO enforcement triggers) ---
-  { pattern: /\b(arthritis|osteoarthritis|rheumatoid)\b/i, category: "disease_name", rationale: "Specific diagnosis — drug claim under 21 USC § 321(g)" },
-  { pattern: /\b(obesity|overweight|weight[\s-]?loss|fat[\s-]?loss)\b/i, category: "disease_name", rationale: "GLP-1 enforcement trigger — Dec 2024 warning letters" },
-  { pattern: /\b(diabetes|diabetic|type[\s-]?2|insulin[\s-]?resistance)\b/i, category: "disease_name", rationale: "FDA-regulated condition" },
-  { pattern: /\b(depression|anxiety|PTSD|bipolar|insomnia)\b/i, category: "disease_name", rationale: "Mental health conditions are drug-claim triggers" },
-  { pattern: /\b(erectile\s+dysfunction|ED\b|impotence|libido)\b/i, category: "disease_name", rationale: "Tainted-supplement enforcement pattern (sildenafil precedent)" },
-  { pattern: /\b(IBD|crohn'?s|colitis|IBS|leaky\s+gut)\b/i, category: "disease_name", rationale: "GI conditions" },
-  { pattern: /\b(alzheimer'?s|parkinson'?s|dementia|cognitive\s+decline)\b/i, category: "disease_name", rationale: "Neurological disease claims" },
-  { pattern: /\b(cancer|tumor|malignan|carcinoma|oncology)\b/i, category: "disease_name", rationale: "Highest-scrutiny disease category" },
-  { pattern: /\b(autoimmune|lupus|multiple\s+sclerosis)\b/i, category: "disease_name", rationale: "Autoimmune disease claims — note: standalone 'MS' is excluded to avoid false positives with mass spectrometry; watch for it in context review" },
-  { pattern: /\binflammation\b/i, category: "disease_name", rationale: "Symptom-as-condition language" },
+  // --- Disease name in claim/marketing context ---
+  // "for arthritis", "for weight loss", "helps with anxiety"
+  {
+    pattern: /\b(?:for|helps?\s+with|used\s+to|intended\s+(?:to|for))\s+(arthritis|osteoarthritis|diabetes|obesity|overweight|anxiety|depression|insomnia|IBD|crohn'?s|colitis|IBS|alzheimer'?s|parkinson'?s|dementia|cancer|autoimmune|lupus|erectile\s+dysfunction|impotence)/i,
+    category: "disease_in_claim_context",
+    rationale: "Specific disease targeting — the classic drug-claim construction.",
+  },
+  // "weight loss", "fat loss" — highly enforced outcome
+  {
+    pattern: /\b(weight[\s-]?loss|fat[\s-]?loss|slimming|weight[\s-]?management\s+(?:solution|product|supplement))\b/i,
+    category: "outcome_claim",
+    rationale: "Direct GLP-1 enforcement trigger — Dec 2024 FDA warning letters hit exactly this language.",
+  },
+  // "muscle growth", "lean mass"
+  {
+    pattern: /\b(muscle[\s-]?(?:growth|gain|building)|lean\s+mass|bodybuilding\s+supplement)\b/i,
+    category: "outcome_claim",
+    rationale: "SARMs-era enforcement pattern; performance-enhancement intent.",
+  },
+  // "anti-aging", "longevity solution"
+  {
+    pattern: /\banti[\s-]?(?:aging|age|anxiety|depression|inflammatory\s+(?:solution|supplement|product))\b/i,
+    category: "outcome_claim",
+    rationale: "Outcome-as-category marketing claim — FDA treats as structure-function.",
+  },
+  // "recovery boost", "performance enhancement"
+  {
+    pattern: /\b(recovery|performance|longevity)\s+(?:boost|enhancement|improvement|optimizer)\b/i,
+    category: "outcome_claim",
+    rationale: "Outcome-chain language — athletic/recovery use intent.",
+  },
+  // "before and after", "transformation"
+  {
+    pattern: /\b(before\s*(?:and|\/|&)\s*after|transformation\s+(?:stor|photo|result))/i,
+    category: "outcome_claim",
+    rationale: "Outcome imagery language.",
+  },
 
-  // --- Body parts in health context (caught in therapeutic_verb too; these are extra belt-and-braces) ---
-  { pattern: /\b(your|the)\s+(joints?|muscles?|skin|brain|liver|gut|mood|memory|libido|energy)\b/i, category: "body_part_health_context", rationale: "Second-person body references imply human/animal subject use" },
+  // --- Dosing language (subject administration instruction) ---
+  // "2 mg/kg body weight"
+  {
+    pattern: /\b\d+(?:\.\d+)?\s*mg\s*\/\s*kg\b/i,
+    category: "dosing_language",
+    rationale: "Body-weight dosing implies subject administration.",
+  },
+  // "inject daily", "take each morning", "administer twice per day"
+  {
+    pattern: /\b(take|inject|administer|dose)\s+(?:it\s+)?(?:daily|each|every|once|twice|thrice|per)\b/i,
+    category: "dosing_language",
+    rationale: "Direct administration instruction targeted at the reader.",
+  },
+  // "before bed", "morning dose", "post-workout"
+  {
+    pattern: /\b(before\s+bed|at\s+bedtime|morning\s+dose|post[\s-]?workout|pre[\s-]?workout)\b/i,
+    category: "dosing_language",
+    rationale: "Subject-regimen temporal context.",
+  },
+  // "inject subcutaneously", "subq injection" in 2p context — narrowed
+  {
+    pattern: /\b(subcutaneous|subq|intramuscular|IM)\s+(injection|shot)\s+(?:daily|weekly|before|after|into\s+(?:your|the))/i,
+    category: "dosing_language",
+    rationale: "Administration route + temporal/subject context — NOT generic 'subcutaneous injection in rodent models' research description.",
+  },
 
-  // --- Outcome claims ---
-  { pattern: /\b(longevity|anti[\s-]?aging|age[\s-]?reversal)\b/i, category: "outcome_claim", rationale: "Structure-function claim under FDA scrutiny" },
-  { pattern: /\b(muscle\s+growth|muscle\s+gain|lean\s+mass|bodybuilding)\b/i, category: "outcome_claim", rationale: "SARMs-era enforcement pattern" },
-  { pattern: /\b(recovery|performance)\s+(?:enhancement|boost|improvement)\b/i, category: "outcome_claim", rationale: "Athletic-use intent language" },
-  { pattern: /\b(before\s*(?:and|\/|&)\s*after|transformation)\b/i, category: "outcome_claim", rationale: "Outcome imagery language" },
+  // --- Bundling / stacking / protocol language ---
+  // "stack with", "cycle with", "run a protocol"
+  {
+    pattern: /\b(stack\s+(?:with|it\s+with)|cycle\s+(?:with|of\s+\w+\s+mg)|run\s+(?:a|the)\s+(?:protocol|cycle|regimen)|combine\s+with\s+\w+\s+for)/i,
+    category: "bundling_language",
+    rationale: "Stacking/cycling implies use-case for subject administration.",
+  },
 
-  // --- Dosing language ---
-  { pattern: /\b\d+\s*mg\s*\/\s*kg\b/i, category: "dosing_language", rationale: "Body-weight dosing = human/animal subject intent" },
-  { pattern: /\b(take|inject|administer|dose)\s+(?:daily|each|every|once|twice|per)\b/i, category: "dosing_language", rationale: "Direct administration instruction" },
-  { pattern: /\b(before\s+bed|morning\s+dose|post[\s-]?workout)\b/i, category: "dosing_language", rationale: "Subject-regimen context" },
-
-  // --- Administration routes in subject context ---
-  { pattern: /\b(subcutaneous|subq|intramuscular|IM\s+injection|intranasal|sublingual)\s+(?:injection|administration|use)\b/i, category: "administration_route", rationale: "Clinical administration route = consumption intent" },
-
-  // --- Bundling / stacking language ---
-  { pattern: /\b(stack|protocol|cycle|regimen|combo|combine\s+with)\b/i, category: "bundling_language", rationale: "Stacking implies use-case for administration" },
-
-  // --- Testimonial / review language ---
-  { pattern: /\b(I\s+(?:tried|used|took|injected|noticed|felt))\b/i, category: "testimonial_language", rationale: "First-person use testimony = self-reported human use" },
-  { pattern: /\b(customer\s+results|user\s+experiences?|success\s+stor)/i, category: "testimonial_language", rationale: "Results-based marketing" },
+  // --- Testimonial / first-person use language ---
+  // "I tried this and it worked"
+  {
+    pattern: /\bI\s+(?:tried|used|took|injected|noticed|felt|experienced)\s+(?:this|it|the|a)/i,
+    category: "testimonial_language",
+    rationale: "First-person use testimony = self-reported consumption.",
+  },
+  {
+    pattern: /\b(customer\s+results|user\s+experiences?|success\s+stories?|transformation\s+stories?)\b/i,
+    category: "testimonial_language",
+    rationale: "Results-based marketing framing.",
+  },
 
   // --- Branded drug comparisons ---
-  { pattern: /\b(like|generic|similar\s+to|alternative\s+to|equivalent\s+to)\s+(ozempic|wegovy|mounjaro|zepbound|saxenda)/i, category: "branded_drug_comparison", rationale: "Comparative claims to FDA-approved drugs — per Dec 2024 warning letters" },
-  { pattern: /\b(ozempic|wegovy|mounjaro|zepbound|saxenda|rimadyl|apoquel|cytopoint)\b/i, category: "branded_drug_comparison", rationale: "Branded-drug references are drug-claim triggers" },
+  {
+    pattern: /\b(?:like|generic|similar\s+to|alternative\s+to|equivalent\s+to|version\s+of)\s+(ozempic|wegovy|mounjaro|zepbound|saxenda)\b/i,
+    category: "branded_drug_comparison",
+    rationale: "Comparative claim to FDA-approved branded drug — per Dec 2024 warning letters.",
+  },
+  {
+    pattern: /\b(ozempic|wegovy|mounjaro|zepbound|saxenda|rimadyl|apoquel|cytopoint)\b/i,
+    category: "branded_drug_comparison",
+    rationale: "Any mention of a branded FDA-approved drug in marketing context.",
+  },
 ];
 
 export interface ComplianceViolation {
@@ -98,14 +186,13 @@ export interface ComplianceViolation {
 }
 
 /**
- * Scan a body of text for banned terms. Returns an array of violations.
+ * Scan a body of text for banned claim patterns. Returns an array of violations.
  * Empty array = content passes.
  */
 export function complianceLint(text: string): ComplianceViolation[] {
   const violations: ComplianceViolation[] = [];
 
   for (const term of BANNED_TERMS) {
-    // Need to clone the regex to iterate with matchAll regardless of original flags
     const flags = term.pattern.flags.includes("g") ? term.pattern.flags : term.pattern.flags + "g";
     const pattern = new RegExp(term.pattern.source, flags);
 
@@ -137,7 +224,7 @@ export function assertCompliant(text: string, source?: string): void {
       .map((v) => `  [${v.category}] "${v.term}" — ${v.rationale}\n    context: "…${v.context}…"`)
       .join("\n");
     throw new Error(
-      `Compliance violations detected${sourceInfo}:\n${summary}\n\nSee /Users/ahmed/.claude/projects/-Users-ahmed-Research-Only-Peptides/memory/ruo_compliance_framework.md §3 for the full banned-terms list and rationale.`
+      `Compliance violations detected${sourceInfo}:\n${summary}\n\nSee memory/ruo_compliance_framework.md §3 for the full banned-terms list.`
     );
   }
 }
