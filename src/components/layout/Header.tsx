@@ -19,7 +19,7 @@ export function Header() {
   return (
     <header className="border-b rule bg-paper relative">
       <div className="max-w-[1440px] mx-auto pl-5 pr-6 lg:pl-8 lg:pr-10 py-5 flex items-center justify-between gap-8">
-        <Logo size="xl" />
+        <Logo size="xl" priority />
 
         <nav className="hidden md:flex items-center gap-10" aria-label="Primary">
           {PRIMARY_NAV.map((item) => (
