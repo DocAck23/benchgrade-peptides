@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { updateOrderStatus, type OrderStatus } from "@/app/actions/admin";
+import { updateOrderStatus } from "@/app/actions/admin";
+import type { OrderStatus } from "@/lib/orders/status";
 
 const TRANSITIONS: Record<string, { label: string; target: OrderStatus; variant: "primary" | "ghost" | "destructive" }[]> = {
   awaiting_wire: [

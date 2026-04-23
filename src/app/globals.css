@@ -163,3 +163,116 @@ body {
     animation: none;
   }
 }
+
+/* Rendered-markdown readable prose for the /admin/briefs pages.
+   Scoped under `.brief-prose` so it doesn't leak into product copy. */
+.brief-prose {
+  color: var(--color-ink);
+  font-size: 15px;
+  line-height: 1.65;
+  max-width: 68ch;
+}
+.brief-prose > * + * { margin-top: 1.1em; }
+.brief-prose h1 {
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-size: 2rem;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  margin-top: 0.25em;
+  margin-bottom: 0.4em;
+}
+.brief-prose h2 {
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-size: 1.35rem;
+  line-height: 1.25;
+  margin-top: 2.2em;
+  margin-bottom: 0.4em;
+  padding-bottom: 0.4em;
+  border-bottom: 1px solid var(--color-rule);
+}
+.brief-prose h3 {
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-size: 1.1rem;
+  line-height: 1.3;
+  margin-top: 1.8em;
+  margin-bottom: 0.2em;
+}
+.brief-prose h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-top: 1.4em;
+  margin-bottom: 0.2em;
+  color: var(--color-ink);
+}
+.brief-prose p { margin: 0.9em 0; }
+.brief-prose a {
+  color: var(--color-teal);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.brief-prose a:hover { color: var(--color-teal-hover); }
+.brief-prose strong { color: var(--color-ink); font-weight: 600; }
+.brief-prose em { font-style: italic; }
+.brief-prose code {
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--color-paper-soft);
+  padding: 0.1em 0.35em;
+  border-radius: 2px;
+}
+.brief-prose pre {
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-size: 0.82em;
+  background: var(--color-paper-soft);
+  border: 1px solid var(--color-rule);
+  padding: 0.9em 1em;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+.brief-prose pre code {
+  background: transparent;
+  padding: 0;
+  font-size: inherit;
+}
+.brief-prose ul, .brief-prose ol {
+  margin: 0.9em 0;
+  padding-left: 1.5em;
+}
+.brief-prose ul { list-style: disc outside; }
+.brief-prose ol { list-style: decimal outside; }
+.brief-prose li { margin: 0.35em 0; }
+.brief-prose li > p { margin: 0.35em 0; }
+.brief-prose blockquote {
+  border-left: 3px solid var(--color-teal);
+  padding: 0.2em 1em;
+  color: var(--color-ink-soft);
+  font-style: italic;
+  background: var(--color-paper-soft);
+}
+.brief-prose hr {
+  border: 0;
+  border-top: 1px solid var(--color-rule);
+  margin: 2.4em 0;
+}
+.brief-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+  margin: 1em 0;
+}
+.brief-prose th, .brief-prose td {
+  border: 1px solid var(--color-rule);
+  padding: 0.55em 0.75em;
+  text-align: left;
+  vertical-align: top;
+}
+.brief-prose th {
+  background: var(--color-paper-soft);
+  font-weight: 600;
+}
+.brief-prose img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1em 0;
+}

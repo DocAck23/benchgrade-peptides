@@ -11,7 +11,7 @@
  * Postgres. When we move the catalog into Supabase those types go here.
  */
 
-import type { OrderStatus } from "@/app/actions/admin";
+import type { OrderStatus } from "@/lib/orders/status";
 
 export interface OrderRow {
   order_id: string;

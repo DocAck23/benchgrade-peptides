@@ -104,7 +104,12 @@ export default async function AdminPage({
           <div className="label-eyebrow text-ink-muted mb-1">Admin</div>
           <h1 className="font-display text-3xl text-ink">Orders</h1>
         </div>
-        <LogoutButton />
+        <div className="flex items-baseline gap-4">
+          <Link href="/admin/briefs" className="text-xs text-teal hover:underline">
+            Briefs →
+          </Link>
+          <LogoutButton />
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2 mb-6">

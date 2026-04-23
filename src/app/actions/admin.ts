@@ -3,6 +3,11 @@
 import { redirect } from "next/navigation";
 import { setAdminCookie, clearAdminCookie, isAdmin } from "@/lib/admin/auth";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import {
+  isValidStatus,
+  isValidUuid,
+  type OrderStatus,
+} from "@/lib/orders/status";
 
 export async function adminLogin(formData: FormData): Promise<{ ok: boolean; error?: string }> {
   const password = String(formData.get("password") ?? "");
@@ -15,23 +20,6 @@ export async function adminLogin(formData: FormData): Promise<{ ok: boolean; err
 export async function adminLogout(): Promise<void> {
   await clearAdminCookie();
   redirect("/admin/login");
-}
-
-export const ORDER_STATUSES = [
-  "awaiting_wire",
-  "funded",
-  "shipped",
-  "cancelled",
-  "refunded",
-] as const;
-export type OrderStatus = (typeof ORDER_STATUSES)[number];
-
-function isValidStatus(s: unknown): s is OrderStatus {
-  return typeof s === "string" && (ORDER_STATUSES as readonly string[]).includes(s);
-}
-
-function isValidUuid(s: unknown): s is string {
-  return typeof s === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 }
 
 export async function updateOrderStatus(
@@ -49,4 +37,3 @@ export async function updateOrderStatus(
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
-
