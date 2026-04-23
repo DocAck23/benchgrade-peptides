@@ -125,7 +125,7 @@ export function CartDrawer() {
                   <div className="relative w-20 h-20 bg-paper-soft border rule shrink-0 overflow-hidden">
                     <Image
                       src={item.vial_image}
-                      alt=""
+                      alt={item.name}
                       fill
                       sizes="80px"
                       className="object-cover"

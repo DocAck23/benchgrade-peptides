@@ -15,10 +15,18 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { category: slug } = await params;
   const category = getCategoryBySlug(slug);
-  if (!category) return { title: "Catalog category not found" };
+  if (!category) return { title: "Catalog category not found", robots: { index: false, follow: false } };
+  const canonical = `/catalog/${category.slug}`;
   return {
     title: category.name,
     description: category.description,
+    alternates: { canonical },
+    openGraph: {
+      title: `${category.name} · Bench Grade Peptides`,
+      description: category.description,
+      url: canonical,
+      type: "website",
+    },
   };
 }
 

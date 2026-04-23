@@ -8,6 +8,14 @@ export const metadata: Metadata = {
   title: "Catalog",
   description:
     "Full catalog of research-grade synthetic peptides. HPLC-verified purity, COA per lot, for laboratory research use only.",
+  alternates: { canonical: "/catalog" },
+  openGraph: {
+    title: "Catalog · Bench Grade Peptides",
+    description:
+      "Full catalog of research-grade synthetic peptides. HPLC-verified purity, COA per lot.",
+    url: "/catalog",
+    type: "website",
+  },
 };
 
 export default function CatalogPage() {
@@ -54,12 +62,12 @@ export default function CatalogPage() {
                 </div>
                 <Link
                   href={`/catalog/${category.slug}`}
-                  className="text-xs sm:text-sm text-teal hover:underline whitespace-nowrap"
+                  className="inline-flex items-center min-h-11 px-2 text-xs sm:text-sm text-teal hover:underline whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal"
                 >
                   {products.length} →
                 </Link>
               </div>
-              <p className="hidden sm:block text-sm text-ink-soft mb-8 max-w-2xl leading-relaxed">
+              <p className="text-xs sm:text-sm text-ink-soft mb-4 sm:mb-8 max-w-2xl leading-snug sm:leading-relaxed line-clamp-2 sm:line-clamp-none">
                 {category.description}
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">

@@ -1,98 +1,69 @@
 /**
- * Database types for Supabase schema.
- * Keep in sync with supabase/schema.sql.
+ * Shared Supabase-row types.
+ *
+ * Source of truth for the schema lives in `supabase/migrations/*.sql`.
+ * Applied migrations at launch: `0001_init_orders.sql` +
+ * `0002_rate_limits.sql`.
+ *
+ * Catalog types (Product, ProductVariant, Category) are NOT in the live
+ * schema today — the catalog is a TS constant (`src/lib/catalog/data.ts`)
+ * and only order / acknowledgment / rate-limit tables actually live in
+ * Postgres. When we move the catalog into Supabase those types go here.
  */
 
-export interface Category {
-  slug: string;
-  name: string;
-  /** Internal MoA taxonomy label — not shown as a claim to customers */
-  internal_taxonomy_label: string;
-  sort_order: number;
-}
+import type { OrderStatus } from "@/app/actions/admin";
 
-export interface Product {
-  id: string;
-  slug: string;
-  name: string;
-  cas_number: string | null;
-  molecular_formula: string | null;
-  molecular_weight: number | null;
-  sequence: string | null;
-  category_slug: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ProductVariant {
-  id: string;
-  product_id: string;
-  size_mg: number;
-  sku: string;
-  wholesale_cost: number;
-  retail_price: number;
-  stock_on_hand: number;
-  purity_percent: number | null;
-  coa_url: string | null;
-  lot_number: string | null;
-  is_active: boolean;
-}
-
-export interface Customer {
-  id: string;
-  email: string;
-  created_at: string;
-  is_institutional: boolean;
-  /** Hash of institutional domain verification, if performed */
-  institutional_verification_ref: string | null;
-}
-
-export interface RuoAcknowledgment {
-  id: string;
-  customer_id: string | null;
-  email: string;
-  ip_address: string;
-  user_agent: string;
-  acknowledged_at: string;
-  certification_text: string;
-  /** SHA-256 of the acknowledged text — protects against retroactive changes */
-  certification_hash: string;
-}
-
-export interface Order {
-  id: string;
-  customer_id: string;
-  order_number: string;
-  status: "pending_payment" | "payment_received" | "processing" | "shipped" | "delivered" | "cancelled";
-  payment_method: "ach" | "wire" | "check";
-  subtotal: number;
-  shipping_cost: number;
-  total: number;
-  ruo_acknowledgment_id: string;
-  shipping_address: ShippingAddress;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ShippingAddress {
-  name: string;
-  company: string | null;
-  street1: string;
-  street2: string | null;
-  city: string;
-  state: string;
-  postal_code: string;
-  country: string; // US only at launch
-}
-
-export interface OrderItem {
-  id: string;
+export interface OrderRow {
   order_id: string;
-  variant_id: string;
-  quantity: number;
-  unit_price: number;
-  line_total: number;
-  lot_number_at_fulfillment: string | null;
-  coa_url_at_fulfillment: string | null;
+  customer: {
+    name: string;
+    email: string;
+    institution?: string;
+    phone?: string;
+    ship_address_1: string;
+    ship_address_2?: string;
+    ship_city: string;
+    ship_state: string;
+    ship_zip: string;
+    notes?: string;
+  };
+  items: Array<{
+    sku: string;
+    product_slug: string;
+    category_slug: string;
+    name: string;
+    size_mg: number;
+    unit_price: number;
+    quantity: number;
+    vial_image: string;
+  }>;
+  subtotal_cents: number;
+  acknowledgment: {
+    certification_text: string;
+    certification_version: string;
+    certification_hash: string;
+    is_adult: boolean;
+    is_researcher: boolean;
+    accepts_ruo: boolean;
+    acknowledged_at: string;
+    ip: string;
+    user_agent: string;
+  };
+  status: OrderStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RuoAcknowledgmentRow {
+  id: string;
+  order_id: string | null;
+  certification_text: string;
+  certification_hash: string;
+  is_adult: boolean;
+  is_researcher: boolean;
+  accepts_ruo: boolean;
+  ip: string | null;
+  user_agent: string | null;
+  acknowledged_at: string;
+  server_received_at: string;
 }

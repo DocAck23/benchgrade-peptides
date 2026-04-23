@@ -4,6 +4,8 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Account",
   description: "Your Bench Grade Peptides account.",
+  robots: { index: false, follow: false },
+  alternates: { canonical: "/account" },
 };
 
 export default function AccountPage() {

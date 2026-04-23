@@ -43,30 +43,34 @@ export function ProductCard({ product, categorySlug }: ProductCardProps) {
 
       {/* Text area — fixed-height rows for uniform layout across cards */}
       <div className="flex-1 flex flex-col">
-        {/* Molecular formula — single line, truncated. Hidden on the smallest
-            breakpoint to reclaim vertical space for the 2-up mobile grid. */}
-        <div className="hidden sm:block h-4 mb-2">
+        {/* Molecular formula — compact mono line at every breakpoint.
+            Hiding it on mobile stripped a key product identifier, so we
+            keep it at a smaller size instead. */}
+        <div className="h-4 mb-1 sm:mb-2">
           {product.molecular_formula && (
-            <span className="font-mono-data text-[11px] text-ink-muted block truncate">
+            <span className="font-mono-data text-[9px] sm:text-[11px] text-ink-muted block truncate">
               {product.molecular_formula}
             </span>
           )}
         </div>
 
-        {/* Compound name — fixed height, single line, truncated */}
-        <h3 className="font-display text-sm sm:text-lg lg:text-xl text-ink leading-tight mb-1 sm:mb-2 truncate sm:h-7">
+        {/* Compound name — wraps to two lines on mobile so long names like
+            "VIP (Vasoactive Intestinal Peptide)" stay readable at 320px. */}
+        <h3 className="font-display text-sm sm:text-lg lg:text-xl text-ink leading-tight mb-1 sm:mb-2 line-clamp-2 sm:line-clamp-1 sm:h-7">
           {product.name}
         </h3>
 
-        {/* Summary — hidden on mobile to save vertical space; visible from sm up */}
-        <p className="hidden sm:block text-xs text-ink-muted mb-4 leading-relaxed line-clamp-2 h-8">
+        {/* Summary — compact mobile excerpt, full two-line clamp from sm up. */}
+        <p className="text-[11px] sm:text-xs text-ink-muted mb-2 sm:mb-4 leading-snug sm:leading-relaxed line-clamp-2 sm:h-8">
           {product.summary}
         </p>
 
-        {/* Footer — pinned to bottom for uniform alignment */}
+        {/* Footer — pinned to bottom. Sizes uses shortest form "5,10mg" on
+            mobile so multi-variant products (e.g. 5 size tiers) don't clip
+            the label. */}
         <div className="mt-auto pt-2 sm:pt-4 border-t rule flex items-baseline justify-between gap-1 sm:gap-2">
           <span className="font-mono-data text-xs sm:text-sm text-ink whitespace-nowrap">{priceRange}</span>
-          <span className="label-eyebrow text-ink-muted truncate text-[9px] sm:text-xs">{sizes}</span>
+          <span className="label-eyebrow text-ink-muted truncate text-[9px] sm:text-xs max-w-[60%] text-right">{sizes}</span>
         </div>
       </div>
     </Link>

@@ -124,7 +124,7 @@ export default function Home() {
             </div>
             <Link
               href="/catalog"
-              className="text-sm text-teal hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2"
+              className="inline-flex items-center min-h-11 px-2 text-sm text-teal hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2"
             >
               View all →
             </Link>
@@ -170,7 +170,7 @@ export default function Home() {
             </p>
             <Link
               href="/compliance"
-              className="inline-flex items-center text-sm text-teal hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2"
+              className="inline-flex items-center min-h-11 px-2 -ml-2 text-sm text-teal hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2"
             >
               Full compliance statement →
             </Link>

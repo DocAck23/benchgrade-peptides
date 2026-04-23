@@ -45,7 +45,7 @@ export function CartPageClient() {
               <div className="relative w-28 h-28 bg-paper-soft border rule shrink-0 overflow-hidden">
                 <Image
                   src={item.vial_image}
-                  alt=""
+                  alt={item.name}
                   fill
                   sizes="112px"
                   className="object-cover"

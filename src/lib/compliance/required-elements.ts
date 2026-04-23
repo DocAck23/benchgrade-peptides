@@ -11,11 +11,27 @@
  * This module exports a pure validator usable at render time and in tests.
  */
 
-import type { Product, ProductVariant } from "@/lib/supabase/types";
+/**
+ * Intentionally narrow local types — this validator works off the
+ * minimal shape each page has at render time, not the full catalog row.
+ * Decouples compliance from schema churn.
+ */
+export interface RequiredElementsProduct {
+  name: string;
+  cas_number: string | null;
+  molecular_formula: string | null;
+  molecular_weight: number | null;
+}
+
+export interface RequiredElementsVariant {
+  purity_percent: number | null;
+  coa_url: string | null;
+  lot_number: string | null;
+}
 
 export interface RequiredElementsInput {
-  product: Pick<Product, "name" | "cas_number" | "molecular_formula" | "molecular_weight">;
-  variant: Pick<ProductVariant, "purity_percent" | "coa_url" | "lot_number">;
+  product: RequiredElementsProduct;
+  variant: RequiredElementsVariant;
   pageMarkup: string;
 }
 

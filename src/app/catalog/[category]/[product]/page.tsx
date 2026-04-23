@@ -31,11 +31,25 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // Cross-check category matches — don't emit product metadata for a URL
   // that will 404 (e.g. /catalog/wrong-category/bpc-157).
   if (!product || product.category_slug !== categorySlug) {
-    return { title: "Compound not found" };
+    return { title: "Compound not found", robots: { index: false, follow: false } };
   }
+  const canonical = `/catalog/${product.category_slug}/${product.slug}`;
+  const description = `${product.summary} Research use only. HPLC-verified, COA per lot.`;
   return {
     title: product.name,
-    description: product.summary,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title: `${product.name} · Bench Grade Peptides`,
+      description,
+      url: canonical,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${product.name} · Bench Grade Peptides`,
+      description,
+    },
   };
 }
 

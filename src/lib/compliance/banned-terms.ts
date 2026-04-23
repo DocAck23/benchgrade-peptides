@@ -175,6 +175,14 @@ export const BANNED_TERMS: BannedTerm[] = [
     category: "branded_drug_comparison",
     rationale: "Any mention of a branded FDA-approved drug in marketing context.",
   },
+  {
+    // International non-proprietary names for the GLP-1 / incretin class.
+    // Our SKUs are intentionally sold under coded names (GLP-1 S/T/R/C/M/Surv);
+    // any public surface mentioning the INN is a compliance leak.
+    pattern: /\b(semaglutide|tirzepatide|retatrutide|cagrilintide|mazdutide|survodutide|liraglutide|dulaglutide|exenatide)\b/i,
+    category: "branded_drug_comparison",
+    rationale: "GLP-1 / incretin INN on a public surface — use the coded class identifier instead.",
+  },
 ];
 
 export interface ComplianceViolation {

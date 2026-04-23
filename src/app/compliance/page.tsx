@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "Compliance & research-use-only statement",
   description:
     "Bench Grade Peptides operates as a research chemical distributor. Products are supplied for laboratory research use only.",
+  alternates: { canonical: "/compliance" },
 };
 
 export default function CompliancePage() {

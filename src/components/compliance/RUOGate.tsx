@@ -24,19 +24,17 @@ export interface RUOAcknowledgmentPayload {
 /**
  * RUO (research-use-only) acknowledgment gate.
  *
- * Blocking modal triggered on first cart-add and replayed at checkout.
- * Three required checkboxes: age (21+), researcher status, and the full
- * RUO certification. Submit button is disabled until all three are true.
+ * Blocking modal shown at checkout. Three required checkboxes: age (21+),
+ * researcher status, and the full RUO certification. Submit button is
+ * disabled until all three are true.
  *
  * Framework ref: RUO compliance framework §5 — customer certification is
  * the single strongest affirmative-defense asset we have.
  *
- * **Current state:** the callback delivers acknowledgment metadata to the
- * caller; the caller is responsible for persisting it server-side.
- * **TODO (phase 3):** wire a server action that inserts a row into
- * `ruo_acknowledgments` with IP address, user agent, and SHA-256 hash of the
- * certification text. Until that lands, any copy on the page/site that
- * claims permanent storage or account-binding is aspirational, not accurate.
+ * **Persistence:** `submitOrder` (src/app/actions/orders.ts) stamps the
+ * certification text and timestamp server-side, hashes them with the
+ * order UUID + IP + timestamp (compliance binding), and writes to
+ * `public.ruo_acknowledgments` alongside the `public.orders` row.
  */
 export function RUOGate({ open, onAcknowledge, onCancel }: RUOGateProps) {
   const [isAdult, setIsAdult] = useState(false);

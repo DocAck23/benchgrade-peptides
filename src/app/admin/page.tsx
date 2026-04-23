@@ -20,6 +20,33 @@ interface OrderRow {
   items: { quantity: number }[];
 }
 
+// Defensive: Supabase can return rows whose JSONB shape has drifted.
+// We narrow to "renderable" before the admin list tries to sum items.
+function safeNarrow(row: unknown): OrderRow | null {
+  if (!row || typeof row !== "object") return null;
+  const r = row as Record<string, unknown>;
+  if (typeof r.order_id !== "string") return null;
+  if (typeof r.subtotal_cents !== "number") return null;
+  if (typeof r.status !== "string") return null;
+  if (typeof r.created_at !== "string") return null;
+  const customer = r.customer as Record<string, unknown> | null;
+  const items = Array.isArray(r.items) ? r.items : null;
+  if (!customer || typeof customer.name !== "string" || typeof customer.email !== "string") return null;
+  if (!items) return null;
+  return {
+    order_id: r.order_id,
+    customer: { name: customer.name, email: customer.email },
+    subtotal_cents: r.subtotal_cents,
+    status: r.status,
+    created_at: r.created_at,
+    items: items
+      .map((i) => (i && typeof i === "object" && typeof (i as Record<string, unknown>).quantity === "number"
+        ? { quantity: (i as { quantity: number }).quantity }
+        : null))
+      .filter((x): x is { quantity: number } => x !== null),
+  };
+}
+
 const STATUS_LABELS: Record<string, string> = {
   awaiting_wire: "Awaiting wire",
   funded: "Funded",
@@ -59,7 +86,11 @@ export default async function AdminPage({
     if (status) query = query.eq("status", status);
     const { data, error } = await query;
     if (error) loadError = error.message;
-    else orders = (data as OrderRow[]) ?? [];
+    else {
+      orders = (Array.isArray(data) ? data : [])
+        .map(safeNarrow)
+        .filter((o): o is OrderRow => o !== null);
+    }
   }
 
   return (

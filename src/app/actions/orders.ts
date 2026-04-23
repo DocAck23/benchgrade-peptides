@@ -2,6 +2,7 @@
 
 import crypto from "node:crypto";
 import { headers } from "next/headers";
+import { z } from "zod";
 import { RUO_STATEMENTS } from "@/lib/compliance";
 import { PRODUCTS } from "@/lib/catalog/data";
 import type { CartItem } from "@/lib/cart/types";
@@ -11,6 +12,7 @@ import { orderConfirmationEmail, adminOrderNotification } from "@/lib/email/temp
 import { SupabaseRateLimitStore } from "@/lib/ratelimit/supabase-store";
 import { MemoryRateLimitStore } from "@/lib/ratelimit/memory-store";
 import { enforceOrderRateLimit } from "@/lib/ratelimit/enforce";
+import { resolveClientIp } from "@/lib/ratelimit/ip";
 
 // Dev-only fallback store — in prod we require Supabase-backed counting.
 const devMemoryStore = new MemoryRateLimitStore();
@@ -62,15 +64,51 @@ function sha256Hex(input: string): string {
   return crypto.createHash("sha256").update(input, "utf8").digest("hex");
 }
 
-function validateCustomer(c: CustomerInfo): string | null {
-  if (!c.name?.trim()) return "Name is required.";
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email)) return "Valid email is required.";
-  if (!c.ship_address_1?.trim()) return "Shipping address is required.";
-  if (!c.ship_city?.trim()) return "City is required.";
-  if (!c.ship_state?.trim()) return "State is required.";
-  if (!/^\d{5}(-\d{4})?$/.test(c.ship_zip.trim())) return "ZIP code is invalid.";
-  return null;
-}
+/**
+ * Whole-input runtime validation. This is the authoritative boundary —
+ * TS types don't narrow across the server action RPC, so a hostile client
+ * can send anything. Zod bounds every field and caps collection sizes so
+ * the action can't be weaponized as a DoS on PRODUCTS.find() / PG insert.
+ */
+const CustomerSchema = z.object({
+  name: z.string().trim().min(1, "Name is required.").max(120),
+  email: z.string().trim().email("Valid email is required.").max(200),
+  institution: z.string().trim().max(200).default(""),
+  phone: z.string().trim().max(40).default(""),
+  ship_address_1: z.string().trim().min(1, "Shipping address is required.").max(200),
+  ship_address_2: z.string().trim().max(200).optional(),
+  ship_city: z.string().trim().min(1, "City is required.").max(100),
+  ship_state: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z]{2}$/u, "State must be a 2-letter code.")
+    .transform((s) => s.toUpperCase()),
+  ship_zip: z
+    .string()
+    .trim()
+    .regex(/^\d{5}(-\d{4})?$/u, "ZIP code is invalid."),
+  notes: z.string().trim().max(1000).optional(),
+});
+
+const CartLineSchema = z.object({
+  sku: z
+    .string()
+    .trim()
+    .regex(/^[A-Z0-9-]{3,40}$/u, "Invalid SKU format."),
+  quantity: z.number().int().positive().max(500),
+});
+
+const AcknowledgmentSchema = z.object({
+  is_adult: z.literal(true, { message: "Age certification is required." }),
+  is_researcher: z.literal(true, { message: "Researcher certification is required." }),
+  accepts_ruo: z.literal(true, { message: "RUO certification is required." }),
+});
+
+const SubmitOrderSchema = z.object({
+  customer: CustomerSchema,
+  items: z.array(CartLineSchema).min(1, "Cart is empty.").max(20, "Cart too large."),
+  acknowledgment: AcknowledgmentSchema,
+});
 
 function resolveCartOnServer(
   lines: ClientCartLine[]
@@ -106,19 +144,12 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
   // validation — so a client hammering the action with malformed payloads
   // can't probe the system without consuming their quota.
   const headerBag = await headers();
-  const ip =
-    headerBag.get("x-vercel-forwarded-for") ??
-    headerBag.get("x-real-ip") ??
-    headerBag.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    "unknown";
+  const ipResult = resolveClientIp(headerBag, {
+    isProduction: process.env.NODE_ENV === "production",
+  });
+  if (!ipResult.ok) return { ok: false, error: ipResult.reason };
+  const ip = ipResult.ip;
   const userAgent = headerBag.get("user-agent") ?? "unknown";
-
-  // Fail closed on unidentifiable clients in prod — the "unknown" bucket
-  // would otherwise collapse every anonymous caller into one shared
-  // counter, letting any one of them lock everyone else out.
-  if (ip === "unknown" && process.env.NODE_ENV === "production") {
-    return { ok: false, error: "Could not identify request source. Please try again." };
-  }
 
   // Rate-limit before we touch the DB. Supabase-backed in prod; dev falls
   // back to in-memory so `npm run dev` works without a live DB.
@@ -131,28 +162,32 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
     return { ok: false, error: limitCheck.error };
   }
 
-  const customerError = validateCustomer(input.customer);
-  if (customerError) return { ok: false, error: customerError };
-
-  const { acknowledgment } = input;
-  if (!acknowledgment?.is_adult || !acknowledgment.is_researcher || !acknowledgment.accepts_ruo) {
-    return { ok: false, error: "RUO certification is required." };
+  // Whole-input validation. Client-side form checks are UX sugar; this
+  // is the authoritative gate.
+  const parsed = SubmitOrderSchema.safeParse(input);
+  if (!parsed.success) {
+    const first = parsed.error.issues[0]?.message ?? "Invalid order submission.";
+    return { ok: false, error: first };
   }
+  const validInput = parsed.data;
+  const { acknowledgment } = validInput;
 
-  const resolved = resolveCartOnServer(input.items);
+  const resolved = resolveCartOnServer(validInput.items);
   if ("error" in resolved) return { ok: false, error: resolved.error };
 
   // Certification text + timestamp are stamped from server-side constants,
-  // not from the client. The stored hash covers both so any later
-  // text revision has a clean version boundary.
+  // not from the client. The hash binds compound inputs that make the ack
+  // evidence-unique per order (HIGH H6 codex fix).
   const certification_text = RUO_STATEMENTS.certification;
   const acknowledged_at = new Date().toISOString();
-  const certification_hash = sha256Hex(`${CERTIFICATION_VERSION}:${certification_text}`);
-
   const order_id = crypto.randomUUID();
+  const certification_hash = sha256Hex(
+    [CERTIFICATION_VERSION, certification_text, order_id, ip, acknowledged_at].join("|")
+  );
+
   const row = {
     order_id,
-    customer: input.customer,
+    customer: validInput.customer,
     items: resolved.items,
     subtotal_cents: resolved.subtotal_cents,
     acknowledgment: {
@@ -219,7 +254,7 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
   if (resend) {
     const emailCtx = {
       order_id,
-      customer: input.customer,
+      customer: validInput.customer,
       items: resolved.items,
       subtotal_cents: resolved.subtotal_cents,
     };
@@ -229,7 +264,7 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
       await Promise.all([
         resend.emails.send({
           from: EMAIL_FROM,
-          to: input.customer.email,
+          to: validInput.customer.email,
           subject: customerEmail.subject,
           text: customerEmail.text,
           html: customerEmail.html,

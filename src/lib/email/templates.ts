@@ -10,6 +10,22 @@ interface OrderContext {
   subtotal_cents: number;
 }
 
+/**
+ * Escape arbitrary user-controlled text for safe HTML interpolation.
+ * We use string-concat rather than a JSX email framework, so every
+ * user-controlled substitution MUST pass through this. An attacker
+ * who orders with `name = "<script>..."` would otherwise land that
+ * markup in both the customer confirmation and the admin notification.
+ */
+export function escapeHtml(s: string): string {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function line(i: CartItem): string {
   return `${i.name} — ${i.size_mg}mg × ${i.quantity}  ${formatPrice(
     i.unit_price * i.quantity * 100
@@ -74,9 +90,9 @@ ${SITE_URL}
       (i) => `
     <tr>
       <td style="padding:10px 0;border-bottom:1px solid #d7d1c4;">
-        <div style="font-family:Geist,system-ui,sans-serif;font-size:15px;color:#1A1A1A;">${i.name}</div>
+        <div style="font-family:Geist,system-ui,sans-serif;font-size:15px;color:#1A1A1A;">${escapeHtml(i.name)}</div>
         <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#5a5a5a;">
-          ${i.size_mg}mg · ${i.sku} × ${i.quantity}
+          ${i.size_mg}mg · ${escapeHtml(i.sku)} × ${i.quantity}
         </div>
       </td>
       <td style="padding:10px 0;border-bottom:1px solid #d7d1c4;text-align:right;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:14px;color:#1A1A1A;white-space:nowrap;">
@@ -110,11 +126,11 @@ ${SITE_URL}
         <div style="background:#EFEAE1;border:1px solid #d7d1c4;padding:18px;">
           <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#0A5C7D;margin-bottom:10px;">Wire transfer instructions</div>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;color:#1A1A1A;">
-            <tr><td style="padding:3px 0;color:#5a5a5a;width:140px;">Beneficiary</td><td>${wireBeneficiary}</td></tr>
-            <tr><td style="padding:3px 0;color:#5a5a5a;">Bank</td><td>${wireBank}</td></tr>
-            <tr><td style="padding:3px 0;color:#5a5a5a;">Routing / ABA</td><td>${wireRouting}</td></tr>
-            <tr><td style="padding:3px 0;color:#5a5a5a;">Account</td><td>${wireAccount}</td></tr>
-            <tr><td style="padding:3px 0;color:#5a5a5a;">Memo</td><td style="color:#0A5C7D;"><strong>${wireMemo}</strong></td></tr>
+            <tr><td style="padding:3px 0;color:#5a5a5a;width:140px;">Beneficiary</td><td>${escapeHtml(wireBeneficiary)}</td></tr>
+            <tr><td style="padding:3px 0;color:#5a5a5a;">Bank</td><td>${escapeHtml(wireBank)}</td></tr>
+            <tr><td style="padding:3px 0;color:#5a5a5a;">Routing / ABA</td><td>${escapeHtml(wireRouting)}</td></tr>
+            <tr><td style="padding:3px 0;color:#5a5a5a;">Account</td><td>${escapeHtml(wireAccount)}</td></tr>
+            <tr><td style="padding:3px 0;color:#5a5a5a;">Memo</td><td style="color:#0A5C7D;"><strong>${escapeHtml(wireMemo)}</strong></td></tr>
           </table>
           <div style="font-size:12px;color:#5a5a5a;margin-top:12px;line-height:1.5;">
             Include the memo on the wire so we can match it to your order.
@@ -126,9 +142,9 @@ ${SITE_URL}
       <tr><td style="padding:0 28px 28px 28px;">
         <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#5a5a5a;margin-bottom:6px;">Ship-to</div>
         <div style="font-size:14px;color:#1A1A1A;line-height:1.5;">
-          ${ctx.customer.name}<br>
-          ${ctx.customer.ship_address_1}${ctx.customer.ship_address_2 ? "<br>" + ctx.customer.ship_address_2 : ""}<br>
-          ${ctx.customer.ship_city}, ${ctx.customer.ship_state} ${ctx.customer.ship_zip}
+          ${escapeHtml(ctx.customer.name)}<br>
+          ${escapeHtml(ctx.customer.ship_address_1)}${ctx.customer.ship_address_2 ? "<br>" + escapeHtml(ctx.customer.ship_address_2) : ""}<br>
+          ${escapeHtml(ctx.customer.ship_city)}, ${escapeHtml(ctx.customer.ship_state)} ${escapeHtml(ctx.customer.ship_zip)}
         </div>
       </td></tr>
 
@@ -170,9 +186,9 @@ ${adminLink}
   const html = `<!doctype html><html><body style="font-family:Inter,system-ui,sans-serif;color:#1A1A1A;background:#F7F4EE;padding:24px;">
   <div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #d7d1c4;padding:24px;">
     <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#5a5a5a;">New order</div>
-    <div style="font-family:Geist,system-ui,sans-serif;font-size:20px;margin-top:4px;">${ctx.customer.name} — ${total}</div>
-    <pre style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#1A1A1A;background:#EFEAE1;padding:14px;white-space:pre-wrap;margin-top:16px;">${text.replace(/</g, "&lt;")}</pre>
-    <a href="${adminLink}" style="display:inline-block;margin-top:12px;background:#1A1A1A;color:#F7F4EE;text-decoration:none;padding:10px 18px;font-size:13px;">Open in admin →</a>
+    <div style="font-family:Geist,system-ui,sans-serif;font-size:20px;margin-top:4px;">${escapeHtml(ctx.customer.name)} — ${total}</div>
+    <pre style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#1A1A1A;background:#EFEAE1;padding:14px;white-space:pre-wrap;margin-top:16px;">${escapeHtml(text)}</pre>
+    <a href="${escapeHtml(adminLink)}" style="display:inline-block;margin-top:12px;background:#1A1A1A;color:#F7F4EE;text-decoration:none;padding:10px 18px;font-size:13px;">Open in admin →</a>
   </div>
 </body></html>`;
   return { subject, text, html };
