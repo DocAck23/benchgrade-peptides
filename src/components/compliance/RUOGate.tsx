@@ -43,10 +43,12 @@ export function RUOGate({ open, onAcknowledge, onCancel }: RUOGateProps) {
   const [isResearcher, setIsResearcher] = useState(false);
   const [acceptsRuo, setAcceptsRuo] = useState(false);
 
-  const canSubmit = isAdult && isResearcher && acceptsRuo;
+  const [submitted, setSubmitted] = useState(false);
+  const canSubmit = isAdult && isResearcher && acceptsRuo && !submitted;
 
   const handleConfirm = () => {
     if (!canSubmit) return;
+    setSubmitted(true);
     onAcknowledge({
       certification_text: RUO_STATEMENTS.certification,
       acknowledged_at: new Date().toISOString(),

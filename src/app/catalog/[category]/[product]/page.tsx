@@ -12,6 +12,7 @@ import {
   getProductBySlug,
 } from "@/lib/catalog/data";
 import { RUO_STATEMENTS } from "@/lib/compliance";
+import { SITE_URL } from "@/lib/site";
 
 interface PageProps {
   params: Promise<{ category: string; product: string }>;
@@ -51,7 +52,7 @@ export default async function ProductPage({ params }: PageProps) {
     "@type": "Product",
     name: product.name,
     description: product.summary,
-    image: `https://benchgradepeptides.com${product.vial_image.split("?")[0]}`,
+    image: `${SITE_URL}${product.vial_image.split("?")[0]}`,
     sku: product.variants[0]?.sku,
     category: category.name,
     offers: {

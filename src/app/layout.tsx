@@ -7,6 +7,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { CartProvider } from "@/lib/cart/CartContext";
 import { CartDrawer } from "@/components/cart/CartDrawer";
+import { SITE_URL } from "@/lib/site";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -36,7 +37,7 @@ export const metadata: Metadata = {
   },
   description:
     "Research-grade synthetic peptides for laboratory use. HPLC-verified, COA-per-lot, cold-chain shipped. For laboratory research use only.",
-  metadataBase: new URL("https://benchgradepeptides.com"),
+  metadataBase: new URL(SITE_URL),
   robots: {
     index: true,
     follow: true,

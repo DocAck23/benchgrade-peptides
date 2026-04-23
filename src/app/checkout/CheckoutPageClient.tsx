@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart/CartContext";
@@ -54,14 +54,26 @@ export function CheckoutPageClient() {
     setRuoOpen(true);
   };
 
+  const inFlight = useRef(false);
   const onAcknowledge = async (ack: RUOAcknowledgmentPayload) => {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setRuoOpen(false);
     setSubmitting(true);
     try {
-      const res = await submitOrder({ customer: form, items, acknowledgment: ack });
+      const res = await submitOrder({
+        customer: form,
+        items: items.map((i) => ({ sku: i.sku, quantity: i.quantity })),
+        acknowledgment: {
+          is_adult: ack.is_adult,
+          is_researcher: ack.is_researcher,
+          accepts_ruo: ack.accepts_ruo,
+        },
+      });
       if (!res.ok) {
         setError(res.error ?? "Order submission failed.");
         setSubmitting(false);
+        inFlight.current = false;
         return;
       }
       clear();
@@ -69,6 +81,7 @@ export function CheckoutPageClient() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unexpected error.");
       setSubmitting(false);
+      inFlight.current = false;
     }
   };
 

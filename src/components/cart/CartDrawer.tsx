@@ -1,28 +1,65 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { X, Minus, Plus } from "lucide-react";
 import { useCart } from "@/lib/cart/CartContext";
 import { formatPrice, cn } from "@/lib/utils";
 
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export function CartDrawer() {
   const { items, itemCount, subtotal, updateQuantity, removeItem, isDrawerOpen, closeDrawer } =
     useCart();
+  const panelRef = useRef<HTMLElement | null>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!isDrawerOpen) return;
+    triggerRef.current = (document.activeElement as HTMLElement | null) ?? null;
+    // Defer so the drawer has its final dimensions before we move focus.
+    const t = requestAnimationFrame(() => {
+      const panel = panelRef.current;
+      if (!panel) return;
+      const first = panel.querySelector<HTMLElement>(FOCUSABLE);
+      first?.focus();
+    });
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeDrawer();
+      if (e.key === "Escape") {
+        closeDrawer();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const panel = panelRef.current;
+      if (!panel) return;
+      const nodes = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE));
+      if (nodes.length === 0) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    return () => {
+      cancelAnimationFrame(t);
+      document.removeEventListener("keydown", onKey);
+      // Return focus to whatever opened the drawer (the Header cart button).
+      triggerRef.current?.focus();
+    };
   }, [isDrawerOpen, closeDrawer]);
 
   useEffect(() => {
+    if (!isDrawerOpen) return;
     const prev = document.body.style.overflow;
-    document.body.style.overflow = isDrawerOpen ? "hidden" : prev;
+    document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prev;
     };
@@ -39,6 +76,7 @@ export function CartDrawer() {
         )}
       />
       <aside
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label="Cart"

@@ -38,12 +38,26 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   // Start empty on first render to match SSR; hydrate from localStorage
   // on mount. Without this gate the server/client HTML diverges and
   // React throws a hydration error on any page with the cart badge.
+  //
+  // The merge (rather than replace) on mount matters: if the user clicks
+  // Add-to-Cart before the mount effect runs, the in-memory state already
+  // has that item — naïvely overwriting with localStorage would lose it.
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
-    setItems(readStoredItems());
+    const stored = readStoredItems();
+    setItems((inMemory) => {
+      if (inMemory.length === 0) return stored;
+      // Merge by SKU: sum quantities, prefer in-memory metadata.
+      const merged = new Map<string, CartItem>(stored.map((i) => [i.sku, i]));
+      for (const item of inMemory) {
+        const prev = merged.get(item.sku);
+        merged.set(item.sku, prev ? { ...item, quantity: prev.quantity + item.quantity } : item);
+      }
+      return [...merged.values()];
+    });
     setHydrated(true);
   }, []);
 
