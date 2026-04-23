@@ -19,6 +19,16 @@ const devMemoryStore = new MemoryRateLimitStore();
 
 const CERTIFICATION_VERSION = "2026-04-22";
 
+// Whitelist of valid US state + territory + military-mail 2-letter codes.
+// Anything outside this set is rejected at checkout — keeps the address
+// field from accepting `ZZ` or similar bogus 2-letter strings.
+const US_STATES_AND_TERRITORIES = new Set<string>([
+  "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
+  "KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
+  "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT",
+  "VA","WA","WV","WI","WY","DC","PR","GU","VI","AS","MP","AA","AE","AP",
+]);
+
 export interface CustomerInfo {
   name: string;
   email: string;
@@ -81,8 +91,10 @@ const CustomerSchema = z.object({
   ship_state: z
     .string()
     .trim()
-    .regex(/^[A-Za-z]{2}$/u, "State must be a 2-letter code.")
-    .transform((s) => s.toUpperCase()),
+    .transform((s) => s.toUpperCase())
+    .refine((s) => US_STATES_AND_TERRITORIES.has(s), {
+      message: "Valid US state, territory, or APO code is required.",
+    }),
   ship_zip: z
     .string()
     .trim()
@@ -181,8 +193,17 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
   const certification_text = RUO_STATEMENTS.certification;
   const acknowledged_at = new Date().toISOString();
   const order_id = crypto.randomUUID();
+  // Hash a stable JSON object (sorted keys) rather than a pipe-joined
+  // string so the hash doesn't silently collide if any field ever contains
+  // a "|" character in the future.
   const certification_hash = sha256Hex(
-    [CERTIFICATION_VERSION, certification_text, order_id, ip, acknowledged_at].join("|")
+    JSON.stringify({
+      acknowledged_at,
+      certification_text,
+      certification_version: CERTIFICATION_VERSION,
+      ip,
+      order_id,
+    })
   );
 
   const row = {

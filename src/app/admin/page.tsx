@@ -21,7 +21,9 @@ interface OrderRow {
 }
 
 // Defensive: Supabase can return rows whose JSONB shape has drifted.
-// We narrow to "renderable" before the admin list tries to sum items.
+// We narrow to "renderable" — and if ANY field is malformed (including
+// any item), the whole row is rejected. Silently rendering an undercount
+// would hide the drift from ops.
 function safeNarrow(row: unknown): OrderRow | null {
   if (!row || typeof row !== "object") return null;
   const r = row as Record<string, unknown>;
@@ -30,20 +32,22 @@ function safeNarrow(row: unknown): OrderRow | null {
   if (typeof r.status !== "string") return null;
   if (typeof r.created_at !== "string") return null;
   const customer = r.customer as Record<string, unknown> | null;
-  const items = Array.isArray(r.items) ? r.items : null;
   if (!customer || typeof customer.name !== "string" || typeof customer.email !== "string") return null;
-  if (!items) return null;
+  if (!Array.isArray(r.items) || r.items.length === 0) return null;
+  const items: Array<{ quantity: number }> = [];
+  for (const it of r.items) {
+    if (!it || typeof it !== "object") return null;
+    const qty = (it as Record<string, unknown>).quantity;
+    if (typeof qty !== "number") return null;
+    items.push({ quantity: qty });
+  }
   return {
     order_id: r.order_id,
     customer: { name: customer.name, email: customer.email },
     subtotal_cents: r.subtotal_cents,
     status: r.status,
     created_at: r.created_at,
-    items: items
-      .map((i) => (i && typeof i === "object" && typeof (i as Record<string, unknown>).quantity === "number"
-        ? { quantity: (i as { quantity: number }).quantity }
-        : null))
-      .filter((x): x is { quantity: number } => x !== null),
+    items,
   };
 }
 
