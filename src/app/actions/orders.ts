@@ -6,6 +6,8 @@ import { RUO_STATEMENTS } from "@/lib/compliance";
 import { PRODUCTS } from "@/lib/catalog/data";
 import type { CartItem } from "@/lib/cart/types";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { getResend, EMAIL_FROM, ADMIN_NOTIFICATION_EMAIL } from "@/lib/email/client";
+import { orderConfirmationEmail, adminOrderNotification } from "@/lib/email/templates";
 
 const CERTIFICATION_VERSION = "2026-04-22";
 
@@ -179,6 +181,42 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
       ok: false,
       error: `RUO acknowledgment mirror failed: ${ackError.message}. Contact support.`,
     };
+  }
+
+  // Emails are best-effort — the order is already durable in Supabase,
+  // so a transient Resend failure shouldn't flip the response to an
+  // error the customer sees. We log and move on; ops can resend from
+  // the admin dashboard if needed.
+  const resend = getResend();
+  if (resend) {
+    const emailCtx = {
+      order_id,
+      customer: input.customer,
+      items: resolved.items,
+      subtotal_cents: resolved.subtotal_cents,
+    };
+    const customerEmail = orderConfirmationEmail(emailCtx);
+    const adminEmail = adminOrderNotification(emailCtx);
+    try {
+      await Promise.all([
+        resend.emails.send({
+          from: EMAIL_FROM,
+          to: input.customer.email,
+          subject: customerEmail.subject,
+          text: customerEmail.text,
+          html: customerEmail.html,
+        }),
+        resend.emails.send({
+          from: EMAIL_FROM,
+          to: ADMIN_NOTIFICATION_EMAIL,
+          subject: adminEmail.subject,
+          text: adminEmail.text,
+          html: adminEmail.html,
+        }),
+      ]);
+    } catch (err) {
+      console.error("[submitOrder] email dispatch failed:", err);
+    }
   }
 
   return { ok: true, order_id };
