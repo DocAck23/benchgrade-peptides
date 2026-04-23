@@ -8,6 +8,12 @@ import type { CartItem } from "@/lib/cart/types";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getResend, EMAIL_FROM, ADMIN_NOTIFICATION_EMAIL } from "@/lib/email/client";
 import { orderConfirmationEmail, adminOrderNotification } from "@/lib/email/templates";
+import { SupabaseRateLimitStore } from "@/lib/ratelimit/supabase-store";
+import { MemoryRateLimitStore } from "@/lib/ratelimit/memory-store";
+import { enforceOrderRateLimit } from "@/lib/ratelimit/enforce";
+
+// Dev-only fallback store — in prod we require Supabase-backed counting.
+const devMemoryStore = new MemoryRateLimitStore();
 
 const CERTIFICATION_VERSION = "2026-04-22";
 
@@ -96,6 +102,35 @@ function resolveCartOnServer(
 }
 
 export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderResult> {
+  // IP + UA resolution + rate-limit check come FIRST — before any semantic
+  // validation — so a client hammering the action with malformed payloads
+  // can't probe the system without consuming their quota.
+  const headerBag = await headers();
+  const ip =
+    headerBag.get("x-vercel-forwarded-for") ??
+    headerBag.get("x-real-ip") ??
+    headerBag.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "unknown";
+  const userAgent = headerBag.get("user-agent") ?? "unknown";
+
+  // Fail closed on unidentifiable clients in prod — the "unknown" bucket
+  // would otherwise collapse every anonymous caller into one shared
+  // counter, letting any one of them lock everyone else out.
+  if (ip === "unknown" && process.env.NODE_ENV === "production") {
+    return { ok: false, error: "Could not identify request source. Please try again." };
+  }
+
+  // Rate-limit before we touch the DB. Supabase-backed in prod; dev falls
+  // back to in-memory so `npm run dev` works without a live DB.
+  const supaForLimiter = getSupabaseServer();
+  const limitStore = supaForLimiter
+    ? new SupabaseRateLimitStore(supaForLimiter)
+    : devMemoryStore;
+  const limitCheck = await enforceOrderRateLimit(limitStore, ip);
+  if (!limitCheck.allowed) {
+    return { ok: false, error: limitCheck.error };
+  }
+
   const customerError = validateCustomer(input.customer);
   if (customerError) return { ok: false, error: customerError };
 
@@ -106,13 +141,6 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
 
   const resolved = resolveCartOnServer(input.items);
   if ("error" in resolved) return { ok: false, error: resolved.error };
-
-  const headerBag = await headers();
-  const ip =
-    headerBag.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    headerBag.get("x-real-ip") ??
-    "unknown";
-  const userAgent = headerBag.get("user-agent") ?? "unknown";
 
   // Certification text + timestamp are stamped from server-side constants,
   // not from the client. The stored hash covers both so any later
