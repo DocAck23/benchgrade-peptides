@@ -13,22 +13,22 @@ export const metadata: Metadata = {
 export default function CatalogPage() {
   return (
     <div className="bg-paper">
-      <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-12 lg:py-16">
+      <div className="max-w-[1280px] mx-auto px-5 sm:px-6 lg:px-10 py-8 sm:py-12 lg:py-16">
         <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Catalog" }]} />
 
-        <header className="mt-6 mb-12 border-b rule pb-12">
-          <div className="label-eyebrow text-ink-muted mb-4">Full catalog</div>
-          <h1 className="font-display text-5xl lg:text-6xl text-ink leading-[1.05] mb-6">
+        <header className="mt-4 sm:mt-6 mb-6 sm:mb-12 border-b rule pb-6 sm:pb-12">
+          <div className="label-eyebrow text-ink-muted mb-2 sm:mb-4 text-[10px] sm:text-xs">Full catalog</div>
+          <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl text-ink leading-[1.08] sm:leading-[1.05] mb-3 sm:mb-6">
             Research-grade synthetic peptides.
           </h1>
-          <p className="text-base lg:text-lg text-ink-soft max-w-2xl leading-relaxed">
+          <p className="text-sm sm:text-base lg:text-lg text-ink-soft max-w-2xl leading-relaxed">
             Lyophilized powder, individual peptides only. HPLC + MS verified, certificate of analysis
             published per lot, cold-chain domestic shipping. Supplied for laboratory research use only —
             not drugs, supplements, or medical devices.
           </p>
         </header>
 
-        <Callout variant="ruo" title="Research use only" className="mb-12">
+        <Callout variant="ruo" title="Research use only" className="mb-6 sm:mb-12">
           All products on this catalog are supplied for laboratory research use only. Not for human or
           veterinary use. Not a drug, supplement, or medical device. Customer certification is required at
           checkout per our{" "}
@@ -41,28 +41,28 @@ export default function CatalogPage() {
           if (products.length === 0) return null;
 
           return (
-            <section key={category.slug} className="mb-20" aria-labelledby={`cat-${category.slug}`}>
-              <div className="flex items-end justify-between gap-4 mb-8 border-b rule pb-4">
+            <section key={category.slug} className="mb-12 sm:mb-20" aria-labelledby={`cat-${category.slug}`}>
+              <div className="flex items-end justify-between gap-3 sm:gap-4 mb-4 sm:mb-8 border-b rule pb-3 sm:pb-4">
                 <div>
-                  <div className="label-eyebrow text-ink-muted mb-2">{category.taxonomy_label}</div>
+                  <div className="label-eyebrow text-ink-muted mb-1 sm:mb-2 text-[10px] sm:text-xs">{category.taxonomy_label}</div>
                   <h2
                     id={`cat-${category.slug}`}
-                    className="font-display text-3xl lg:text-4xl text-ink leading-tight"
+                    className="font-display text-xl sm:text-3xl lg:text-4xl text-ink leading-tight"
                   >
                     {category.name}
                   </h2>
                 </div>
                 <Link
                   href={`/catalog/${category.slug}`}
-                  className="text-sm text-teal hover:underline whitespace-nowrap"
+                  className="text-xs sm:text-sm text-teal hover:underline whitespace-nowrap"
                 >
-                  {products.length} {products.length === 1 ? "compound" : "compounds"} →
+                  {products.length} →
                 </Link>
               </div>
-              <p className="text-sm text-ink-soft mb-8 max-w-2xl leading-relaxed">
+              <p className="hidden sm:block text-sm text-ink-soft mb-8 max-w-2xl leading-relaxed">
                 {category.description}
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
                 {products.map((product) => (
                   <ProductCard key={product.slug} product={product} categorySlug={category.slug} />
                 ))}
