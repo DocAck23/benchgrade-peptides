@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
+import { CartButton } from "@/components/cart/CartButton";
 import { cn } from "@/lib/utils";
 
 const PRIMARY_NAV = [
@@ -52,12 +53,7 @@ export function Header() {
           >
             Account
           </Link>
-          <Link
-            href="/cart"
-            className="text-base px-4 py-2 border rule text-ink hover:bg-paper-soft transition-colors"
-          >
-            Cart
-          </Link>
+          <CartButton />
           <button
             type="button"
             aria-label={mobileOpen ? "Close menu" : "Open menu"}

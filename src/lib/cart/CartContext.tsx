@@ -1,0 +1,123 @@
+"use client";
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import type { CatalogProduct, CatalogVariant } from "@/lib/catalog/data";
+import type { CartApi, CartItem } from "./types";
+
+const STORAGE_KEY = "bgp.cart.v1";
+const CartContext = createContext<CartApi | null>(null);
+
+function readStoredItems(): CartItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (x): x is CartItem =>
+        x &&
+        typeof x.sku === "string" &&
+        typeof x.product_slug === "string" &&
+        typeof x.quantity === "number" &&
+        x.quantity > 0
+    );
+  } catch {
+    return [];
+  }
+}
+
+export function CartProvider({ children }: { children: React.ReactNode }) {
+  // Start empty on first render to match SSR; hydrate from localStorage
+  // on mount. Without this gate the server/client HTML diverges and
+  // React throws a hydration error on any page with the cart badge.
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [hydrated, setHydrated] = useState(false);
+  const [isDrawerOpen, setDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    setItems(readStoredItems());
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    } catch {
+      // Ignore quota / private-mode failures — cart is ephemeral then.
+    }
+  }, [items, hydrated]);
+
+  const addItem = useCallback(
+    (product: CatalogProduct, variant: CatalogVariant, quantity: number) => {
+      setItems((prev) => {
+        const existing = prev.find((i) => i.sku === variant.sku);
+        if (existing) {
+          return prev.map((i) =>
+            i.sku === variant.sku ? { ...i, quantity: i.quantity + quantity } : i
+          );
+        }
+        const next: CartItem = {
+          sku: variant.sku,
+          product_slug: product.slug,
+          category_slug: product.category_slug,
+          name: product.name,
+          size_mg: variant.size_mg,
+          unit_price: variant.retail_price,
+          quantity,
+          vial_image: product.vial_image,
+        };
+        return [...prev, next];
+      });
+      setDrawerOpen(true);
+    },
+    []
+  );
+
+  const updateQuantity = useCallback((sku: string, quantity: number) => {
+    setItems((prev) => {
+      if (quantity <= 0) return prev.filter((i) => i.sku !== sku);
+      return prev.map((i) => (i.sku === sku ? { ...i, quantity } : i));
+    });
+  }, []);
+
+  const removeItem = useCallback((sku: string) => {
+    setItems((prev) => prev.filter((i) => i.sku !== sku));
+  }, []);
+
+  const clear = useCallback(() => setItems([]), []);
+  const openDrawer = useCallback(() => setDrawerOpen(true), []);
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+
+  const api = useMemo<CartApi>(
+    () => ({
+      items,
+      itemCount: items.reduce((n, i) => n + i.quantity, 0),
+      subtotal: items.reduce((s, i) => s + i.unit_price * i.quantity, 0),
+      addItem,
+      updateQuantity,
+      removeItem,
+      clear,
+      openDrawer,
+      closeDrawer,
+      isDrawerOpen,
+    }),
+    [items, addItem, updateQuantity, removeItem, clear, openDrawer, closeDrawer, isDrawerOpen]
+  );
+
+  return <CartContext.Provider value={api}>{children}</CartContext.Provider>;
+}
+
+export function useCart(): CartApi {
+  const ctx = useContext(CartContext);
+  if (!ctx) throw new Error("useCart must be used inside <CartProvider>");
+  return ctx;
+}

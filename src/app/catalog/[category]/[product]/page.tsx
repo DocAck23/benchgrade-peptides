@@ -44,8 +44,38 @@ export default async function ProductPage({ params }: PageProps) {
   const product = getProductBySlug(productSlug);
   if (!category || !product || product.category_slug !== categorySlug) notFound();
 
+  const minPrice = Math.min(...product.variants.map((v) => v.retail_price));
+  const maxPrice = Math.max(...product.variants.map((v) => v.retail_price));
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.summary,
+    image: `https://benchgradepeptides.com${product.vial_image.split("?")[0]}`,
+    sku: product.variants[0]?.sku,
+    category: category.name,
+    offers: {
+      "@type": "AggregateOffer",
+      priceCurrency: "USD",
+      lowPrice: minPrice,
+      highPrice: maxPrice,
+      offerCount: product.variants.length,
+      availability: "https://schema.org/InStock",
+      seller: { "@type": "Organization", name: "Bench Grade Peptides" },
+    },
+    ...(product.molecular_formula && { molecularFormula: product.molecular_formula }),
+    ...(product.molecular_weight && { molecularWeight: `${product.molecular_weight} g/mol` }),
+    ...(product.cas_number && {
+      identifier: { "@type": "PropertyValue", propertyID: "CAS", value: product.cas_number },
+    }),
+  };
+
   return (
     <div className="bg-paper">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-12 lg:py-16">
         <Breadcrumb
           items={[
@@ -109,7 +139,7 @@ export default async function ProductPage({ params }: PageProps) {
 
             <MolecularDataPanel product={product} />
 
-            <VariantPicker variants={product.variants} productName={product.name} />
+            <VariantPicker product={product} />
 
             <div className="border-t rule pt-6 space-y-2">
               <p className="text-xs text-ink-muted leading-relaxed">

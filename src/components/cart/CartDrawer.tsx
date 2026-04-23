@@ -1,0 +1,172 @@
+"use client";
+
+import { useEffect } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { X, Minus, Plus } from "lucide-react";
+import { useCart } from "@/lib/cart/CartContext";
+import { formatPrice, cn } from "@/lib/utils";
+
+export function CartDrawer() {
+  const { items, itemCount, subtotal, updateQuantity, removeItem, isDrawerOpen, closeDrawer } =
+    useCart();
+
+  useEffect(() => {
+    if (!isDrawerOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeDrawer();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [isDrawerOpen, closeDrawer]);
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = isDrawerOpen ? "hidden" : prev;
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isDrawerOpen]);
+
+  return (
+    <>
+      <div
+        aria-hidden="true"
+        onClick={closeDrawer}
+        className={cn(
+          "fixed inset-0 z-40 bg-ink/40 transition-opacity",
+          isDrawerOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        )}
+      />
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label="Cart"
+        inert={!isDrawerOpen}
+        className={cn(
+          "fixed top-0 right-0 z-50 h-full w-full max-w-md bg-paper border-l rule flex flex-col",
+          "transition-transform duration-200 ease-out",
+          isDrawerOpen ? "translate-x-0" : "translate-x-full"
+        )}
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b rule">
+          <div>
+            <div className="label-eyebrow text-ink-muted">Cart</div>
+            <div className="text-sm text-ink">
+              {itemCount === 0 ? "Empty" : `${itemCount} ${itemCount === 1 ? "item" : "items"}`}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={closeDrawer}
+            aria-label="Close cart"
+            className="p-2 -mr-2 text-ink-soft hover:text-ink"
+          >
+            <X className="w-5 h-5" strokeWidth={1.5} />
+          </button>
+        </div>
+
+        {items.length === 0 ? (
+          <div className="flex-1 flex items-center justify-center px-6 text-center">
+            <div>
+              <p className="text-ink-soft mb-6">Your cart is empty.</p>
+              <Link
+                href="/catalog"
+                onClick={closeDrawer}
+                className="inline-flex items-center h-11 px-6 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-teal transition-colors"
+              >
+                Browse the catalog
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <>
+            <ul className="flex-1 overflow-y-auto divide-y rule">
+              {items.map((item) => (
+                <li key={item.sku} className="px-6 py-4 flex gap-4">
+                  <div className="relative w-20 h-20 bg-paper-soft border rule shrink-0 overflow-hidden">
+                    <Image
+                      src={item.vial_image}
+                      alt=""
+                      fill
+                      sizes="80px"
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <Link
+                        href={`/catalog/${item.category_slug}/${item.product_slug}`}
+                        onClick={closeDrawer}
+                        className="font-display text-base text-ink hover:text-teal truncate"
+                      >
+                        {item.name}
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => removeItem(item.sku)}
+                        className="text-xs text-ink-muted hover:text-oxblood shrink-0"
+                        aria-label={`Remove ${item.name} ${item.size_mg}mg from cart`}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div className="font-mono-data text-xs text-ink-muted mb-2">
+                      {item.size_mg}mg · {item.sku}
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="inline-flex items-center border rule">
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.sku, item.quantity - 1)}
+                          className="w-8 h-8 flex items-center justify-center text-ink-soft hover:bg-paper-soft"
+                          aria-label="Decrease quantity"
+                        >
+                          <Minus className="w-3 h-3" strokeWidth={1.5} />
+                        </button>
+                        <span className="w-10 text-center font-mono-data text-sm text-ink">
+                          {item.quantity}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.sku, item.quantity + 1)}
+                          className="w-8 h-8 flex items-center justify-center text-ink-soft hover:bg-paper-soft"
+                          aria-label="Increase quantity"
+                        >
+                          <Plus className="w-3 h-3" strokeWidth={1.5} />
+                        </button>
+                      </div>
+                      <span className="font-mono-data text-sm text-ink">
+                        {formatPrice(item.unit_price * item.quantity * 100)}
+                      </span>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            <div className="border-t rule px-6 py-5 space-y-4 bg-paper-soft">
+              <div className="flex items-baseline justify-between">
+                <span className="label-eyebrow text-ink-muted">Subtotal</span>
+                <span className="font-mono-data text-lg text-ink">
+                  {formatPrice(subtotal * 100)}
+                </span>
+              </div>
+              <p className="text-xs text-ink-muted leading-relaxed">
+                Shipping calculated at checkout. Payment by bank transfer only — order confirmation
+                email includes wire instructions.
+              </p>
+              <Link
+                href="/checkout"
+                onClick={closeDrawer}
+                className="flex items-center justify-center w-full h-12 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-teal transition-colors"
+              >
+                Proceed to checkout
+              </Link>
+            </div>
+          </>
+        )}
+      </aside>
+    </>
+  );
+}
