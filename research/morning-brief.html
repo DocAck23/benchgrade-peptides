@@ -4,193 +4,381 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Morning brief — Bench Grade Peptides</title>
-<meta name="description" content="TL;DR, what shipped overnight, six decisions for the founder.">
+<title>Morning brief · Bench Grade Peptides</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --paper: #f7f4ee;
-    --paper-soft: #efeae1;
-    --rule: #d7d1c4;
-    --ink: #1a1a1a;
-    --ink-soft: #4a4a4a;
-    --ink-muted: #6b6b6b;
-    --teal: #0a5c7d;
-    --teal-hover: #084a65;
-    --oxblood: #7a1e1e;
-    --geist: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    --mono: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+    --paper:      #F7F4EE;
+    --paper-soft: #EFEAE1;
+    --paper-deep: #E7E0D0;
+    --rule:       #D7D1C4;
+    --rule-strong:#B8B0A1;
+    --ink:        #1A1A1A;
+    --ink-soft:   #3A3A3A;
+    --ink-muted:  #6B6B6B;
+    --teal:       #0A5C7D;
+    --teal-hover: #084A65;
+    --teal-soft:  #E7F0F4;
+    --oxblood:    #7A1E1E;
+
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+    --content-width: 38rem;   /* ~640px at 16px */
+    --gutter: 2rem;
   }
-  @media (prefers-color-scheme: dark) {
-    :root { /* keep brand paper even in dark — this is an editorial doc */ }
-  }
-  *, *::before, *::after { box-sizing: border-box; }
+
+  * { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
   body {
     margin: 0;
     background: var(--paper);
     color: var(--ink);
-    font: 15px/1.65 var(--geist);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.7;
+    font-feature-settings: "ss01", "cv11";
   }
-  .bar {
+
+  /* ---------- top bar ---------- */
+  .ruo-bar {
     background: var(--oxblood);
     color: var(--paper);
-    font: 11px/1.5 var(--mono);
-    letter-spacing: 0.12em;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     text-align: center;
     padding: 8px 16px;
   }
-  .topnav {
+
+  /* ---------- document nav ---------- */
+  .doc-nav {
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 18px var(--gutter);
     display: flex;
     align-items: baseline;
-    gap: 20px;
-    padding: 20px max(16px, calc((100vw - 720px) / 2));
-    border-bottom: 1px solid var(--rule);
+    gap: 8px 28px;
     flex-wrap: wrap;
+    border-bottom: 1px solid var(--rule);
   }
-  .topnav .wordmark {
+  .doc-nav .brand {
+    font-size: 13px;
     font-weight: 700;
-    font-size: 14px;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--ink);
     text-decoration: none;
     margin-right: auto;
   }
-  .topnav a {
-    color: var(--teal);
+  .doc-nav a {
+    font-size: 14px;
+    color: var(--ink-muted);
     text-decoration: none;
-    font-size: 13px;
-    padding: 6px 10px;
-    border-radius: 2px;
+    padding: 4px 0;
+    border-bottom: 2px solid transparent;
+    transition: color 120ms, border-color 120ms;
   }
-  .topnav a:hover { background: var(--paper-soft); }
-  .topnav a[aria-current="page"] {
-    background: var(--ink);
-    color: var(--paper);
+  .doc-nav a:hover { color: var(--ink); }
+  .doc-nav a.is-current {
+    color: var(--ink);
+    border-bottom-color: var(--teal);
   }
-  main {
-    max-width: 720px;
+
+  /* ---------- layout: TOC + article ---------- */
+  .page {
+    max-width: 72rem;
     margin: 0 auto;
-    padding: 32px max(20px, calc((100vw - 720px) / 2)) 72px;
+    padding: 56px var(--gutter) 96px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 48px;
   }
-  main h1 {
-    font-size: 34px;
-    line-height: 1.1;
-    letter-spacing: -0.01em;
-    margin: 0 0 20px 0;
+  @media (min-width: 1024px) {
+    .page {
+      grid-template-columns: 15rem minmax(0, 1fr);
+      gap: 72px;
+    }
   }
-  main h2 {
-    font-size: 22px;
-    line-height: 1.25;
-    margin: 48px 0 12px 0;
-    padding-bottom: 10px;
+
+  .toc {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--ink-muted);
+    position: relative;
+  }
+  @media (min-width: 1024px) {
+    .toc {
+      position: sticky;
+      top: 32px;
+      align-self: start;
+    }
+  }
+  .toc-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--ink-muted);
+    margin-bottom: 10px;
+    padding-bottom: 8px;
     border-bottom: 1px solid var(--rule);
   }
-  main h3 {
-    font-size: 17px;
-    line-height: 1.3;
-    margin: 36px 0 6px 0;
+  .toc ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: toc;
   }
-  main h4 {
-    font-size: 14px;
+  .toc li {
+    counter-increment: toc;
+    padding: 4px 0;
+  }
+  .toc li::before {
+    content: counter(toc, decimal-leading-zero);
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-faint, #9a9a9a);
+    margin-right: 8px;
+  }
+  .toc a {
+    color: var(--ink-soft);
+    text-decoration: none;
+  }
+  .toc a:hover { color: var(--teal); }
+
+  /* ---------- article ---------- */
+  article { max-width: var(--content-width); }
+
+  article header {
+    margin-bottom: 48px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--rule);
+  }
+  article header .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--teal);
+  }
+  article header h1 {
+    font-family: var(--sans);
+    font-size: clamp(2rem, 4vw, 2.8rem);
     font-weight: 600;
-    margin: 28px 0 4px 0;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin: 10px 0 6px 0;
   }
-  main p { margin: 14px 0; }
-  main a {
+  article header p {
+    font-size: 17px;
+    color: var(--ink-soft);
+    margin: 0;
+  }
+
+  article h1, article h2, article h3, article h4 {
+    font-family: var(--sans);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  /* The markdown body shouldn't render its own H1 because we already
+     printed the document header above. */
+  article .body > h1:first-child { display: none; }
+
+  article h2 {
+    position: relative;
+    font-size: 1.5rem;
+    line-height: 1.25;
+    margin: 64px 0 8px 0;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+  }
+  article h3 {
+    font-size: 1.125rem;
+    line-height: 1.35;
+    margin: 40px 0 2px 0;
+  }
+  article h4 {
+    font-size: 0.95rem;
+    margin: 28px 0 0 0;
+  }
+  article .anchor {
+    position: absolute;
+    left: -1.25em;
+    top: 24px;
+    color: var(--rule-strong);
+    text-decoration: none;
+    font-weight: 400;
+    font-family: var(--mono);
+    font-size: 0.8em;
+    opacity: 0;
+    transition: opacity 120ms;
+  }
+  article h2:hover .anchor { opacity: 1; }
+
+  article p {
+    margin: 14px 0;
+    color: var(--ink-soft);
+  }
+  article strong { color: var(--ink); font-weight: 600; }
+  article em { font-style: italic; color: var(--ink); }
+
+  article a {
     color: var(--teal);
     text-decoration: underline;
-    text-underline-offset: 2px;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    transition: color 120ms;
   }
-  main a:hover { color: var(--teal-hover); }
-  main strong { color: var(--ink); font-weight: 600; }
-  main em { font-style: italic; }
-  main code {
-    font-family: var(--mono);
-    font-size: 0.86em;
-    background: var(--paper-soft);
-    padding: 2px 5px;
-    border-radius: 2px;
+  article a:hover { color: var(--teal-hover); }
+
+  article ul, article ol {
+    margin: 16px 0;
+    padding-left: 1.75rem;
+    color: var(--ink-soft);
   }
-  main pre {
+  article ul { list-style: disc outside; }
+  article ol { list-style: decimal outside; }
+  article li { margin: 6px 0; }
+  article li > p { margin: 6px 0; }
+  article li::marker { color: var(--ink-muted); }
+
+  article code {
     font-family: var(--mono);
-    font-size: 12.5px;
+    font-size: 0.88em;
     background: var(--paper-soft);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--ink);
+  }
+  article pre {
+    font-family: var(--mono);
+    font-size: 13.5px;
+    line-height: 1.6;
+    background: #F1ECE1;
     border: 1px solid var(--rule);
-    padding: 14px 16px;
+    border-radius: 4px;
+    padding: 16px 20px;
     overflow-x: auto;
-    line-height: 1.55;
-    border-radius: 2px;
+    margin: 18px 0;
+    color: var(--ink);
   }
-  main pre code {
+  article pre code {
     background: transparent;
     padding: 0;
     font-size: inherit;
   }
-  main ul, main ol {
-    margin: 14px 0;
-    padding-left: 24px;
-  }
-  main ul { list-style: disc outside; }
-  main ol { list-style: decimal outside; }
-  main li { margin: 6px 0; }
-  main li > p { margin: 4px 0; }
-  main blockquote {
+
+  article blockquote {
     border-left: 3px solid var(--teal);
-    padding: 4px 16px;
-    color: var(--ink-soft);
-    font-style: italic;
-    background: var(--paper-soft);
-    margin: 14px 0;
+    background: var(--teal-soft);
+    padding: 12px 20px;
+    margin: 20px 0;
+    color: var(--ink);
+    font-style: normal;
   }
-  main hr {
+  article blockquote p { color: var(--ink); }
+
+  article hr {
     border: 0;
     border-top: 1px solid var(--rule);
-    margin: 40px 0;
+    margin: 48px 0;
   }
-  main table {
+
+  article table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13.5px;
-    margin: 16px 0;
+    font-size: 14px;
+    margin: 20px 0;
+    background: var(--paper);
   }
-  main th, main td {
+  article th, article td {
     border: 1px solid var(--rule);
-    padding: 9px 12px;
+    padding: 10px 14px;
     text-align: left;
     vertical-align: top;
   }
-  main th { background: var(--paper-soft); font-weight: 600; }
-  main img { max-width: 100%; height: auto; display: block; margin: 16px 0; }
-  footer {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 24px max(20px, calc((100vw - 720px) / 2));
-    border-top: 1px solid var(--rule);
-    color: var(--ink-muted);
-    font-size: 12px;
+  article th {
+    background: var(--paper-soft);
+    font-weight: 600;
+    color: var(--ink);
   }
-  @media (max-width: 560px) {
-    main h1 { font-size: 28px; }
-    main h2 { font-size: 19px; }
-    .topnav { gap: 8px 14px; }
-    .topnav .wordmark { flex: 1 1 100%; margin-right: 0; }
+  article td { color: var(--ink-soft); }
+
+  /* subtle callout effect for intro "TL;DR" style paragraphs */
+  article .body > h2:first-of-type + p,
+  article .body > h1 + p:first-of-type {
+    font-size: 1.0625rem;
+    color: var(--ink);
+  }
+
+  /* emphasis for emoji-prefixed headings in morning brief */
+  article h3 { overflow-wrap: break-word; }
+
+  /* ---------- footer ---------- */
+  footer {
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 24px var(--gutter);
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-muted);
+    letter-spacing: 0.04em;
+  }
+  footer code {
+    font-size: inherit;
+    background: var(--paper-soft);
+    padding: 1px 5px;
+    border-radius: 2px;
+  }
+
+  @media (max-width: 640px) {
+    body { font-size: 16px; }
+    .page { padding: 32px 20px 64px; }
+    article header h1 { font-size: 1.75rem; }
+    article h2 { font-size: 1.25rem; }
+    article pre { font-size: 12.5px; padding: 14px 16px; }
+  }
+
+  @media print {
+    .doc-nav, .ruo-bar, footer, .toc { display: none; }
+    .page { grid-template-columns: 1fr; padding: 0; }
+    article { max-width: 100%; }
+    article a { color: var(--ink); text-decoration: none; }
   }
 </style>
 </head>
 <body>
-<div class="bar">BENCH GRADE PEPTIDES · internal brief · not for distribution</div>
-<nav class="topnav">
-  <a class="wordmark" href="./morning-brief.html">Bench Grade · Briefs</a>
-  <a href="./codebase-audit.html">Codebase audit</a><a href="./market-landscape.html">Market landscape</a><a href="./morning-brief.html" aria-current="page">Morning brief</a>
+<div class="ruo-bar">BENCH GRADE PEPTIDES · INTERNAL BRIEF · NOT FOR DISTRIBUTION</div>
+
+<nav class="doc-nav" aria-label="Briefs">
+  <a class="brand" href="./morning-brief.html">Bench Grade · Briefs</a>
+  <a href="./codebase-audit.html">Codebase audit</a><a href="./market-landscape.html">Market landscape</a><a href="./morning-brief.html" class="is-current" aria-current="page">Morning brief</a>
 </nav>
-<main><h1>Bench Grade Peptides — Morning Brief</h1>
+
+<div class="page">
+  <nav class="toc" aria-label="Table of contents">
+          <div class="toc-label">Contents</div>
+          <ol><li><a href="#tldr-read-this-first">TL;DR (read this first)</a></li><li><a href="#what-i-shipped-overnight-autonomous-no-permission-needed">What I shipped overnight (autonomous, no permission needed)</a></li><li><a href="#items-that-need-your-permission-action-morning-review-queue">Items that need your permission / action (morning review queue)</a></li><li><a href="#deep-research-key-strategic-findings">Deep research — key strategic findings</a></li><li><a href="#codebase-audit-what-else-the-audit-flagged">Codebase audit — what else the audit flagged</a></li><li><a href="#outstanding-prd-product-requirements-document">Outstanding PRD (product requirements document)</a></li><li><a href="#where-to-look-when-you-wake-up">Where to look when you wake up</a></li></ol>
+        </nav>
+  <article>
+    <header>
+      <div class="eyebrow">Bench Grade Peptides</div>
+      <h1>Morning brief</h1>
+      <p>What shipped overnight · six decisions waiting for you</p>
+    </header>
+    <div class="body"><h1>Bench Grade Peptides — Morning Brief</h1>
 <p><strong>For:</strong> Ahmed (founder, Bench Grade Peptides LLC)
 <strong>From:</strong> Claude (overnight audit + implementation run)
 <strong>Date:</strong> 2026-04-23
 <strong>Status:</strong> Deploy-ready code, pending strategy decisions that need your explicit approval.</p>
 <hr>
-<h2>TL;DR (read this first)</h2>
+<h2 id="tldr-read-this-first"><a class="anchor" href="#tldr-read-this-first" aria-hidden="true">#</a>TL;DR (read this first)</h2>
 <ol>
 <li><strong>Biggest strategic finding from the deep research</strong>: FDA enforcement against RUO peptide sellers has intensified sharply on the GLP-1 class specifically (Dec 2024 warning-letter wave, Sept 2025 wave, March 2026 Peptide Sciences shutdown, June 2025 Amino Asylum raid, $1.79M DOJ forfeiture from Tailor Made Compounding). <strong>Recommend you launch without the 6 GLP-1 SKUs</strong> and add them back once enforcement stabilizes.</li>
 <li><strong>Biggest compliance leak fixed tonight</strong>: the GLP-1 slug + sequence + citation chain was a Potemkin village — the display names were coded but the URLs, image filenames, full amino-acid sequences, and discovery-paper citations all spelled out the branded drugs. All coded now. Compliance linter now also catches the raw INNs.</li>
@@ -198,7 +386,7 @@
 <li><strong>Still needs your permission / action before going live</strong>: six items, listed at the bottom.</li>
 </ol>
 <hr>
-<h2>What I shipped overnight (autonomous, no permission needed)</h2>
+<h2 id="what-i-shipped-overnight-autonomous-no-permission-needed"><a class="anchor" href="#what-i-shipped-overnight-autonomous-no-permission-needed" aria-hidden="true">#</a>What I shipped overnight (autonomous, no permission needed)</h2>
 <h3>Mobile compaction</h3>
 <ul>
 <li>Hero text scaled from <code>text-5xl</code> to <code>text-3xl</code> on mobile, tighter vertical padding, compact stat chips, shorter CTA labels.</li>
@@ -247,7 +435,7 @@
 <li>JSON-LD Product schema per product page (already live pre-tonight).</li>
 </ul>
 <hr>
-<h2>Items that need your permission / action (morning review queue)</h2>
+<h2 id="items-that-need-your-permission-action-morning-review-queue"><a class="anchor" href="#items-that-need-your-permission-action-morning-review-queue" aria-hidden="true">#</a>Items that need your permission / action (morning review queue)</h2>
 <p>These are the recommendations from the deep research + audit that I <strong>did not act on</strong> because they&#39;re strategy calls, external actions, or financial commitments. Each one has a clear &quot;what to do&quot; so you can process quickly.</p>
 <h3>1. ⚠️ <strong>Drop the 6 GLP-1 SKUs from the launch catalog</strong> (HIGHEST PRIORITY)</h3>
 <p><strong>Source</strong>: deep-research report <code>research/market-landscape.md</code> — extensive FDA / CBP / DOJ citation chain.
@@ -278,7 +466,7 @@
 <p><strong>Status</strong>: I didn&#39;t add Cloudflare Turnstile to the RUO gate because it requires site-key + secret-key from a Cloudflare account you don&#39;t have yet. Rate limiter catches casual abuse but a real botnet sidesteps 5/hour/IP trivially.
 <strong>What to do</strong>: (a) sign up at cloudflare.com/products/turnstile (free), (b) create a widget, (c) paste <code>NEXT_PUBLIC_TURNSTILE_SITE_KEY</code> + <code>TURNSTILE_SECRET_KEY</code> into Vercel env, (d) tell me &quot;turnstile ready&quot; — I&#39;ll wire it up.</p>
 <hr>
-<h2>Deep research — key strategic findings</h2>
+<h2 id="deep-research-key-strategic-findings"><a class="anchor" href="#deep-research-key-strategic-findings" aria-hidden="true">#</a>Deep research — key strategic findings</h2>
 <p>Full report: <code>research/market-landscape.md</code> (~7,500 words, 60+ citations). Highlights:</p>
 <h3>Competitive landscape</h3>
 <ul>
@@ -320,7 +508,7 @@
 <li><strong>&quot;Institutional&quot; verified tier</strong> (–10% extra after domain verification): untapped differentiator. Nobody does this well.</li>
 </ul>
 <hr>
-<h2>Codebase audit — what else the audit flagged</h2>
+<h2 id="codebase-audit-what-else-the-audit-flagged"><a class="anchor" href="#codebase-audit-what-else-the-audit-flagged" aria-hidden="true">#</a>Codebase audit — what else the audit flagged</h2>
 <p>Full report: <code>research/codebase-audit.md</code> (~2,500 words, 28 findings).</p>
 <p><strong>Fixed tonight</strong> (code changes shipped): all 5 BLOCKERs (B1–B5), 7 of 9 HIGHs (H1, H2, H6, H7 done; H3, H4, H9 either already handled or low-risk), M1, L2, L3, L4, M7 (CI).</p>
 <p><strong>Still open</strong> (needs discussion):</p>
@@ -336,7 +524,7 @@
 </ul>
 <p>I can knock out M4/M5/M9/M3 in one pass in the morning after you look at this. M6 (more tests) is a steady-state investment that I&#39;d do after we have real traffic informing which surfaces are highest-risk.</p>
 <hr>
-<h2>Outstanding PRD (product requirements document)</h2>
+<h2 id="outstanding-prd-product-requirements-document"><a class="anchor" href="#outstanding-prd-product-requirements-document" aria-hidden="true">#</a>Outstanding PRD (product requirements document)</h2>
 <p>Based on the deep research + what we&#39;ve already built, here&#39;s the PRD shape:</p>
 <h3>Vision</h3>
 <p>Bench Grade Peptides is the <strong>reagent-catalog-grade</strong> RUO peptide distributor. We look like Sigma-Aldrich, act like Cayman Chemical, and serve independent researchers, academic labs, and small life-sciences companies who want HPLC-verified, lot-traceable, third-party-audited synthetic peptides with zero therapeutic claims.</p>
@@ -385,7 +573,7 @@
 <li>→ Admin: filter + search + CSV export</li>
 </ul>
 <hr>
-<h2>Where to look when you wake up</h2>
+<h2 id="where-to-look-when-you-wake-up"><a class="anchor" href="#where-to-look-when-you-wake-up" aria-hidden="true">#</a>Where to look when you wake up</h2>
 <ol>
 <li><strong>This file</strong> — <code>research/morning-brief.md</code> (you&#39;re in it).</li>
 <li><strong>Market deep-research</strong> — <code>research/market-landscape.md</code></li>
@@ -402,7 +590,10 @@
 <li>&quot;draft supplier outreach&quot; → I draft RFQs for US contract-synthesis labs</li>
 <li>&quot;start shipping content&quot; → I start on the top-10 SEO content calendar</li>
 </ul>
-</main>
-<footer>Generated 2026-04-23 from <code>research/*.md</code>. Rebuild: <code>node scripts/build-briefs.mjs</code>.</footer>
+</div>
+  </article>
+</div>
+
+<footer>Generated 2026-04-23 · source <code>research/morning-brief.md</code> · rebuild <code>node scripts/build-briefs.mjs</code></footer>
 </body>
 </html>

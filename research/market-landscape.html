@@ -4,193 +4,381 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Market landscape — Bench Grade Peptides</title>
-<meta name="description" content="Deep research on US RUO peptide market, competitors, suppliers, SEO, pricing.">
+<title>Market landscape · Bench Grade Peptides</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --paper: #f7f4ee;
-    --paper-soft: #efeae1;
-    --rule: #d7d1c4;
-    --ink: #1a1a1a;
-    --ink-soft: #4a4a4a;
-    --ink-muted: #6b6b6b;
-    --teal: #0a5c7d;
-    --teal-hover: #084a65;
-    --oxblood: #7a1e1e;
-    --geist: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    --mono: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+    --paper:      #F7F4EE;
+    --paper-soft: #EFEAE1;
+    --paper-deep: #E7E0D0;
+    --rule:       #D7D1C4;
+    --rule-strong:#B8B0A1;
+    --ink:        #1A1A1A;
+    --ink-soft:   #3A3A3A;
+    --ink-muted:  #6B6B6B;
+    --teal:       #0A5C7D;
+    --teal-hover: #084A65;
+    --teal-soft:  #E7F0F4;
+    --oxblood:    #7A1E1E;
+
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+    --content-width: 38rem;   /* ~640px at 16px */
+    --gutter: 2rem;
   }
-  @media (prefers-color-scheme: dark) {
-    :root { /* keep brand paper even in dark — this is an editorial doc */ }
-  }
-  *, *::before, *::after { box-sizing: border-box; }
+
+  * { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
   body {
     margin: 0;
     background: var(--paper);
     color: var(--ink);
-    font: 15px/1.65 var(--geist);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.7;
+    font-feature-settings: "ss01", "cv11";
   }
-  .bar {
+
+  /* ---------- top bar ---------- */
+  .ruo-bar {
     background: var(--oxblood);
     color: var(--paper);
-    font: 11px/1.5 var(--mono);
-    letter-spacing: 0.12em;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     text-align: center;
     padding: 8px 16px;
   }
-  .topnav {
+
+  /* ---------- document nav ---------- */
+  .doc-nav {
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 18px var(--gutter);
     display: flex;
     align-items: baseline;
-    gap: 20px;
-    padding: 20px max(16px, calc((100vw - 720px) / 2));
-    border-bottom: 1px solid var(--rule);
+    gap: 8px 28px;
     flex-wrap: wrap;
+    border-bottom: 1px solid var(--rule);
   }
-  .topnav .wordmark {
+  .doc-nav .brand {
+    font-size: 13px;
     font-weight: 700;
-    font-size: 14px;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--ink);
     text-decoration: none;
     margin-right: auto;
   }
-  .topnav a {
-    color: var(--teal);
+  .doc-nav a {
+    font-size: 14px;
+    color: var(--ink-muted);
     text-decoration: none;
-    font-size: 13px;
-    padding: 6px 10px;
-    border-radius: 2px;
+    padding: 4px 0;
+    border-bottom: 2px solid transparent;
+    transition: color 120ms, border-color 120ms;
   }
-  .topnav a:hover { background: var(--paper-soft); }
-  .topnav a[aria-current="page"] {
-    background: var(--ink);
-    color: var(--paper);
+  .doc-nav a:hover { color: var(--ink); }
+  .doc-nav a.is-current {
+    color: var(--ink);
+    border-bottom-color: var(--teal);
   }
-  main {
-    max-width: 720px;
+
+  /* ---------- layout: TOC + article ---------- */
+  .page {
+    max-width: 72rem;
     margin: 0 auto;
-    padding: 32px max(20px, calc((100vw - 720px) / 2)) 72px;
+    padding: 56px var(--gutter) 96px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 48px;
   }
-  main h1 {
-    font-size: 34px;
-    line-height: 1.1;
-    letter-spacing: -0.01em;
-    margin: 0 0 20px 0;
+  @media (min-width: 1024px) {
+    .page {
+      grid-template-columns: 15rem minmax(0, 1fr);
+      gap: 72px;
+    }
   }
-  main h2 {
-    font-size: 22px;
-    line-height: 1.25;
-    margin: 48px 0 12px 0;
-    padding-bottom: 10px;
+
+  .toc {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--ink-muted);
+    position: relative;
+  }
+  @media (min-width: 1024px) {
+    .toc {
+      position: sticky;
+      top: 32px;
+      align-self: start;
+    }
+  }
+  .toc-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--ink-muted);
+    margin-bottom: 10px;
+    padding-bottom: 8px;
     border-bottom: 1px solid var(--rule);
   }
-  main h3 {
-    font-size: 17px;
-    line-height: 1.3;
-    margin: 36px 0 6px 0;
+  .toc ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: toc;
   }
-  main h4 {
-    font-size: 14px;
+  .toc li {
+    counter-increment: toc;
+    padding: 4px 0;
+  }
+  .toc li::before {
+    content: counter(toc, decimal-leading-zero);
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-faint, #9a9a9a);
+    margin-right: 8px;
+  }
+  .toc a {
+    color: var(--ink-soft);
+    text-decoration: none;
+  }
+  .toc a:hover { color: var(--teal); }
+
+  /* ---------- article ---------- */
+  article { max-width: var(--content-width); }
+
+  article header {
+    margin-bottom: 48px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--rule);
+  }
+  article header .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--teal);
+  }
+  article header h1 {
+    font-family: var(--sans);
+    font-size: clamp(2rem, 4vw, 2.8rem);
     font-weight: 600;
-    margin: 28px 0 4px 0;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin: 10px 0 6px 0;
   }
-  main p { margin: 14px 0; }
-  main a {
+  article header p {
+    font-size: 17px;
+    color: var(--ink-soft);
+    margin: 0;
+  }
+
+  article h1, article h2, article h3, article h4 {
+    font-family: var(--sans);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  /* The markdown body shouldn't render its own H1 because we already
+     printed the document header above. */
+  article .body > h1:first-child { display: none; }
+
+  article h2 {
+    position: relative;
+    font-size: 1.5rem;
+    line-height: 1.25;
+    margin: 64px 0 8px 0;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+  }
+  article h3 {
+    font-size: 1.125rem;
+    line-height: 1.35;
+    margin: 40px 0 2px 0;
+  }
+  article h4 {
+    font-size: 0.95rem;
+    margin: 28px 0 0 0;
+  }
+  article .anchor {
+    position: absolute;
+    left: -1.25em;
+    top: 24px;
+    color: var(--rule-strong);
+    text-decoration: none;
+    font-weight: 400;
+    font-family: var(--mono);
+    font-size: 0.8em;
+    opacity: 0;
+    transition: opacity 120ms;
+  }
+  article h2:hover .anchor { opacity: 1; }
+
+  article p {
+    margin: 14px 0;
+    color: var(--ink-soft);
+  }
+  article strong { color: var(--ink); font-weight: 600; }
+  article em { font-style: italic; color: var(--ink); }
+
+  article a {
     color: var(--teal);
     text-decoration: underline;
-    text-underline-offset: 2px;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    transition: color 120ms;
   }
-  main a:hover { color: var(--teal-hover); }
-  main strong { color: var(--ink); font-weight: 600; }
-  main em { font-style: italic; }
-  main code {
-    font-family: var(--mono);
-    font-size: 0.86em;
-    background: var(--paper-soft);
-    padding: 2px 5px;
-    border-radius: 2px;
+  article a:hover { color: var(--teal-hover); }
+
+  article ul, article ol {
+    margin: 16px 0;
+    padding-left: 1.75rem;
+    color: var(--ink-soft);
   }
-  main pre {
+  article ul { list-style: disc outside; }
+  article ol { list-style: decimal outside; }
+  article li { margin: 6px 0; }
+  article li > p { margin: 6px 0; }
+  article li::marker { color: var(--ink-muted); }
+
+  article code {
     font-family: var(--mono);
-    font-size: 12.5px;
+    font-size: 0.88em;
     background: var(--paper-soft);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--ink);
+  }
+  article pre {
+    font-family: var(--mono);
+    font-size: 13.5px;
+    line-height: 1.6;
+    background: #F1ECE1;
     border: 1px solid var(--rule);
-    padding: 14px 16px;
+    border-radius: 4px;
+    padding: 16px 20px;
     overflow-x: auto;
-    line-height: 1.55;
-    border-radius: 2px;
+    margin: 18px 0;
+    color: var(--ink);
   }
-  main pre code {
+  article pre code {
     background: transparent;
     padding: 0;
     font-size: inherit;
   }
-  main ul, main ol {
-    margin: 14px 0;
-    padding-left: 24px;
-  }
-  main ul { list-style: disc outside; }
-  main ol { list-style: decimal outside; }
-  main li { margin: 6px 0; }
-  main li > p { margin: 4px 0; }
-  main blockquote {
+
+  article blockquote {
     border-left: 3px solid var(--teal);
-    padding: 4px 16px;
-    color: var(--ink-soft);
-    font-style: italic;
-    background: var(--paper-soft);
-    margin: 14px 0;
+    background: var(--teal-soft);
+    padding: 12px 20px;
+    margin: 20px 0;
+    color: var(--ink);
+    font-style: normal;
   }
-  main hr {
+  article blockquote p { color: var(--ink); }
+
+  article hr {
     border: 0;
     border-top: 1px solid var(--rule);
-    margin: 40px 0;
+    margin: 48px 0;
   }
-  main table {
+
+  article table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13.5px;
-    margin: 16px 0;
+    font-size: 14px;
+    margin: 20px 0;
+    background: var(--paper);
   }
-  main th, main td {
+  article th, article td {
     border: 1px solid var(--rule);
-    padding: 9px 12px;
+    padding: 10px 14px;
     text-align: left;
     vertical-align: top;
   }
-  main th { background: var(--paper-soft); font-weight: 600; }
-  main img { max-width: 100%; height: auto; display: block; margin: 16px 0; }
-  footer {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 24px max(20px, calc((100vw - 720px) / 2));
-    border-top: 1px solid var(--rule);
-    color: var(--ink-muted);
-    font-size: 12px;
+  article th {
+    background: var(--paper-soft);
+    font-weight: 600;
+    color: var(--ink);
   }
-  @media (max-width: 560px) {
-    main h1 { font-size: 28px; }
-    main h2 { font-size: 19px; }
-    .topnav { gap: 8px 14px; }
-    .topnav .wordmark { flex: 1 1 100%; margin-right: 0; }
+  article td { color: var(--ink-soft); }
+
+  /* subtle callout effect for intro "TL;DR" style paragraphs */
+  article .body > h2:first-of-type + p,
+  article .body > h1 + p:first-of-type {
+    font-size: 1.0625rem;
+    color: var(--ink);
+  }
+
+  /* emphasis for emoji-prefixed headings in morning brief */
+  article h3 { overflow-wrap: break-word; }
+
+  /* ---------- footer ---------- */
+  footer {
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 24px var(--gutter);
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-muted);
+    letter-spacing: 0.04em;
+  }
+  footer code {
+    font-size: inherit;
+    background: var(--paper-soft);
+    padding: 1px 5px;
+    border-radius: 2px;
+  }
+
+  @media (max-width: 640px) {
+    body { font-size: 16px; }
+    .page { padding: 32px 20px 64px; }
+    article header h1 { font-size: 1.75rem; }
+    article h2 { font-size: 1.25rem; }
+    article pre { font-size: 12.5px; padding: 14px 16px; }
+  }
+
+  @media print {
+    .doc-nav, .ruo-bar, footer, .toc { display: none; }
+    .page { grid-template-columns: 1fr; padding: 0; }
+    article { max-width: 100%; }
+    article a { color: var(--ink); text-decoration: none; }
   }
 </style>
 </head>
 <body>
-<div class="bar">BENCH GRADE PEPTIDES · internal brief · not for distribution</div>
-<nav class="topnav">
-  <a class="wordmark" href="./morning-brief.html">Bench Grade · Briefs</a>
-  <a href="./codebase-audit.html">Codebase audit</a><a href="./market-landscape.html" aria-current="page">Market landscape</a><a href="./morning-brief.html">Morning brief</a>
+<div class="ruo-bar">BENCH GRADE PEPTIDES · INTERNAL BRIEF · NOT FOR DISTRIBUTION</div>
+
+<nav class="doc-nav" aria-label="Briefs">
+  <a class="brand" href="./morning-brief.html">Bench Grade · Briefs</a>
+  <a href="./codebase-audit.html">Codebase audit</a><a href="./market-landscape.html" class="is-current" aria-current="page">Market landscape</a><a href="./morning-brief.html">Morning brief</a>
 </nav>
-<main><h1>Bench Grade Peptides LLC — Market Landscape &amp; GTM Report</h1>
+
+<div class="page">
+  <nav class="toc" aria-label="Table of contents">
+          <div class="toc-label">Contents</div>
+          <ol><li><a href="#top-10-action-items-for-the-founder-prioritized">Top 10 Action Items for the Founder, Prioritized</a></li><li><a href="#1-competitor-landscape">1. Competitor Landscape</a></li><li><a href="#2-us-based-supplier-alternatives-to-agerecode">2. US-Based Supplier Alternatives to AgeREcode</a></li><li><a href="#3-regulatory-enforcement-environment-20242026">3. Regulatory + Enforcement Environment 2024–2026</a></li><li><a href="#4-seo-keyword-landscape">4. SEO + Keyword Landscape</a></li><li><a href="#5-pricing-models-in-the-wild">5. Pricing Models in the Wild</a></li><li><a href="#6-branding-differentiation">6. Branding + Differentiation</a></li><li><a href="#7-go-to-market-recommendations-90-day-plan">7. Go-to-Market Recommendations (90-day plan)</a></li><li><a href="#appendices">Appendices</a></li></ol>
+        </nav>
+  <article>
+    <header>
+      <div class="eyebrow">Bench Grade Peptides</div>
+      <h1>Market landscape</h1>
+      <p>Deep research on the US RUO peptide market</p>
+    </header>
+    <div class="body"><h1>Bench Grade Peptides LLC — Market Landscape &amp; GTM Report</h1>
 <p><em>Prepared: 2026-04-22. Audience: founder. Scope: US-facing RUO (research-use-only) synthetic peptide e-commerce for 2026 launch.</em></p>
 <blockquote>
 <p><strong>Honesty convention used throughout.</strong> Specific numbers, dates, and direct quotes are linked to a source. Where a price, MOQ, or ownership fact could not be verified without scraping the live site, the body says &quot;<strong>not verifiable without scraping</strong>&quot; rather than inventing. Where a claim is inferred (rather than reported), it is prefixed &quot;<strong>inference:</strong>&quot;. Where the underlying market is in active flux (GLP-1 enforcement, Peptide Sciences shutdown aftermath), the report timestamps the fact.</p>
 </blockquote>
 <hr>
-<h2>Top 10 Action Items for the Founder, Prioritized</h2>
+<h2 id="top-10-action-items-for-the-founder-prioritized"><a class="anchor" href="#top-10-action-items-for-the-founder-prioritized" aria-hidden="true">#</a>Top 10 Action Items for the Founder, Prioritized</h2>
 <ol>
 <li><strong>Do not sell GLP-1 analogs (semaglutide, tirzepatide, retatrutide, cagrilintide, mazdutide, survodutide) at launch.</strong> Every single FDA warning letter in the December 2024 and September 2025 waves, the CBP 5,000-shipment seizure, and the Eli Lilly / Novo Nordisk civil suits target this exact class. Coded names (&quot;GLP-1 R&quot;) are explicitly called out by FDA as a ruse. Launch with the 50 non-GLP-1 SKUs, treat the 6 coded GLP-1 SKUs as a post-launch decision after 90 days of watching enforcement. See §3.</li>
 <li><strong>Publish Janoshik third-party COAs with QR-linked lot lookup for every SKU on day one.</strong> This is the single biggest trust gap competitors leave open, and it is cheap to execute. See §6.</li>
@@ -205,7 +393,7 @@
 <li><strong>Keep a &quot;go-dark&quot; playbook written before launch.</strong> Every major vendor that was raided (Amino Asylum June 2025, Paradigm Peptides/Matthew Kawa indictment per <a href="https://www.justice.gov/usao-ndin/united-states-v-matthew-kawa">DOJ N.D. Indiana</a>) did not have operational continuity plans. At minimum: offshore DNS, counsel on retainer, customer-data minimization (don&#39;t store what you don&#39;t need), no internal Slack with therapeutic-claim language. See §3 and §7.</li>
 </ol>
 <hr>
-<h2>1. Competitor Landscape</h2>
+<h2 id="1-competitor-landscape"><a class="anchor" href="#1-competitor-landscape" aria-hidden="true">#</a>1. Competitor Landscape</h2>
 <p>The US-facing research peptide vendor landscape in April 2026 is shaped by three forces: (1) the shutdown of Peptide Sciences in March 2026, (2) the FDA/DOJ enforcement wave that removed Amino Asylum, hobbled Swiss Chems, Summit, and Prime Peptides, and (3) rising enforcement on GLP-1 analogs specifically.</p>
 <h3>1.1 Competitor table — verified facts and honest gaps</h3>
 <p>Sources for this section: a mix of trade reviews (Muscle and Brawn, Outliyr, Peptide Dossier, Peptide Examiner), FDA enforcement records, Trustpilot, and vendor homepages. <strong>Exact current pricing is not verifiable without scraping</strong> — review-site price quotes drift by months. Positioning language and broad ranges are cited where found.</p>
@@ -332,7 +520,7 @@
 <li><strong>Institutional account / PhD verification gate</strong>: absent across the consumer-facing vendors. Bachem, GenScript, and the academic-aligned CDMOs do it, but none of the gray-market consumer vendors require institution verification.</li>
 </ul>
 <hr>
-<h2>2. US-Based Supplier Alternatives to AgeREcode</h2>
+<h2 id="2-us-based-supplier-alternatives-to-agerecode"><a class="anchor" href="#2-us-based-supplier-alternatives-to-agerecode" aria-hidden="true">#</a>2. US-Based Supplier Alternatives to AgeREcode</h2>
 <p>The founder&#39;s primary candidate is <a href="https://agerecode.com">AgeREcode</a> in China (not yet confirmed as supplier per the project&#39;s <a href="../docs/supplier_and_catalog.md">supplier_and_catalog memory</a>). The China-only path has three risks visible in the data: (a) CBP is actively seizing these exact shipments at Cincinnati and probably other ports (<a href="https://www.cbp.gov/newsroom/local-media-release/cincinnati-cbp-foils-scheme-smuggle-over-5000-unapproved-peptides-us">CBP press release</a>), (b) FDA&#39;s Sept 2025 &quot;Green List Import Alert&quot; specifically targets GLP-1 API imports, and (c) Chinese hormone/peptide import volumes to the US are visible in customs data — roughly doubled to $328M in the first three quarters of 2025 per <a href="https://www.chinatalk.media/p/chinese-peptides">ChinaTalk analysis</a> — which means CBP has every incentive to invest more in interdiction, not less.</p>
 <p>Realistic US-based contract-synthesis alternatives — none of which will openly sell GLP-1 API under RUO framing, and all of which are priced at institutional rates, not gray-market rates:</p>
 <table>
@@ -420,7 +608,7 @@
 </ul>
 <p><strong>Concrete recommendation for §2:</strong> single-source AgeREcode for non-GLP-1 SKUs at MOQ the founder can absorb, dual-source with a US catalog-peptide supplier (LifeTein or AAPPTec are the most responsive to small LLCs; Bachem for premium-priced SKUs where margin can absorb it). Skip the GLP-1 class until enforcement stabilizes.</p>
 <hr>
-<h2>3. Regulatory + Enforcement Environment 2024–2026</h2>
+<h2 id="3-regulatory-enforcement-environment-20242026"><a class="anchor" href="#3-regulatory-enforcement-environment-20242026" aria-hidden="true">#</a>3. Regulatory + Enforcement Environment 2024–2026</h2>
 <h3>3.1 Why Bench Grade is not a compounding pharmacy</h3>
 <p>FD&amp;C Act <strong>Section 503A</strong> governs state-licensed compounding pharmacies compounding for individual patients with a prescription. <strong>Section 503B</strong> governs FDA-registered outsourcing facilities compounding in bulk without patient-specific prescriptions. Bench Grade is <strong>neither</strong> — it is a reagent wholesaler selling non-GMP research chemicals to other entities, not compounding finished drug products for human use. That is the entire legal structure supporting the RUO wedge, and it only holds if the product copy, marketing, and customer behavior all support &quot;reagent, not drug.&quot;</p>
 <p>The FDA explicitly does not accept &quot;RUO&quot; as a shield when other evidence points the other way. From the <a href="https://www.healthlawalliance.com/blog/fda-targets-glp-1-and-peptide-compounding-advertising-and-research-use-only-labeling">Health Law Alliance analysis of the FDA warning letters</a>: the disclaimer is &quot;considered a ruse by the FDA if any other evidence suggests human consumption.&quot; Other evidence includes dosing guides, injection protocols, testimonials, before/after imagery, bundled kits with syringes and bacteriostatic water, Telegram/Discord marketing, oral/capsule product lines, social-media &quot;benefits&quot; claims, and price structures keyed to human-dose increments.</p>
@@ -460,7 +648,7 @@
 <p>CBP Cincinnati&#39;s December 2025 operation intercepted approximately <strong>5,000 individual peptide shipments</strong> across 300 master cartons, mis-manifested as unrelated goods, from a single Chinese shipper (<a href="https://www.cbp.gov/newsroom/local-media-release/cincinnati-cbp-foils-scheme-smuggle-over-5000-unapproved-peptides-us">CBP release</a>). Interdiction is not uniform — Louisville, JFK, LAX, and Chicago ORD are the other major express-consignment inbound ports for this category.</p>
 <p><strong>Realistic seizure rates are unknowable publicly</strong> but inference from visible seizure volumes plus visible import volumes ($328M through Q3 2025 from <a href="https://www.chinatalk.media/p/chinese-peptides">ChinaTalk</a>) suggests a small percentage of shipments are intercepted — but the intercepted shipments are concentrated in the GLP-1 class, and that concentration is rising. A direct-import model concentrated in GLP-1 SKUs from China is increasingly exposed.</p>
 <hr>
-<h2>4. SEO + Keyword Landscape</h2>
+<h2 id="4-seo-keyword-landscape"><a class="anchor" href="#4-seo-keyword-landscape" aria-hidden="true">#</a>4. SEO + Keyword Landscape</h2>
 <h3>4.1 Top commercial-intent keywords</h3>
 <p><strong>Honest disclaimer: specific CPC and difficulty numbers require a paid tool (SEMrush/Ahrefs) with a live account.</strong> The numbers below that are citable come from <a href="https://www.peptidedeck.com/blog/bpc-157-vendor-review-2026">Peptide Dossier&#39;s 2026 State of Peptides report</a>, which aggregates DataForSEO. Numbers not explicitly cited are inferred from search behavior and should be validated with a paid tool before the founder commits spend.</p>
 <p>Verified data points:</p>
@@ -548,7 +736,7 @@ Tools:
  └─ /tools/hplc-method-reference
 </code></pre>
 <hr>
-<h2>5. Pricing Models in the Wild</h2>
+<h2 id="5-pricing-models-in-the-wild"><a class="anchor" href="#5-pricing-models-in-the-wild" aria-hidden="true">#</a>5. Pricing Models in the Wild</h2>
 <p>The research-peptide category has four visible pricing archetypes. The founder&#39;s 56-SKU plan maps cleanly to the tiered-volume model.</p>
 <h3>5.1 Flat markup (ex-Peptide Sciences template)</h3>
 <ul>
@@ -586,7 +774,7 @@ Tools:
 </ul>
 <p>The honest pricing recipe for the founder: price <strong>3 points below the Limitless Life Nootropics median</strong> on the classic SKUs at launch, hold at Swiss Chems / Pure Rawz median on the niche ones, and <strong>skip GLP-1 entirely</strong>. Revisit pricing monthly for the first six months.</p>
 <hr>
-<h2>6. Branding + Differentiation</h2>
+<h2 id="6-branding-differentiation"><a class="anchor" href="#6-branding-differentiation" aria-hidden="true">#</a>6. Branding + Differentiation</h2>
 <h3>6.1 Current category aesthetic split</h3>
 <ul>
 <li><strong>Gym-bro / muscle aesthetic</strong>: Amino Asylum (pre-raid), Swiss Chems, Element Sarms. Bold red/black, kettlebell icons, &quot;lab-tested&quot; badges that visually resemble supplement-industry trust seals.</li>
@@ -627,7 +815,7 @@ Tools:
 </ul>
 <p><strong>Recommendation:</strong> use full scientific naming including salt form and purity grade (Sigma pattern) on the 50 non-GLP-1 SKUs. Do not launch the GLP-1 SKUs at all. If the founder eventually launches them, use the real INN (semaglutide, tirzepatide) rather than a code, and gate the SKUs behind a real institutional-researcher verification; this is paradoxically safer than code names because it drops the &quot;intent to deceive&quot; element.</p>
 <hr>
-<h2>7. Go-to-Market Recommendations (90-day plan)</h2>
+<h2 id="7-go-to-market-recommendations-90-day-plan"><a class="anchor" href="#7-go-to-market-recommendations-90-day-plan" aria-hidden="true">#</a>7. Go-to-Market Recommendations (90-day plan)</h2>
 <h3>7.1 Three positioning options, ranked by differentiation strength</h3>
 <p><strong>Option A — &quot;The reagent catalog for peptide research&quot; (strongest)</strong></p>
 <ul>
@@ -692,7 +880,7 @@ Tools:
 <li><strong>Supplier quality failure</strong> (one bad AgeREcode lot kills reputation). Mitigation: every lot Janoshik-tested before it hits inventory; no batch released if HPLC &lt; 98%; written kill-switch in the supplier agreement.</li>
 </ol>
 <hr>
-<h2>Appendices</h2>
+<h2 id="appendices"><a class="anchor" href="#appendices" aria-hidden="true">#</a>Appendices</h2>
 <h3>A. Sources cited</h3>
 <ul>
 <li><a href="https://www.fda.gov/inspections-compliance-enforcement-and-criminal-investigations/warning-letters">FDA: Summit Research Peptides warning letter, Dec 10 2024</a></li>
@@ -782,7 +970,10 @@ Tools:
 <li><strong>Keyword CPC data</strong> — free-tool screenshots in the research window did not expose reliable CPC numbers. Validate via Ahrefs/SEMrush before spending.</li>
 <li><strong>Precise coded-name mappings</strong> (e.g. &quot;GLP-1 R&quot; → retatrutide) — vendors reshuffle coded names frequently; research-window sources referenced the general pattern but did not expose a stable mapping. Verify against live competitor listings before adopting any code-name strategy — which, again, is not recommended.</li>
 </ul>
-</main>
-<footer>Generated 2026-04-23 from <code>research/*.md</code>. Rebuild: <code>node scripts/build-briefs.mjs</code>.</footer>
+</div>
+  </article>
+</div>
+
+<footer>Generated 2026-04-23 · source <code>research/market-landscape.md</code> · rebuild <code>node scripts/build-briefs.mjs</code></footer>
 </body>
 </html>

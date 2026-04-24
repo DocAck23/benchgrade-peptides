@@ -11,7 +11,9 @@ import {
 import type { CatalogProduct, CatalogVariant } from "@/lib/catalog/data";
 import type { CartApi, CartItem } from "./types";
 
-const STORAGE_KEY = "bgp.cart.v1";
+// Bump the storage key on schema changes so stale carts from the
+// pre-pack-tier era don't resurface as broken line items.
+const STORAGE_KEY = "bgp.cart.v2";
 const CartContext = createContext<CartApi | null>(null);
 
 function readStoredItems(): CartItem[] {
@@ -26,6 +28,8 @@ function readStoredItems(): CartItem[] {
         x &&
         typeof x.sku === "string" &&
         typeof x.product_slug === "string" &&
+        typeof x.pack_size === "number" &&
+        x.pack_size > 0 &&
         typeof x.quantity === "number" &&
         x.quantity > 0
     );
@@ -85,6 +89,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           category_slug: product.category_slug,
           name: product.name,
           size_mg: variant.size_mg,
+          pack_size: variant.pack_size,
           unit_price: variant.retail_price,
           quantity,
           vial_image: product.vial_image,

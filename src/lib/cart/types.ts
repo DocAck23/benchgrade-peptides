@@ -5,8 +5,13 @@ export interface CartItem {
   product_slug: string;
   category_slug: string;
   name: string;
+  /** Dose in mg (per vial). Mirrors product.dose_mg. */
   size_mg: number;
+  /** Vials in this pack (1 / 5 / 10 for launch). */
+  pack_size: number;
+  /** Retail price for one whole pack (USD). */
   unit_price: number;
+  /** Number of packs of this variant in the cart. */
   quantity: number;
   vial_image: string;
 }

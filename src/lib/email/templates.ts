@@ -26,8 +26,12 @@ export function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
+function packLabel(i: CartItem): string {
+  return `${i.pack_size}-vial pack (${i.size_mg}mg ea.)`;
+}
+
 function line(i: CartItem): string {
-  return `${i.name} — ${i.size_mg}mg × ${i.quantity}  ${formatPrice(
+  return `${i.name} — ${packLabel(i)} × ${i.quantity}  ${formatPrice(
     i.unit_price * i.quantity * 100
   )}`;
 }
@@ -92,7 +96,7 @@ ${SITE_URL}
       <td style="padding:10px 0;border-bottom:1px solid #d7d1c4;">
         <div style="font-family:Geist,system-ui,sans-serif;font-size:15px;color:#1A1A1A;">${escapeHtml(i.name)}</div>
         <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#5a5a5a;">
-          ${i.size_mg}mg · ${escapeHtml(i.sku)} × ${i.quantity}
+          ${i.pack_size}-vial pack · ${i.size_mg}mg ea. · ${escapeHtml(i.sku)} × ${i.quantity}
         </div>
       </td>
       <td style="padding:10px 0;border-bottom:1px solid #d7d1c4;text-align:right;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:14px;color:#1A1A1A;white-space:nowrap;">

@@ -144,13 +144,13 @@ export function CartDrawer() {
                         type="button"
                         onClick={() => removeItem(item.sku)}
                         className="text-xs text-ink-muted hover:text-oxblood shrink-0"
-                        aria-label={`Remove ${item.name} ${item.size_mg}mg from cart`}
+                        aria-label={`Remove ${item.name} ${item.pack_size}-vial pack from cart`}
                       >
                         Remove
                       </button>
                     </div>
                     <div className="font-mono-data text-xs text-ink-muted mb-2">
-                      {item.size_mg}mg · {item.sku}
+                      {item.pack_size}-vial pack · {item.size_mg}mg ea. · {item.sku}
                     </div>
                     <div className="flex items-center justify-between gap-2">
                       <div className="inline-flex items-center border rule">

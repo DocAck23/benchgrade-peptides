@@ -147,7 +147,7 @@ export function CheckoutPageClient() {
               {items.map((item) => (
                 <li key={item.sku} className="flex justify-between gap-2">
                   <span className="truncate">
-                    {item.name} · {item.size_mg}mg × {item.quantity}
+                    {item.name} · {item.pack_size}-vial pack × {item.quantity}
                   </span>
                   <span className="font-mono-data text-ink shrink-0">
                     {formatPrice(item.unit_price * item.quantity * 100)}

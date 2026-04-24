@@ -68,7 +68,7 @@ export function CartPageClient() {
                   </button>
                 </div>
                 <div className="font-mono-data text-xs text-ink-muted mb-3">
-                  {item.size_mg}mg · {item.sku} · {formatPrice(item.unit_price * 100)} ea.
+                  {item.pack_size}-vial pack · {item.size_mg}mg ea. · {item.sku} · {formatPrice((item.unit_price / item.pack_size) * 100)}/vial
                 </div>
                 <div className="mt-auto flex items-center justify-between gap-2">
                   <div className="inline-flex items-center border rule">

@@ -40,6 +40,7 @@ interface OrderItem {
   sku: string;
   name: string;
   size_mg: number;
+  pack_size: number;
   unit_price: number;
   quantity: number;
   product_slug: string;
@@ -161,7 +162,7 @@ export default async function AdminOrderPage({
               <div>
                 <div className="text-ink">{item.name}</div>
                 <div className="font-mono-data text-xs text-ink-muted">
-                  {item.size_mg}mg · {item.sku} × {item.quantity}
+                  {item.pack_size}-vial pack · {item.size_mg}mg ea. · {item.sku} × {item.quantity}
                 </div>
               </div>
               <span className="font-mono-data text-sm text-ink">

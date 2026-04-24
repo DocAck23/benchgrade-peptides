@@ -142,6 +142,7 @@ function resolveCartOnServer(
       category_slug: match.category_slug,
       name: match.name,
       size_mg: variant.size_mg,
+      pack_size: variant.pack_size,
       unit_price: variant.retail_price,
       quantity: qty,
       vial_image: match.vial_image,
