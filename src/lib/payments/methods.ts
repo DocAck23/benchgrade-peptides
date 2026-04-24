@@ -32,7 +32,12 @@ export function enabledPaymentMethods(): PaymentMethod[] {
     !!process.env.WIRE_ROUTING &&
     !!process.env.WIRE_ACCOUNT;
   const zelleReady = !!process.env.ZELLE_ID;
-  const cryptoReady = !!process.env.NOWPAYMENTS_API_KEY;
+  // Crypto requires BOTH the API key (to create invoices) AND the IPN
+  // secret (to verify incoming webhooks). Without the secret, a real
+  // payment would clear at NOWPayments but never flip the order to
+  // funded on our side — the customer pays and the order stalls.
+  const cryptoReady =
+    !!process.env.NOWPAYMENTS_API_KEY && !!process.env.NOWPAYMENTS_IPN_SECRET;
 
   return DISPLAY_ORDER.filter((m) => {
     if (m === "wire" || m === "ach") return wireReady;

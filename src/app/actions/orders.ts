@@ -279,12 +279,28 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
     acknowledged_at,
   });
   if (ackError) {
-    // If the mirror failed we've shipped an order without a standalone
-    // compliance row — surface the error so ops can reconcile rather
-    // than silently log it.
+    // Two-phase write compensation: the order row already landed but
+    // the compliance-evidence mirror didn't. We can't ship without
+    // that row, and if we leave the order behind the customer will
+    // retry and we'll end up with duplicates. Best-effort delete the
+    // order before returning.
+    //
+    // NOT a real transaction — Supabase-js can't open one — but close
+    // enough pre-launch. Long-term fix: move both writes into a single
+    // Postgres RPC `submit_order()` wrapped in BEGIN/COMMIT.
+    const { error: compensationError } = await supa
+      .from("orders")
+      .delete()
+      .eq("order_id", order_id);
+    if (compensationError) {
+      console.error(
+        "[submitOrder] CRITICAL: ack mirror failed AND order rollback failed",
+        { order_id, ackError: ackError.message, compensationError: compensationError.message }
+      );
+    }
     return {
       ok: false,
-      error: `RUO acknowledgment mirror failed: ${ackError.message}. Contact support.`,
+      error: `Order submission failed at compliance step. Please retry in a minute; if it persists, email admin@benchgradepeptides.com with any reference you have.`,
     };
   }
 

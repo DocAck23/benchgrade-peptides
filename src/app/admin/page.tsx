@@ -5,6 +5,7 @@ import { isAdmin } from "@/lib/admin/auth";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/utils";
 import { LogoutButton } from "./LogoutButton";
+import { isPaymentMethod } from "@/lib/payments/methods";
 
 export const metadata: Metadata = {
   title: "Admin",
@@ -43,9 +44,18 @@ function safeNarrow(row: unknown): OrderRow | null {
     if (typeof qty !== "number") return null;
     items.push({ quantity: qty });
   }
+  // Accept either the enum values or null (legacy rows). Any other
+  // string is a sign of schema drift — reject the whole row rather
+  // than render garbage.
   const pm = r.payment_method;
-  const paymentMethod: string | null =
-    typeof pm === "string" && pm.length > 0 ? pm : null;
+  let paymentMethod: string | null;
+  if (pm === null || pm === undefined) {
+    paymentMethod = null;
+  } else if (isPaymentMethod(pm)) {
+    paymentMethod = pm;
+  } else {
+    return null;
+  }
   return {
     order_id: r.order_id,
     customer: { name: customer.name, email: customer.email },

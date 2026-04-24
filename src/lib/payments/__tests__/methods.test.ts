@@ -31,6 +31,7 @@ describe("payment methods — enum + feature flags", () => {
       delete process.env.WIRE_ACCOUNT;
       delete process.env.ZELLE_ID;
       delete process.env.NOWPAYMENTS_API_KEY;
+      delete process.env.NOWPAYMENTS_IPN_SECRET;
     });
     afterEach(() => {
       process.env = { ...orig };
@@ -54,9 +55,17 @@ describe("payment methods — enum + feature flags", () => {
       expect(enabledPaymentMethods()).toContain("zelle");
     });
 
-    it("enables crypto when NOWPAYMENTS_API_KEY is set", () => {
+    it("enables crypto only when BOTH NOWPAYMENTS_API_KEY and NOWPAYMENTS_IPN_SECRET are set", () => {
       process.env.NOWPAYMENTS_API_KEY = "test-key";
+      expect(enabledPaymentMethods()).not.toContain("crypto");
+      process.env.NOWPAYMENTS_IPN_SECRET = "test-secret";
       expect(enabledPaymentMethods()).toContain("crypto");
+    });
+
+    it("hides crypto if IPN secret is missing even with the API key", () => {
+      process.env.NOWPAYMENTS_API_KEY = "test-key";
+      // secret intentionally missing
+      expect(enabledPaymentMethods()).not.toContain("crypto");
     });
 
     it("hides wire + ach if any of the WIRE_* quartet is missing", () => {
@@ -75,6 +84,7 @@ describe("payment methods — enum + feature flags", () => {
       process.env.WIRE_ACCOUNT = "d";
       process.env.ZELLE_ID = "e";
       process.env.NOWPAYMENTS_API_KEY = "f";
+      process.env.NOWPAYMENTS_IPN_SECRET = "g";
       // Display order: zelle, crypto, ach, wire — fastest UX first.
       expect(enabledPaymentMethods()).toEqual(["zelle", "crypto", "ach", "wire"]);
     });

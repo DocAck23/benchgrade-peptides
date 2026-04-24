@@ -5,6 +5,8 @@ import { isAdmin } from "@/lib/admin/auth";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/utils";
 import { StatusControls } from "./StatusControls";
+import { isPaymentMethod } from "@/lib/payments/methods";
+import { isValidStatus } from "@/lib/orders/status";
 
 export const metadata: Metadata = {
   title: "Order",
@@ -59,6 +61,97 @@ interface OrderRow {
   updated_at: string;
 }
 
+/**
+ * Strict runtime narrowing — refuse to render anything that isn't
+ * shaped like an OrderRow. Previously this page used `data as OrderRow`
+ * which silently rendered garbage on any schema drift. Now a bad row
+ * returns null and the page shows an explicit error instead of crashing
+ * at the moment ops most needs the dashboard.
+ */
+function narrowOrderRow(row: unknown): OrderRow | null {
+  if (!row || typeof row !== "object") return null;
+  const r = row as Record<string, unknown>;
+
+  if (typeof r.order_id !== "string") return null;
+  if (typeof r.subtotal_cents !== "number") return null;
+  if (typeof r.created_at !== "string") return null;
+  if (typeof r.updated_at !== "string") return null;
+  if (typeof r.status !== "string" || !isValidStatus(r.status)) return null;
+
+  const pm = r.payment_method;
+  let paymentMethod: string | null;
+  if (pm === null || pm === undefined) paymentMethod = null;
+  else if (isPaymentMethod(pm)) paymentMethod = pm;
+  else return null;
+
+  const customer = r.customer as Record<string, unknown> | null;
+  if (
+    !customer ||
+    typeof customer.name !== "string" ||
+    typeof customer.email !== "string" ||
+    typeof customer.ship_address_1 !== "string" ||
+    typeof customer.ship_city !== "string" ||
+    typeof customer.ship_state !== "string" ||
+    typeof customer.ship_zip !== "string"
+  )
+    return null;
+
+  if (!Array.isArray(r.items) || r.items.length === 0) return null;
+  const items: OrderItem[] = [];
+  for (const it of r.items) {
+    if (!it || typeof it !== "object") return null;
+    const i = it as Record<string, unknown>;
+    if (
+      typeof i.sku !== "string" ||
+      typeof i.name !== "string" ||
+      typeof i.size_mg !== "number" ||
+      typeof i.pack_size !== "number" ||
+      typeof i.unit_price !== "number" ||
+      typeof i.quantity !== "number" ||
+      typeof i.product_slug !== "string" ||
+      typeof i.category_slug !== "string"
+    )
+      return null;
+    items.push({
+      sku: i.sku,
+      name: i.name,
+      size_mg: i.size_mg,
+      pack_size: i.pack_size,
+      unit_price: i.unit_price,
+      quantity: i.quantity,
+      product_slug: i.product_slug,
+      category_slug: i.category_slug,
+    });
+  }
+
+  const ack = r.acknowledgment as Record<string, unknown> | null;
+  if (
+    !ack ||
+    typeof ack.certification_text !== "string" ||
+    typeof ack.certification_version !== "string" ||
+    typeof ack.certification_hash !== "string" ||
+    typeof ack.is_adult !== "boolean" ||
+    typeof ack.is_researcher !== "boolean" ||
+    typeof ack.accepts_ruo !== "boolean" ||
+    typeof ack.acknowledged_at !== "string" ||
+    typeof ack.ip !== "string" ||
+    typeof ack.user_agent !== "string"
+  )
+    return null;
+
+  return {
+    order_id: r.order_id,
+    customer: customer as unknown as Customer,
+    items,
+    subtotal_cents: r.subtotal_cents,
+    status: r.status,
+    payment_method: paymentMethod,
+    acknowledgment: ack as unknown as Acknowledgment,
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+  };
+}
+
 export default async function AdminOrderPage({
   params,
 }: {
@@ -89,7 +182,17 @@ export default async function AdminOrderPage({
     );
   }
   if (!data) notFound();
-  const order = data as OrderRow;
+  const order = narrowOrderRow(data);
+  if (!order) {
+    return (
+      <article className="max-w-4xl mx-auto px-6 py-10">
+        <p className="text-oxblood">
+          Order row has an unexpected shape. Schema drift suspected — check
+          Supabase directly. Row id: {id}
+        </p>
+      </article>
+    );
+  }
 
   return (
     <article className="max-w-4xl mx-auto px-6 lg:px-10 py-10 space-y-10">

@@ -4,6 +4,7 @@ import {
   verifyIpnSignature,
   mapPaymentStatusToOrderStatus,
 } from "@/lib/payments/nowpayments/webhook";
+import type { OrderStatus } from "@/lib/orders/status";
 
 /**
  * NOWPayments IPN (webhook) endpoint.
@@ -12,20 +13,16 @@ import {
  * Headers: x-nowpayments-sig (HMAC-SHA512 hex over canonicalized body)
  *
  * Flow:
- *   1. Read raw body + signature header.
- *   2. If NOWPAYMENTS_IPN_SECRET missing → 503 (dormant until env lands).
- *   3. Parse body, verify HMAC against the IPN secret. Reject 401 on any
- *      mismatch.
- *   4. Map NOWPayments `payment_status` → our order status.
- *   5. If the map returns a transition and the payment has an order_id
- *      (via NOWPayments `order_id` field we set at invoice creation),
- *      update orders.status in Supabase.
- *   6. Return 200 with `{ ok, applied, to }` for observability.
- *
- * Idempotency: the handler is idempotent in practice because status
- * transitions are set-to-constant ("funded", "cancelled", "refunded"),
- * and NOWPayments retries are bounded. We additionally refuse to
- * downgrade a shipped/funded order back to pending.
+ *   1. 503 if NOWPAYMENTS_IPN_SECRET env is missing (still dormant).
+ *   2. Parse + signature-verify; reject 401 on any mismatch.
+ *   3. Require body's order_id AND that the order in our DB is a
+ *      `crypto`-method order (refuse to touch Zelle/Wire/ACH orders).
+ *   4. Map NOWPayments payment_status -> our OrderStatus.
+ *   5. Apply the transition atomically: UPDATE ... WHERE status IN
+ *      (allowed source states) so a delayed/retried IPN can't
+ *      downgrade a shipped or refunded order, and concurrent IPNs
+ *      can't race past a terminal state.
+ *   6. 200 on success with { ok, applied, to } for observability.
  */
 
 export const dynamic = "force-dynamic";
@@ -40,12 +37,25 @@ interface NowpaymentsIpnBody {
   price_currency?: string;
 }
 
+/**
+ * Legal source states for each IPN-driven target. Anything not listed
+ * is refused (the UPDATE no-ops). Crucially `funded` is NOT a valid
+ * source for `cancelled`: once we've confirmed a payment, only an
+ * explicit refund workflow (admin action) can change it.
+ */
+const ALLOWED_SOURCES: Record<OrderStatus, OrderStatus[]> = {
+  funded: ["awaiting_payment", "awaiting_wire"],
+  cancelled: ["awaiting_payment", "awaiting_wire"],
+  refunded: ["funded"],
+  // These targets are never webhook-driven:
+  awaiting_payment: [],
+  awaiting_wire: [],
+  shipped: [],
+};
+
 export async function POST(req: Request) {
   const secret = process.env.NOWPAYMENTS_IPN_SECRET;
   if (!secret) {
-    // Dormant path — crypto still disabled. Return a 503 so NOWPayments
-    // retries later (in case the env lands before the dashboard notices),
-    // but don't 200 to avoid marking the IPN as "delivered" prematurely.
     return NextResponse.json(
       { ok: false, error: "Webhook not configured." },
       { status: 503 }
@@ -76,7 +86,7 @@ export async function POST(req: Request) {
 
   const target = mapPaymentStatusToOrderStatus(paymentStatus);
   if (!target) {
-    // Interim state (waiting/confirming). Nothing to do.
+    // Interim state (waiting / confirming / sending). No-op.
     return NextResponse.json({ ok: true, applied: false, payment_status: paymentStatus });
   }
 
@@ -88,11 +98,13 @@ export async function POST(req: Request) {
     );
   }
 
-  // Defensive: don't downgrade a shipped or cancelled/refunded order
-  // back to funded just because a delayed IPN arrived.
+  // Bind: only apply an IPN transition to an order that was actually
+  // submitted via the crypto method. Prevents a forged-or-replayed IPN
+  // (even one with a valid sig) from mutating a Zelle/Wire/ACH order
+  // whose UUID happened to match.
   const { data: existing, error: selectError } = await supa
     .from("orders")
-    .select("status")
+    .select("status, payment_method")
     .eq("order_id", orderId)
     .maybeSingle();
   if (selectError) {
@@ -102,31 +114,47 @@ export async function POST(req: Request) {
     );
   }
   if (!existing) {
+    return NextResponse.json({ ok: false, error: "Unknown order_id." }, { status: 404 });
+  }
+  if (existing.payment_method !== "crypto") {
     return NextResponse.json(
-      { ok: false, error: "Unknown order_id." },
-      { status: 404 }
+      {
+        ok: false,
+        error: "Order was not a crypto order; IPN refused.",
+      },
+      { status: 409 }
     );
   }
 
-  const TERMINAL: string[] = ["shipped", "cancelled", "refunded"];
-  if (TERMINAL.includes(existing.status)) {
-    return NextResponse.json({
-      ok: true,
-      applied: false,
-      reason: `Order already ${existing.status}; no transition.`,
-    });
+  // Atomic conditional update: only succeeds if current.status is in
+  // the legal source-states for the target. Stops delayed/retried IPNs
+  // from pushing us backwards or re-triggering a terminal transition.
+  const allowedSources = ALLOWED_SOURCES[target];
+  if (allowedSources.length === 0) {
+    return NextResponse.json(
+      { ok: true, applied: false, reason: "IPN target is not a legal webhook transition." }
+    );
   }
-
-  const { error: updateError } = await supa
+  const { data: updated, error: updateError } = await supa
     .from("orders")
     .update({ status: target })
-    .eq("order_id", orderId);
+    .eq("order_id", orderId)
+    .in("status", allowedSources)
+    .select("status");
   if (updateError) {
     return NextResponse.json(
       { ok: false, error: `Update failed: ${updateError.message}` },
       { status: 500 }
     );
   }
-
-  return NextResponse.json({ ok: true, applied: true, to: target });
+  const applied = Array.isArray(updated) && updated.length > 0;
+  return NextResponse.json({
+    ok: true,
+    applied,
+    to: applied ? target : undefined,
+    from: applied ? undefined : existing.status,
+    reason: applied
+      ? undefined
+      : `No-op: status ${existing.status} is not a legal source for ${target}.`,
+  });
 }
