@@ -13,6 +13,11 @@ import { SupabaseRateLimitStore } from "@/lib/ratelimit/supabase-store";
 import { MemoryRateLimitStore } from "@/lib/ratelimit/memory-store";
 import { enforceOrderRateLimit } from "@/lib/ratelimit/enforce";
 import { resolveClientIp } from "@/lib/ratelimit/ip";
+import {
+  PAYMENT_METHODS,
+  enabledPaymentMethods,
+  type PaymentMethod,
+} from "@/lib/payments/methods";
 
 // Dev-only fallback store — in prod we require Supabase-backed counting.
 const devMemoryStore = new MemoryRateLimitStore();
@@ -62,6 +67,7 @@ export interface SubmitOrderInput {
   customer: CustomerInfo;
   items: ClientCartLine[];
   acknowledgment: ClientAcknowledgment;
+  payment_method: PaymentMethod;
 }
 
 export interface SubmitOrderResult {
@@ -116,10 +122,13 @@ const AcknowledgmentSchema = z.object({
   accepts_ruo: z.literal(true, { message: "RUO certification is required." }),
 });
 
+const PaymentMethodSchema = z.enum(PAYMENT_METHODS);
+
 const SubmitOrderSchema = z.object({
   customer: CustomerSchema,
   items: z.array(CartLineSchema).min(1, "Cart is empty.").max(20, "Cart too large."),
   acknowledgment: AcknowledgmentSchema,
+  payment_method: PaymentMethodSchema,
 });
 
 function resolveCartOnServer(
@@ -183,7 +192,17 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
     return { ok: false, error: first };
   }
   const validInput = parsed.data;
-  const { acknowledgment } = validInput;
+  const { acknowledgment, payment_method } = validInput;
+
+  // Second gate: even if the client sent a valid enum value, the method
+  // must be ENABLED in the current env. Stops an old form or bad actor
+  // from submitting "crypto" before NOWPAYMENTS_API_KEY lands.
+  if (!enabledPaymentMethods().includes(payment_method)) {
+    return {
+      ok: false,
+      error: `Payment method "${payment_method}" is not currently available. Please choose another.`,
+    };
+  }
 
   const resolved = resolveCartOnServer(validInput.items);
   if ("error" in resolved) return { ok: false, error: resolved.error };
@@ -212,6 +231,7 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
     customer: validInput.customer,
     items: resolved.items,
     subtotal_cents: resolved.subtotal_cents,
+    payment_method,
     acknowledgment: {
       certification_text,
       certification_version: CERTIFICATION_VERSION,
@@ -223,7 +243,7 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
       ip,
       user_agent: userAgent,
     },
-    status: "awaiting_wire" as const,
+    status: "awaiting_payment" as const,
     created_at: acknowledged_at,
   };
 
@@ -279,6 +299,7 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
       customer: validInput.customer,
       items: resolved.items,
       subtotal_cents: resolved.subtotal_cents,
+      payment_method,
     };
     const customerEmail = orderConfirmationEmail(emailCtx);
     const adminEmail = adminOrderNotification(emailCtx);

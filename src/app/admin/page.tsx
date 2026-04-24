@@ -52,7 +52,8 @@ function safeNarrow(row: unknown): OrderRow | null {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  awaiting_wire: "Awaiting wire",
+  awaiting_payment: "Awaiting payment",
+  awaiting_wire: "Awaiting wire", // legacy fallback for pre-rename rows
   funded: "Funded",
   shipped: "Shipped",
   cancelled: "Cancelled",
@@ -60,6 +61,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_CLASSES: Record<string, string> = {
+  awaiting_payment: "bg-oxblood/10 text-oxblood",
   awaiting_wire: "bg-oxblood/10 text-oxblood",
   funded: "bg-teal/10 text-teal",
   shipped: "bg-ink/10 text-ink",

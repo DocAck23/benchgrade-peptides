@@ -6,8 +6,13 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart/CartContext";
 import { RUOGate, type RUOAcknowledgmentPayload } from "@/components/compliance/RUOGate";
 import { submitOrder, type CustomerInfo } from "@/app/actions/orders";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, cn } from "@/lib/utils";
 import { Callout } from "@/components/ui";
+import {
+  type PaymentMethod,
+  paymentMethodLabel,
+  paymentMethodBlurb,
+} from "@/lib/payments/methods";
 
 const EMPTY: CustomerInfo = {
   name: "",
@@ -22,10 +27,18 @@ const EMPTY: CustomerInfo = {
   notes: "",
 };
 
-export function CheckoutPageClient() {
+interface CheckoutPageClientProps {
+  /** Methods the server has confirmed are configured + available. */
+  availableMethods: PaymentMethod[];
+}
+
+export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps) {
   const router = useRouter();
   const { items, subtotal, itemCount, clear } = useCart();
   const [form, setForm] = useState<CustomerInfo>(EMPTY);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "">(
+    availableMethods[0] ?? ""
+  );
   const [ruoOpen, setRuoOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +57,20 @@ export function CheckoutPageClient() {
     );
   }
 
+  // Hard guard — the UI should never let them submit without a method,
+  // but the server-side enum validation is the authoritative gate.
+  if (availableMethods.length === 0) {
+    return (
+      <article className="max-w-3xl mx-auto px-6 lg:px-10 py-20 text-center">
+        <h1 className="font-display text-3xl text-ink mb-4">Payments temporarily unavailable.</h1>
+        <p className="text-ink-soft mb-6">
+          No payment methods are currently configured on our end. Please email
+          admin@benchgradepeptides.com to complete your order manually, or try again shortly.
+        </p>
+      </article>
+    );
+  }
+
   const update = <K extends keyof CustomerInfo>(key: K, value: CustomerInfo[K]) => {
     setForm((f) => ({ ...f, [key]: value }));
   };
@@ -51,12 +78,17 @@ export function CheckoutPageClient() {
   const onReview = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (!paymentMethod) {
+      setError("Please choose a payment method.");
+      return;
+    }
     setRuoOpen(true);
   };
 
   const inFlight = useRef(false);
   const onAcknowledge = async (ack: RUOAcknowledgmentPayload) => {
     if (inFlight.current) return;
+    if (!paymentMethod) return;
     inFlight.current = true;
     setRuoOpen(false);
     setSubmitting(true);
@@ -69,6 +101,7 @@ export function CheckoutPageClient() {
           is_researcher: ack.is_researcher,
           accepts_ruo: ack.accepts_ruo,
         },
+        payment_method: paymentMethod,
       });
       if (!res.ok) {
         setError(res.error ?? "Order submission failed.");
@@ -111,6 +144,42 @@ export function CheckoutPageClient() {
             <Field label="ZIP" required value={form.ship_zip} onChange={(v) => update("ship_zip", v)} autoComplete="postal-code" />
           </Section>
 
+          <Section title="Payment method">
+            <fieldset
+              className="grid grid-cols-1 gap-2"
+              role="radiogroup"
+              aria-label="Payment method"
+            >
+              {availableMethods.map((m) => {
+                const selected = paymentMethod === m;
+                return (
+                  <label
+                    key={m}
+                    className={cn(
+                      "flex items-start gap-3 border rule p-3 cursor-pointer transition-colors",
+                      selected ? "border-ink bg-paper-soft" : "bg-paper hover:bg-paper-soft"
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="payment_method"
+                      value={m}
+                      checked={selected}
+                      onChange={() => setPaymentMethod(m)}
+                      className="mt-0.5 accent-ink"
+                    />
+                    <span className="flex-1">
+                      <span className="block text-sm text-ink">{paymentMethodLabel(m)}</span>
+                      <span className="block text-xs text-ink-muted mt-0.5">
+                        {paymentMethodBlurb(m)}
+                      </span>
+                    </span>
+                  </label>
+                );
+              })}
+            </fieldset>
+          </Section>
+
           <Section title="Notes (optional)">
             <Field
               label="Anything the lab should know"
@@ -120,9 +189,9 @@ export function CheckoutPageClient() {
             />
           </Section>
 
-          <Callout variant="ruo" title="Payment by bank transfer only">
-            No card processor. After you submit, we email wire instructions to the address above.
-            We ship the order once funds are received (usually 1–2 business days).
+          <Callout variant="ruo" title="Payment on confirmation">
+            No card processor. After you submit, we email you instructions for the method you chose.
+            Your order ships within 1-2 business days of payment confirmation.
           </Callout>
 
           {error && (
@@ -133,7 +202,7 @@ export function CheckoutPageClient() {
 
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || !paymentMethod}
             className="flex items-center justify-center w-full h-12 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-teal transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {submitting ? "Submitting…" : "Review RUO certification & submit"}

@@ -6,6 +6,11 @@ import { updateOrderStatus } from "@/app/actions/admin";
 import type { OrderStatus } from "@/lib/orders/status";
 
 const TRANSITIONS: Record<string, { label: string; target: OrderStatus; variant: "primary" | "ghost" | "destructive" }[]> = {
+  awaiting_payment: [
+    { label: "Mark funded", target: "funded", variant: "primary" },
+    { label: "Cancel", target: "cancelled", variant: "destructive" },
+  ],
+  // Legacy pre-rename orders can still be actioned via the same transitions.
   awaiting_wire: [
     { label: "Mark funded", target: "funded", variant: "primary" },
     { label: "Cancel", target: "cancelled", variant: "destructive" },
