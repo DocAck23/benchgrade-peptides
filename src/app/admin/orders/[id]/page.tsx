@@ -53,6 +53,7 @@ interface OrderRow {
   items: OrderItem[];
   subtotal_cents: number;
   status: string;
+  payment_method: string | null;
   acknowledgment: Acknowledgment;
   created_at: string;
   updated_at: string;
@@ -104,6 +105,11 @@ export default async function AdminOrderPage({
               Placed {new Date(order.created_at).toLocaleString()} · updated{" "}
               {new Date(order.updated_at).toLocaleString()}
             </div>
+            {order.payment_method && (
+              <div className="font-mono-data text-xs text-teal mt-2 uppercase tracking-wider">
+                Payment method: {order.payment_method}
+              </div>
+            )}
           </div>
           <StatusControls orderId={order.order_id} current={order.status} />
         </div>

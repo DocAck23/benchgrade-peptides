@@ -16,6 +16,8 @@ interface OrderRow {
   customer: { name: string; email: string };
   subtotal_cents: number;
   status: string;
+  /** Null only on legacy rows from before payment_method was first-class. */
+  payment_method: string | null;
   created_at: string;
   items: { quantity: number }[];
 }
@@ -41,11 +43,15 @@ function safeNarrow(row: unknown): OrderRow | null {
     if (typeof qty !== "number") return null;
     items.push({ quantity: qty });
   }
+  const pm = r.payment_method;
+  const paymentMethod: string | null =
+    typeof pm === "string" && pm.length > 0 ? pm : null;
   return {
     order_id: r.order_id,
     customer: { name: customer.name, email: customer.email },
     subtotal_cents: r.subtotal_cents,
     status: r.status,
+    payment_method: paymentMethod,
     created_at: r.created_at,
     items,
   };
@@ -86,7 +92,7 @@ export default async function AdminPage({
   } else {
     let query = supa
       .from("orders")
-      .select("order_id, customer, subtotal_cents, status, created_at, items")
+      .select("order_id, customer, subtotal_cents, status, payment_method, created_at, items")
       .order("created_at", { ascending: false })
       .limit(100);
     if (status) query = query.eq("status", status);
@@ -142,6 +148,7 @@ export default async function AdminPage({
                 <Th>Date</Th>
                 <Th>Customer</Th>
                 <Th>Items</Th>
+                <Th>Method</Th>
                 <Th>Total</Th>
                 <Th>Status</Th>
                 <Th aria-label="Action" />
@@ -164,6 +171,11 @@ export default async function AdminPage({
                     <Td>
                       <span className="font-mono-data text-xs">
                         {totalQty} {totalQty === 1 ? "vial" : "vials"}
+                      </span>
+                    </Td>
+                    <Td>
+                      <span className="font-mono-data text-xs text-ink-muted uppercase">
+                        {o.payment_method ?? "—"}
                       </span>
                     </Td>
                     <Td>
