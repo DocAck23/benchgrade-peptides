@@ -12,37 +12,34 @@ interface LogoProps {
   className?: string;
 }
 
-/** Intrinsic dimensions of `public/brand/logo-full.jpg`. Preserves aspect ratio. */
-const INTRINSIC_WIDTH = 1376;
-const INTRINSIC_HEIGHT = 768;
-const ASPECT = INTRINSIC_WIDTH / INTRINSIC_HEIGHT; // ≈ 1.79 : 1
+/**
+ * F6 logo (laurel wreath + chemist + "BENCH GRADE PEPTIDES" wordmark)
+ * traced as vector. Source: research/vial-templates/F6-maroon-vector.svg
+ * — maroon ink on transparent background, paints cleanly on the cream
+ * paper ground used across the site.
+ *
+ * Roughly square (4:3 from the cropped trace bbox). Width classes drive
+ * the visual size; height auto-scales by aspect ratio.
+ */
+const ASPECT = 918 / 654; // ≈ 1.40 : 1 — matches the F6-maroon-vector traced bbox
 
 const WIDTH_CLASSES: Record<NonNullable<LogoProps["size"]>, string> = {
-  sm: "w-24",
-  md: "w-36",
-  lg: "w-52",
-  xl: "w-56 md:w-72 lg:w-[340px]",
+  // Bumped sizes 2026-04-25 — F6 hero treatment, big and centered.
+  sm: "w-16",
+  md: "w-28",
+  lg: "w-40",
+  xl: "w-44 md:w-60 lg:w-[280px]",
 };
 
-/**
- * Bench Grade Peptides wordmark — Concept 5.
- *
- * Uses the approved Concept 5 rendered image as the source of truth for the
- * brand identity (peptide-bond chemistry mark + "BENCH GRADE PEPTIDES"
- * wordmark composed). Previously we ran an SVG approximation; switched to
- * the rendered image so the logo matches what was approved 1:1.
- *
- * The image background color (warm paper) is tuned to match our
- * `--color-paper` token so it blends cleanly into the header and footer.
- */
 export function Logo({ size = "md", asStatic = false, priority = false, className }: LogoProps) {
   const imageEl = (
     <Image
-      src="/brand/logo-full.png"
+      src="/brand/logo-f6.svg"
       alt="Bench Grade Peptides"
-      width={INTRINSIC_WIDTH}
-      height={INTRINSIC_HEIGHT}
+      width={918}
+      height={654}
       priority={priority}
+      unoptimized
       className="h-auto w-full select-none"
     />
   );
