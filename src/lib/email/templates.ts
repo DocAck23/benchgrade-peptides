@@ -13,6 +13,68 @@ interface OrderContext {
   payment_method: PaymentMethod;
 }
 
+// ---------- Editorial-direction email wrapper ----------
+// Spec §9 (Editorial direction) + §16.1 (locked tokens). Emails must use
+// system-font fallbacks only (no <link>/<style>/web fonts) so we approximate
+// Cinzel/Cormorant with Georgia, and Inter with Helvetica/Arial. Locked
+// tokens used inline: paper #FDFAF1, paper-soft #F4EBD7, wine #4A0E1A,
+// gold #B89254, ink #1A0506, ink-muted #6B5350, rule #D4C8A8.
+
+const RUO_DISCLAIMER =
+  "All products sold for laboratory research use only. Not for human or veterinary use. " +
+  "Not for diagnostic, therapeutic, or in-vivo experimental use. By accepting delivery, " +
+  "the recipient affirms research-only intent and assumes full responsibility for compliant handling.";
+
+interface EditorialEmailOpts {
+  title: string;
+  bodyHtml: string;
+  memo: string;
+  cta?: { label: string; href: string };
+}
+
+export function editorialEmailHtml(opts: EditorialEmailOpts): string {
+  const { title, bodyHtml, memo, cta } = opts;
+  const safeMemo = escapeHtml(memo);
+  const safeTitle = escapeHtml(title);
+  const ctaHtml = cta
+    ? `<tr><td align="center" style="padding:8px 32px 32px 32px;">
+        <a href="${escapeHtml(cta.href)}" style="display:inline-block;background:#4A0E1A;color:#FDFAF1;text-decoration:none;font-family:Georgia,'Times New Roman',serif;font-size:15px;letter-spacing:1px;text-transform:uppercase;padding:14px 28px;border:1px solid #4A0E1A;">${escapeHtml(cta.label)}</a>
+      </td></tr>`
+    : "";
+  return `<!doctype html>
+<html><body style="margin:0;padding:0;background:#FDFAF1;color:#1A0506;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FDFAF1;"><tr><td align="center" style="padding:32px 16px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#FDFAF1;">
+      <tr><td align="center" style="padding:8px 32px 16px 32px;">
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#6B5350;">Virtue of the Month · Honorable</div>
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;letter-spacing:4px;text-transform:uppercase;color:#4A0E1A;margin-top:10px;">Bench Grade Peptides</div>
+        <div style="height:1px;background:#B89254;margin:18px auto 0 auto;width:80px;"></div>
+      </td></tr>
+
+      <tr><td style="padding:24px 32px 8px 32px;">
+        <div style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;">Order ${safeMemo}</div>
+        <h1 style="font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:26px;line-height:1.25;color:#1A0506;margin:8px 0 0 0;">${safeTitle}</h1>
+      </td></tr>
+
+      <tr><td style="padding:16px 32px 8px 32px;font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.65;color:#1A0506;">
+        ${bodyHtml}
+      </td></tr>
+
+      ${ctaHtml}
+
+      <tr><td style="padding:0 32px;">
+        <div style="height:1px;background:#D4C8A8;margin:8px 0 0 0;"></div>
+      </td></tr>
+
+      <tr><td style="padding:18px 32px 28px 32px;font-family:Helvetica,Arial,sans-serif;font-size:11px;line-height:1.6;color:#6B5350;">
+        ${escapeHtml(RUO_DISCLAIMER)}
+        <div style="margin-top:10px;font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;">Bench Grade Peptides · Made in USA</div>
+      </td></tr>
+    </table>
+  </td></tr></table>
+</body></html>`;
+}
+
 /**
  * Escape arbitrary user-controlled text for safe HTML interpolation.
  * Every user-supplied substitution MUST pass through this — string
@@ -351,5 +413,225 @@ ${adminLink}
     <a href="${escapeHtml(adminLink)}" style="display:inline-block;margin-top:12px;background:#1A1A1A;color:#F7F4EE;text-decoration:none;padding:10px 18px;font-size:13px;">Open in admin →</a>
   </div>
 </body></html>`;
+  return { subject, text, html };
+}
+
+// ---------- Sprint 1 Task 3: lifecycle emails (Editorial direction) ----------
+
+function itemRowsHtmlEditorial(items: CartItem[]): string {
+  return items
+    .map(
+      (i) => `<tr>
+        <td style="padding:10px 0;border-bottom:1px solid #D4C8A8;font-family:Georgia,'Times New Roman',serif;font-size:14px;color:#1A0506;">
+          ${escapeHtml(i.name)}
+          <div style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:#6B5350;letter-spacing:1px;margin-top:2px;">
+            ${i.pack_size}-VIAL · ${i.size_mg}MG · ${escapeHtml(i.sku)} × ${i.quantity}
+          </div>
+        </td>
+        <td style="padding:10px 0;border-bottom:1px solid #D4C8A8;text-align:right;font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;color:#1A0506;white-space:nowrap;">
+          ${formatPrice(i.unit_price * i.quantity * 100)}
+        </td>
+      </tr>`
+    )
+    .join("");
+}
+
+export function paymentConfirmedEmail(ctx: OrderContext): {
+  subject: string;
+  text: string;
+  html: string;
+} {
+  const ref = ctx.order_id.slice(0, 8);
+  const memo = `BGP-${ref}`;
+  const subject = `Payment received — your order is being prepared · ${memo}`;
+  const customerName = escapeHtml(ctx.customer.name);
+  const itemsText = ctx.items.map(lineText).join("\n");
+  const total = formatPrice(ctx.subtotal_cents);
+  const portalUrl = `${SITE_URL}/account/orders/${ctx.order_id}`;
+
+  const text = [
+    `${ctx.customer.name} —`,
+    ``,
+    `Your payment has been received. Your stack moves into our packing queue and ships within 1–2 business days. We'll send a tracking number when your box leaves our lab.`,
+    ``,
+    `Order ${memo}`,
+    `--`,
+    itemsText,
+    ``,
+    `Total: ${total}`,
+    ``,
+    `View order: ${portalUrl}`,
+    ``,
+    RUO_DISCLAIMER,
+    ``,
+    `Bench Grade Peptides · Made in USA`,
+  ].join("\n");
+
+  const bodyHtml = `
+    <p style="margin:0 0 14px 0;">${customerName} —</p>
+    <p style="margin:0 0 14px 0;">Your payment has been received. Your stack moves into our packing queue and ships within 1–2 business days. We'll send a tracking number when your box leaves our lab.</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:18px;border-top:1px solid #1A0506;">
+      ${itemRowsHtmlEditorial(ctx.items)}
+      <tr>
+        <td style="padding-top:14px;font-family:Georgia,'Times New Roman',serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;">Total</td>
+        <td style="padding-top:14px;text-align:right;font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:18px;font-weight:700;color:#1A0506;">${total}</td>
+      </tr>
+    </table>`;
+
+  const html = editorialEmailHtml({
+    title: "Your payment has been received.",
+    bodyHtml,
+    memo,
+    cta: { label: "View order", href: portalUrl },
+  });
+
+  return { subject, text, html };
+}
+
+export interface ShippedContext extends OrderContext {
+  tracking_number: string;
+  tracking_carrier: "USPS" | "UPS" | "FedEx" | "DHL";
+  tracking_url: string;
+  coa_lot_urls: Array<{ sku: string; lot: string; url: string }>;
+}
+
+const STORAGE_PANEL_TEXT = `Storage & handling
+------------------
+Lyophilized vials: 2–8°C refrigerated (or –20°C for 6+ months).
+Light-protect; do not freeze-thaw repeatedly.
+Reconstitute only when ready to use; per-peptide reconstituted shelf
+life on the COA enclosed.`;
+
+export function orderShippedEmail(ctx: ShippedContext): {
+  subject: string;
+  text: string;
+  html: string;
+} {
+  const ref = ctx.order_id.slice(0, 8);
+  const memo = `BGP-${ref}`;
+  const subject = `Shipped — tracking inside · ${memo}`;
+  const customerName = escapeHtml(ctx.customer.name);
+  const portalUrl = `${SITE_URL}/account/orders/${ctx.order_id}`;
+
+  const coaTextLines = ctx.coa_lot_urls.length
+    ? ctx.coa_lot_urls
+        .map((c) => `  ${c.sku} · lot ${c.lot} — ${c.url}`)
+        .join("\n")
+    : `  COA available in your portal — ${portalUrl}`;
+
+  const text = [
+    `${ctx.customer.name} —`,
+    ``,
+    `Your order has shipped.`,
+    ``,
+    `Tracking`,
+    `--------`,
+    `Carrier: ${ctx.tracking_carrier}`,
+    `Number: ${ctx.tracking_number}`,
+    `Track: ${ctx.tracking_url}`,
+    ``,
+    STORAGE_PANEL_TEXT,
+    ``,
+    `Certificates of analysis`,
+    `------------------------`,
+    coaTextLines,
+    ``,
+    `Order ${memo}`,
+    `View in portal: ${portalUrl}`,
+    ``,
+    RUO_DISCLAIMER,
+    ``,
+    `Bench Grade Peptides · Made in USA`,
+  ].join("\n");
+
+  const coaHtml = ctx.coa_lot_urls.length
+    ? `<ul style="margin:8px 0 0 0;padding-left:18px;font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;color:#1A0506;">${ctx.coa_lot_urls
+        .map(
+          (c) =>
+            `<li style="margin-bottom:4px;">${escapeHtml(c.sku)} · lot ${escapeHtml(c.lot)} — <a href="${escapeHtml(c.url)}" style="color:#4A0E1A;text-decoration:underline;">view COA</a></li>`
+        )
+        .join("")}</ul>`
+    : `<p style="margin:8px 0 0 0;font-family:Georgia,'Times New Roman',serif;font-size:14px;color:#1A0506;">COA available in your portal — <a href="${escapeHtml(portalUrl)}" style="color:#4A0E1A;text-decoration:underline;">sign in to view</a>.</p>`;
+
+  const bodyHtml = `
+    <p style="margin:0 0 14px 0;">${customerName} —</p>
+    <p style="margin:0 0 18px 0;">Your order has shipped. Tracking and storage details below.</p>
+
+    <div style="background:#F4EBD7;border:1px solid #D4C8A8;padding:18px;margin:0 0 18px 0;">
+      <div style="font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;margin-bottom:8px;">Tracking</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;color:#1A0506;">
+        <tr><td style="width:90px;color:#6B5350;padding:2px 0;">Carrier</td><td>${escapeHtml(ctx.tracking_carrier)}</td></tr>
+        <tr><td style="width:90px;color:#6B5350;padding:2px 0;">Number</td><td><strong>${escapeHtml(ctx.tracking_number)}</strong></td></tr>
+        <tr><td style="width:90px;color:#6B5350;padding:2px 0;">Status</td><td><a href="${escapeHtml(ctx.tracking_url)}" style="color:#4A0E1A;text-decoration:underline;">Track shipment</a></td></tr>
+      </table>
+    </div>
+
+    <div style="background:#FDFAF1;border:1px solid #D4C8A8;padding:18px;margin:0 0 18px 0;">
+      <div style="font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;margin-bottom:8px;">Storage &amp; handling</div>
+      <p style="margin:0 0 8px 0;font-family:Georgia,'Times New Roman',serif;font-size:14px;line-height:1.6;color:#1A0506;">Lyophilized vials: 2–8°C refrigerated (or –20°C for 6+ months).</p>
+      <p style="margin:0 0 8px 0;font-family:Georgia,'Times New Roman',serif;font-size:14px;line-height:1.6;color:#1A0506;">Light-protect; do not freeze-thaw repeatedly.</p>
+      <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:14px;line-height:1.6;color:#1A0506;">Reconstitute only when ready to use; per-peptide reconstituted shelf life on the COA enclosed.</p>
+    </div>
+
+    <div>
+      <div style="font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;">Certificates of analysis</div>
+      ${coaHtml}
+    </div>`;
+
+  const html = editorialEmailHtml({
+    title: "Your order has shipped.",
+    bodyHtml,
+    memo,
+    cta: { label: "Track shipment", href: ctx.tracking_url },
+  });
+
+  return { subject, text, html };
+}
+
+export interface ClaimContext extends OrderContext {
+  magic_link_url: string;
+}
+
+export function accountClaimEmail(ctx: ClaimContext): {
+  subject: string;
+  text: string;
+  html: string;
+} {
+  const ref = ctx.order_id.slice(0, 8);
+  const memo = `BGP-${ref}`;
+  const subject = `Claim your Bench Grade portal — order ${memo}`;
+  const customerName = escapeHtml(ctx.customer.name);
+  const safeLink = escapeHtml(ctx.magic_link_url);
+
+  const text = [
+    `${ctx.customer.name} —`,
+    ``,
+    `Your portal is ready. Click the link below to claim your account and view this order, your COAs, tracking, and any future orders in one place.`,
+    ``,
+    `Claim your account:`,
+    ctx.magic_link_url,
+    ``,
+    `This link signs you in directly — no password to set. In the future, just request a magic link from /login and click any future magic link from us — same account, same order history.`,
+    ``,
+    `Order ${memo}`,
+    ``,
+    RUO_DISCLAIMER,
+    ``,
+    `Bench Grade Peptides · Made in USA`,
+  ].join("\n");
+
+  const bodyHtml = `
+    <p style="margin:0 0 14px 0;">${customerName} —</p>
+    <p style="margin:0 0 14px 0;">Your portal is ready. Claim your account to view this order, your certificates of analysis, tracking, and any future orders in one place.</p>
+    <p style="margin:0 0 14px 0;font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#6B5350;word-break:break-all;">${safeLink}</p>
+    <p style="margin:18px 0 0 0;font-size:13px;color:#4A2528;">This link signs you in directly — no password to set. Any future magic link from us opens the same account, with all your orders.</p>`;
+
+  const html = editorialEmailHtml({
+    title: "Claim your Bench Grade portal.",
+    bodyHtml,
+    memo,
+    cta: { label: "Claim your account", href: ctx.magic_link_url },
+  });
+
   return { subject, text, html };
 }
