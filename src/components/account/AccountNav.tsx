@@ -7,9 +7,9 @@ import { cn } from "@/lib/utils";
 /**
  * Customer portal nav (spec §5 portal route map).
  *
- * Active tabs: Dashboard, Orders, Subscription.
- * Coming-soon tabs: Messages, Referrals, Profile — rendered non-clickable
- * in `text-ink-muted cursor-not-allowed` with a tooltip per spec §16.4
+ * Active tabs: Dashboard, Orders, Subscription, Messages, Referrals.
+ * Coming-soon tab: Profile — rendered non-clickable in
+ * `text-ink-muted cursor-not-allowed` with a tooltip per spec §16.4
  * ("greyed but visible — every empty surface is a sales surface").
  */
 
@@ -40,8 +40,20 @@ const TABS: Tab[] = [
     match: (p) =>
       p === "/account/subscription" || p.startsWith("/account/subscription/"),
   },
-  { href: "#", label: "Messages", enabled: false },
-  { href: "#", label: "Referrals", enabled: false },
+  {
+    href: "/account/messages",
+    label: "Messages",
+    enabled: true,
+    match: (p) =>
+      p === "/account/messages" || p.startsWith("/account/messages/"),
+  },
+  {
+    href: "/account/referrals",
+    label: "Referrals",
+    enabled: true,
+    match: (p) =>
+      p === "/account/referrals" || p.startsWith("/account/referrals/"),
+  },
   { href: "#", label: "Profile", enabled: false },
 ];
 

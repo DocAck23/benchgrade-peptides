@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Flag, ShieldCheck, QrCode, Snowflake, Check } from "lucide-react";
@@ -12,6 +12,7 @@ import { Callout } from "@/components/ui";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/site";
 import { CardProcessorFootnote } from "@/components/checkout/CardProcessorFootnote";
 import { SubscriptionUpsellCard } from "@/components/checkout/SubscriptionUpsellCard";
+import { parseReferralCookie } from "@/lib/referrals/cookie";
 import {
   type PaymentMethod,
   paymentMethodLabel,
@@ -49,6 +50,29 @@ export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps
   const [ruoOpen, setRuoOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Sprint 3 Wave C — referral discount preview line.
+  //
+  // Cosmetic only: we read `bgp_ref` from `document.cookie` to show a "10% off"
+  // line above the Stack & Save / Subscription discounts. The cookie is
+  // HttpOnly in production, so this preview will only render when a non-
+  // HttpOnly mirror is set (e.g., dev/test). The authoritative discount is
+  // applied server-side in `submitOrder` based on the request cookie + the
+  // first-time-buyer check; we deliberately do NOT try to validate that here.
+  const [referralPreview, setReferralPreview] = useState<{
+    code: string;
+    discountCents: number;
+  } | null>(null);
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const attribution = parseReferralCookie(document.cookie);
+    if (!attribution) {
+      setReferralPreview(null);
+      return;
+    }
+    const discountCents = Math.round(subtotal * 100 * 0.1);
+    setReferralPreview({ code: attribution.code, discountCents });
+  }, [subtotal]);
 
   if (items.length === 0 && !submitting) {
     return (
@@ -251,6 +275,22 @@ export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps
                 {formatPrice(subtotal * 100)}
               </span>
             </div>
+            {referralPreview && (
+              <div
+                className="flex items-baseline justify-between"
+                data-testid="referral-discount-preview"
+              >
+                <span
+                  className="text-xs text-gold-dark italic"
+                  style={{ fontFamily: "var(--font-editorial)" }}
+                >
+                  Referred by friend
+                </span>
+                <span className="font-mono-data text-sm text-gold-dark">
+                  −{formatPrice(referralPreview.discountCents)}
+                </span>
+              </div>
+            )}
             {hasStackSave && (
               <div className="flex items-baseline justify-between">
                 <span className="text-xs text-gold-dark">

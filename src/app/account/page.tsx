@@ -76,6 +76,35 @@ export default async function AccountDashboardPage() {
     .order("created_at", { ascending: false })
     .limit(1);
 
+  // Sprint 3 Wave C — unread admin messages count for badge.
+  const { data: unreadMsgRows } = await supa
+    .from("messages")
+    .select("id")
+    .eq("customer_user_id", user.id)
+    .eq("sender", "admin")
+    .is("read_at", null);
+  const unreadCount = Array.isArray(unreadMsgRows) ? unreadMsgRows.length : 0;
+
+  // Sprint 3 Wave C — referral stats for dashboard card.
+  const [availableEntRes, successfulRefRes] = await Promise.all([
+    supa
+      .from("free_vial_entitlements")
+      .select("id")
+      .eq("customer_user_id", user.id)
+      .eq("status", "available"),
+    supa
+      .from("referrals")
+      .select("id")
+      .eq("referrer_user_id", user.id)
+      .in("status", ["shipped", "redeemed"]),
+  ]);
+  const availableEntitlements = Array.isArray(availableEntRes.data)
+    ? availableEntRes.data.length
+    : 0;
+  const successfulReferrals = Array.isArray(successfulRefRes.data)
+    ? successfulRefRes.data.length
+    : 0;
+
   const activeSub: SubscriptionRow | null =
     Array.isArray(subRows) &&
     subRows.length > 0 &&
@@ -213,20 +242,84 @@ export default async function AccountDashboardPage() {
             ctaLabel="Start a subscription"
           />
         )}
-        <PlaceholderCard
-          eyebrow="Messages"
-          headline="Direct line to the bench."
-          body="Order updates and lab notes will surface here. For now, contact us directly."
-          ctaHref="/contact"
-          ctaLabel="Contact us"
-        />
-        <PlaceholderCard
-          eyebrow="Referrals"
-          headline="Stack the bench."
-          body="Refer another researcher — both labs get a free vial credit. Coming soon."
+        <MessagesCard unreadCount={unreadCount} />
+        <ReferralsDashboardCard
+          availableEntitlements={availableEntitlements}
+          successfulReferrals={successfulReferrals}
         />
       </div>
     </article>
+  );
+}
+
+function MessagesCard({ unreadCount }: { unreadCount: number }) {
+  const hasUnread = unreadCount > 0;
+  return (
+    <section className="border rule bg-paper-soft p-6 flex flex-col">
+      <div className="flex items-center justify-between gap-2">
+        <div className="label-eyebrow text-ink-muted">Messages</div>
+        {hasUnread && (
+          <span
+            className="inline-flex items-center justify-center min-w-6 h-6 px-1.5 bg-wine text-paper border border-gold font-display uppercase text-[10px] tracking-[0.12em]"
+            aria-label={`${unreadCount} unread`}
+            data-testid="messages-unread-badge"
+          >
+            {unreadCount}
+          </span>
+        )}
+      </div>
+      <h3
+        className="mt-2 font-editorial text-2xl text-ink leading-snug"
+        style={{ fontFamily: "var(--font-editorial)" }}
+      >
+        {hasUnread ? "You have a new reply." : "Direct line to the bench."}
+      </h3>
+      <p className="mt-3 text-sm text-ink-soft flex-1">
+        {hasUnread
+          ? "Read what the lab sent over and keep the thread moving."
+          : "Order questions, COA requests, lab notes — we typically reply within one business day."}
+      </p>
+      <Link
+        href="/account/messages"
+        className="mt-4 inline-flex items-center font-display uppercase text-[11px] tracking-[0.14em] text-gold-dark hover:text-ink transition-colors duration-200 ease-out"
+      >
+        Open conversation →
+      </Link>
+    </section>
+  );
+}
+
+function ReferralsDashboardCard({
+  availableEntitlements,
+  successfulReferrals,
+}: {
+  availableEntitlements: number;
+  successfulReferrals: number;
+}) {
+  const hasActivity = availableEntitlements > 0 || successfulReferrals > 0;
+  return (
+    <section className="border rule bg-paper-soft p-6 flex flex-col">
+      <div className="label-eyebrow text-ink-muted">Referrals</div>
+      <h3
+        className="mt-2 font-editorial text-2xl text-ink leading-snug"
+        style={{ fontFamily: "var(--font-editorial)" }}
+      >
+        {availableEntitlements > 0
+          ? `${availableEntitlements} free vial${availableEntitlements === 1 ? "" : "s"} ready.`
+          : "Stack the bench."}
+      </h3>
+      <p className="mt-3 text-sm text-ink-soft flex-1">
+        {hasActivity
+          ? `${successfulReferrals} successful referral${successfulReferrals === 1 ? "" : "s"}. Redeem your free vials on your next order.`
+          : "Refer another researcher — they get 10% off, you earn a free vial when their order ships."}
+      </p>
+      <Link
+        href="/account/referrals"
+        className="mt-4 inline-flex items-center font-display uppercase text-[11px] tracking-[0.14em] text-gold-dark hover:text-ink transition-colors duration-200 ease-out"
+      >
+        View your referral link →
+      </Link>
+    </section>
   );
 }
 
