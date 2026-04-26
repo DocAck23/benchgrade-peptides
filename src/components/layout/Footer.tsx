@@ -82,7 +82,7 @@ export function Footer() {
         <hr className="mt-14 mb-8 border-t" />
 
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <p className="text-xs max-w-2xl leading-relaxed opacity-90">
+          <p className="text-sm sm:text-[15px] max-w-3xl leading-relaxed opacity-95 font-medium">
             {RUO_STATEMENTS.banner} Products are not drugs, supplements, or medical devices and are not
             approved by the FDA for any use other than laboratory research. By purchasing, customer certifies
             research use per our{" "}
