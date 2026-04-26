@@ -14,6 +14,10 @@ import {
   sendOrderShipped,
   lookupCoaUrls,
 } from "@/lib/email/notifications/send-order-emails";
+import type { CartItem } from "@/lib/cart/types";
+import type { SubscriptionRow } from "@/lib/supabase/types";
+import { nextCycleDate } from "@/lib/subscriptions/cycles";
+import crypto from "node:crypto";
 
 const SHIPPING_CARRIERS = ["USPS", "UPS", "FedEx", "DHL"] as const;
 type ShippingCarrier = (typeof SHIPPING_CARRIERS)[number];
@@ -133,5 +137,160 @@ export async function markOrderShipped(
   }
   const row = data[0] as OrderRow;
   await sendOrderShipped(row, lookupCoaUrls(row.items));
+  return { ok: true };
+}
+
+function subtotalCentsFromItems(items: CartItem[]): number {
+  let total = 0;
+  for (const it of items) {
+    total += Math.round(it.unit_price * 100) * it.quantity;
+  }
+  return total;
+}
+
+/**
+ * Fire the next subscription cycle: create a fresh order linked to the
+ * subscription, advance cycles_completed, recompute next_ship_date.
+ *
+ * Idempotency: the UPDATE filters on the *current* cycles_completed
+ * value (read-then-write), so a duplicate click after a successful
+ * advance returns rowcount=0. This is a 2-step "compare-and-set" that
+ * has a small race window; pre-launch acceptable, v2 moves into a
+ * Postgres RPC. We do NOT send the cycle-shipped email from here —
+ * that fires from a separate ship action once tracking is added.
+ */
+export async function adminFireNextCycle(
+  subscriptionId: string
+): Promise<{ ok: boolean; order_id?: string; error?: string }> {
+  if (!(await isAdmin())) return { ok: false, error: "Unauthorized." };
+  if (!isValidUuid(subscriptionId)) return { ok: false, error: "Invalid subscription id." };
+  const supa = getSupabaseServer();
+  if (!supa) return { ok: false, error: "Database unavailable." };
+
+  const { data: sub, error: readError } = await supa
+    .from("subscriptions")
+    .select("*")
+    .eq("id", subscriptionId)
+    .single();
+  if (readError || !sub) {
+    return { ok: false, error: readError?.message ?? "Subscription not found." };
+  }
+  const row = sub as SubscriptionRow;
+  if (row.status !== "active") {
+    return { ok: false, error: `Subscription is ${row.status}, cannot fire cycle.` };
+  }
+  if (row.cycles_completed >= row.cycles_total) {
+    return { ok: false, error: "All cycles already completed." };
+  }
+
+  const order_id = crypto.randomUUID();
+  const now = new Date();
+  const cycleSubtotal = subtotalCentsFromItems(row.items as CartItem[]);
+  const cycleTotal = row.cycle_total_cents;
+
+  const { error: insertError } = await supa.from("orders").insert({
+    order_id,
+    customer: { name: "", email: "", ship_address_1: "", ship_city: "", ship_state: "", ship_zip: "" },
+    items: row.items,
+    subtotal_cents: cycleSubtotal,
+    discount_cents: cycleSubtotal - cycleTotal,
+    total_cents: cycleTotal,
+    payment_method: row.payment_cadence === "prepay" ? "subscription_prepaid" : "bill_pay",
+    status: row.payment_cadence === "prepay" ? "funded" : "awaiting_payment",
+    subscription_id: subscriptionId,
+    customer_user_id: row.customer_user_id,
+    created_at: now.toISOString(),
+    acknowledgment: {
+      certification_text: "subscription-cycle",
+      certification_version: "n/a",
+      certification_hash: "n/a",
+      is_adult: true,
+      is_researcher: true,
+      accepts_ruo: true,
+      acknowledged_at: now.toISOString(),
+      ip: "subscription",
+      user_agent: "subscription-cycle",
+    },
+  });
+  if (insertError) return { ok: false, error: insertError.message };
+
+  const newCyclesCompleted = row.cycles_completed + 1;
+  const isFinalCycle = newCyclesCompleted >= row.cycles_total;
+  const next = isFinalCycle ? null : nextCycleDate(now, row.ship_cadence);
+  const next_charge_date =
+    row.payment_cadence === "prepay" ? null : next ? next.toISOString() : null;
+
+  const { data: updated, error: updateError } = await supa
+    .from("subscriptions")
+    .update({
+      cycles_completed: newCyclesCompleted,
+      next_ship_date: next ? next.toISOString() : null,
+      next_charge_date,
+      status: isFinalCycle ? "completed" : "active",
+    })
+    .eq("id", subscriptionId)
+    // Compare-and-set: rowcount=0 if a concurrent fire already advanced.
+    .eq("cycles_completed", row.cycles_completed)
+    .select();
+  if (updateError) return { ok: false, error: updateError.message };
+  if (!updated || updated.length === 0) {
+    // Compensate: roll back the order we just inserted, otherwise we'd
+    // leak a phantom order without a corresponding cycle advance.
+    await supa.from("orders").delete().eq("order_id", order_id);
+    return { ok: false, error: "Cycle was already advanced concurrently." };
+  }
+
+  return { ok: true, order_id };
+}
+
+/**
+ * Swap items in an active subscription. Customer-requested via support.
+ * Recomputes per-cycle totals from the new items + the existing
+ * discount_percent (we honor whatever tier they signed up at).
+ */
+export async function adminSwapSubscriptionItems(
+  subscriptionId: string,
+  items: CartItem[]
+): Promise<{ ok: boolean; error?: string }> {
+  if (!(await isAdmin())) return { ok: false, error: "Unauthorized." };
+  if (!isValidUuid(subscriptionId)) return { ok: false, error: "Invalid subscription id." };
+  if (!Array.isArray(items) || items.length === 0) {
+    return { ok: false, error: "Items required." };
+  }
+  const supa = getSupabaseServer();
+  if (!supa) return { ok: false, error: "Database unavailable." };
+
+  const { data: sub, error: readError } = await supa
+    .from("subscriptions")
+    .select("id, discount_percent, status")
+    .eq("id", subscriptionId)
+    .single();
+  if (readError || !sub) {
+    return { ok: false, error: readError?.message ?? "Subscription not found." };
+  }
+
+  const subtotal = subtotalCentsFromItems(items);
+  const discountPercent = (sub as { discount_percent: number }).discount_percent;
+  const discountCents = Math.round((subtotal * discountPercent) / 100);
+  const total = subtotal - discountCents;
+
+  const { error: updateError } = await supa
+    .from("subscriptions")
+    .update({
+      items,
+      cycle_subtotal_cents: subtotal,
+      cycle_total_cents: total,
+    })
+    .eq("id", subscriptionId);
+  if (updateError) return { ok: false, error: updateError.message };
+
+  // Audit log for v1 — proper audit table is v2.
+  console.log("[adminSwapSubscriptionItems] swap", {
+    subscriptionId,
+    item_count: items.length,
+    new_subtotal_cents: subtotal,
+    new_total_cents: total,
+  });
+
   return { ok: true };
 }
