@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
-import { Geist, Inter, JetBrains_Mono } from "next/font/google";
+import {
+  Cinzel,
+  Cormorant_Garamond,
+  Inter,
+  JetBrains_Mono,
+} from "next/font/google";
 import "./globals.css";
 
 import { RUOBanner } from "@/components/layout/RUOBanner";
@@ -9,21 +14,35 @@ import { CartProvider } from "@/lib/cart/CartContext";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { SITE_URL } from "@/lib/site";
 
+/** Cinzel — Roman-cap display face. Used for the wordmark, hero headlines,
+ *  virtue marks, premium-tier titles. Closest free analogue to the
+ *  monumental capitals on the finalized Bench Grade logo. */
+const cinzel = Cinzel({
+  variable: "--font-cinzel",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
+
+/** Cormorant Garamond — transitional editorial serif. Used for email
+ *  headlines, /why-no-cards prose, and longer editorial copy. */
+const cormorant = Cormorant_Garamond({
+  variable: "--font-cormorant",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+});
+
+/** Inter — UI sans for navigation, forms, transactional body, dashboards. */
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
   display: "swap",
 });
 
-/** Geist — Vercel's clinical geometric sans, used for display headings.
- *  Replaces the editorial Instrument Serif per user feedback: more clear,
- *  more clinical, closer to Valeria.health / NuScience reference typography. */
-const geist = Geist({
-  variable: "--font-geist",
-  subsets: ["latin"],
-  display: "swap",
-});
-
+/** JetBrains Mono — tabular numerals for prices, lot numbers, COA IDs,
+ *  SKU strings. Data-only; never body. */
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
   subsets: ["latin"],
@@ -58,7 +77,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${geist.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${cinzel.variable} ${cormorant.variable} ${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[color:var(--color-paper)] text-[color:var(--color-ink)]">
         <CartProvider>
