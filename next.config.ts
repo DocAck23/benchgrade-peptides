@@ -3,10 +3,16 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   images: {
     localPatterns: [
+      // Query-less local paths (icons, brand marks, etc.)
       { pathname: "/**", search: "" },
       { pathname: "/brand/**", search: "" },
+      // Vial product photos use a per-build cache-buster query.
+      // Bump these in lockstep with VIAL_PHOTO_VERSION in src/lib/catalogue/data.ts
+      // when refreshing the photoset; older versions can stay listed so deep
+      // links from old emails / cached pages still resolve.
       { pathname: "/brand/vials/**", search: "?v=3" },
       { pathname: "/brand/vials/**", search: "?v=4" },
+      { pathname: "/brand/vials/**", search: "?v=56" },
     ],
   },
   // Catalog rebuilt 2026-04-25 with the full AgeREcode SKU list under
