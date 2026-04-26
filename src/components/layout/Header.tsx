@@ -14,8 +14,27 @@ const PRIMARY_NAV = [
   { href: "/about", label: "About" },
 ] as const;
 
+/**
+ * Site header — locked brand visual system (spec §16.1).
+ *
+ * Surface: cream (page default — no `data-surface` set, inherits body bg/ink).
+ * Logo: gold-on-cream mark via `<Logo variant="mark" surface="cream" priority />`.
+ * Nav: Cinzel (display), 13px, uppercase, tracked 0.12em. Hover reveals a
+ * gold-light underline at 200ms ease.
+ * Cart hover: gold-light accent (handled inside `<CartButton>` plus a wrapper
+ * group hint for surface-aware fallbacks).
+ *
+ * Microinteractions: 200ms ease-out — no springs.
+ */
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Cinzel UI nav class — shared across desktop + mobile lists so the
+  // typographic system is consistent. 13px, uppercase, tracked.
+  const navLinkBase =
+    "font-display uppercase text-[13px] tracking-[0.12em] text-ink-soft transition-colors duration-200 ease-out";
+  const navLinkUnderline =
+    "relative after:absolute after:left-0 after:right-0 after:-bottom-1 after:h-px after:bg-gold-light after:scale-x-0 after:origin-left after:transition-transform after:duration-200 after:ease-out hover:text-ink hover:after:scale-x-100";
 
   return (
     <header className="border-b rule bg-paper relative">
@@ -24,12 +43,9 @@ export function Header() {
           [auto]  logo hugs the true left edge
           [1fr]   nav centers in the remaining space, independent of logo width
           [auto]  Account + Cart hug the true right edge
-
-        No max-width wrapper — the logo and right nav should touch the
-        viewport edges on every breakpoint.
       */}
       <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4 md:gap-8 pl-3 pr-3 lg:pl-5 lg:pr-5 py-2 md:py-2.5">
-        <Logo size="xl" priority />
+        <Logo variant="mark" surface="cream" size="xl" priority />
 
         <nav
           className="hidden md:flex items-center justify-center gap-10 lg:gap-12"
@@ -39,7 +55,7 @@ export function Header() {
             <Link
               key={item.href}
               href={item.href}
-              className="text-base text-ink-soft hover:text-teal transition-colors"
+              className={cn(navLinkBase, navLinkUnderline)}
             >
               {item.label}
             </Link>
@@ -49,18 +65,20 @@ export function Header() {
         <div className="flex items-center gap-4 justify-self-end">
           <Link
             href="/account"
-            className="hidden md:inline-block text-base text-ink-soft hover:text-teal transition-colors"
+            className={cn("hidden md:inline-block", navLinkBase, navLinkUnderline)}
           >
             Account
           </Link>
-          <CartButton />
+          <span className="[&_button]:transition-colors [&_button]:duration-200 [&_button]:ease-out [&_button:hover]:text-gold-dark">
+            <CartButton />
+          </span>
           <button
             type="button"
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
             aria-expanded={mobileOpen}
             aria-controls="mobile-nav"
             onClick={() => setMobileOpen((v) => !v)}
-            className="md:hidden p-2 text-ink-soft hover:text-ink"
+            className="md:hidden p-2 text-ink-soft hover:text-ink transition-colors duration-200 ease-out"
           >
             {mobileOpen ? <X className="w-5 h-5" strokeWidth={1.5} /> : <Menu className="w-5 h-5" strokeWidth={1.5} />}
           </button>
@@ -73,7 +91,7 @@ export function Header() {
         aria-label="Primary"
         inert={!mobileOpen}
         className={cn(
-          "md:hidden overflow-hidden border-t rule bg-paper transition-[max-height,opacity] duration-200",
+          "md:hidden overflow-hidden border-t rule bg-paper transition-[max-height,opacity] duration-[250ms] ease-out",
           mobileOpen ? "max-h-[320px] opacity-100" : "max-h-0 opacity-0 pointer-events-none"
         )}
       >
@@ -83,7 +101,7 @@ export function Header() {
               <Link
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
-                className="block py-3 text-base text-ink hover:text-teal border-b rule last:border-b-0"
+                className="block py-3 font-display uppercase text-[13px] tracking-[0.12em] text-ink hover:text-gold-dark border-b rule last:border-b-0 transition-colors duration-200 ease-out"
               >
                 {item.label}
               </Link>
@@ -93,7 +111,7 @@ export function Header() {
             <Link
               href="/account"
               onClick={() => setMobileOpen(false)}
-              className="block py-3 text-base text-ink hover:text-teal"
+              className="block py-3 font-display uppercase text-[13px] tracking-[0.12em] text-ink hover:text-gold-dark transition-colors duration-200 ease-out"
             >
               Account
             </Link>
