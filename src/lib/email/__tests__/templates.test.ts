@@ -6,6 +6,10 @@ import {
   paymentConfirmedEmail,
   orderShippedEmail,
   accountClaimEmail,
+  subscriptionStartedEmail,
+  subscriptionCycleShipNoticeEmail,
+  subscriptionPaymentDueEmail,
+  subscriptionRenewalEmail,
 } from "../templates";
 import type { CartItem } from "@/lib/cart/types";
 
@@ -233,6 +237,198 @@ describe("accountClaimEmail", () => {
   it("explains 'click any future magic link from us — same account'", () => {
     const email = accountClaimEmail(claimCtx);
     expect(email.text.toLowerCase()).toMatch(/same account|future magic link/);
+  });
+});
+
+describe("subscriptionStartedEmail", () => {
+  const subId = "sub-12345-6789-aaaa-bbbb-cccccccccccc";
+  const startedCtx = {
+    subscription_id: subId,
+    customer: baseCtx.customer,
+    items: [sampleItem],
+    plan_duration_months: 6,
+    payment_cadence: "prepay" as const,
+    ship_cadence: "monthly" as const,
+    cycle_total_cents: 27500,
+    plan_total_cents: 140250,
+    next_ship_date: "2026-05-01",
+    upcoming_ship_dates: ["2026-05-01", "2026-06-01", "2026-07-01"],
+    savings_vs_retail_cents: 24750,
+  };
+
+  it("subject is 'Your subscription is active — BGP-SUB-<first8>'", () => {
+    const email = subscriptionStartedEmail(startedCtx);
+    expect(email.subject).toBe("Your subscription is active — BGP-SUB-sub-1234");
+  });
+
+  it("body includes plan terms, item list, next ship date and upcoming dates", () => {
+    const email = subscriptionStartedEmail(startedCtx);
+    expect(email.text).toContain("BPC-157");
+    expect(email.text).toContain("6");
+    expect(email.text.toLowerCase()).toContain("monthly");
+    expect(email.text).toContain("2026-05-01");
+    expect(email.text).toContain("2026-06-01");
+    expect(email.text).toContain("2026-07-01");
+    expect(email.html).toContain("BPC-157");
+  });
+
+  it("prepay path does NOT include bill-pay setup instructions", () => {
+    const email = subscriptionStartedEmail(startedCtx);
+    expect(email.text).not.toMatch(/bank bill[- ]?pay/i);
+  });
+
+  it("bill-pay path shows the bill-pay setup instructions block", () => {
+    const email = subscriptionStartedEmail({
+      ...startedCtx,
+      payment_cadence: "bill_pay",
+      plan_duration_months: 3,
+    });
+    expect(email.text).toMatch(/bank bill[- ]?pay/i);
+    expect(email.text).toContain("BGP-SUB-sub-1234");
+    expect(email.html).toMatch(/bank bill[- ]?pay/i);
+  });
+
+  it("escapes customer name", () => {
+    const email = subscriptionStartedEmail({
+      ...startedCtx,
+      customer: { ...baseCtx.customer, name: "<script>x</script>" },
+    });
+    expect(email.html).not.toContain("<script>x");
+    expect(email.html).toContain("&lt;script&gt;");
+  });
+
+  it("CTA points at /account/subscription", () => {
+    const email = subscriptionStartedEmail(startedCtx);
+    expect(email.html).toContain("/account/subscription");
+  });
+});
+
+describe("subscriptionCycleShipNoticeEmail", () => {
+  const subId = "sub-12345-6789-aaaa-bbbb-cccccccccccc";
+  const cycleCtx = {
+    subscription_id: subId,
+    customer: baseCtx.customer,
+    items: [sampleItem],
+    cycle_number: 2,
+    cycles_total: 6,
+    tracking_number: "9400111202509999999999",
+    tracking_carrier: "USPS" as const,
+    tracking_url:
+      "https://tools.usps.com/go/TrackConfirmAction?tLabels=9400111202509999999999",
+    coa_lot_urls: [
+      {
+        sku: "BGP-BPC157-10-5",
+        lot: "L-2026-0431",
+        url: "https://benchgradepeptides.com/coa/L-2026-0431",
+      },
+    ],
+    next_ship_date: "2026-06-01",
+  };
+
+  it("subject is 'Cycle N of M shipped — BGP-SUB-<first8>'", () => {
+    const email = subscriptionCycleShipNoticeEmail(cycleCtx);
+    expect(email.subject).toBe("Cycle 2 of 6 shipped — BGP-SUB-sub-1234");
+  });
+
+  it("body shows tracking + COA links + storage panel", () => {
+    const email = subscriptionCycleShipNoticeEmail(cycleCtx);
+    expect(email.text).toContain("9400111202509999999999");
+    expect(email.text).toContain("USPS");
+    expect(email.text).toContain("L-2026-0431");
+    expect(email.text).toMatch(/2[–-]?8°C/);
+    expect(email.text).toMatch(/light[- ]protect/i);
+    expect(email.html).toContain("9400111202509999999999");
+  });
+
+  it("shows 'Final cycle of your plan.' on last cycle (no next_ship_date)", () => {
+    const email = subscriptionCycleShipNoticeEmail({
+      ...cycleCtx,
+      cycle_number: 6,
+      next_ship_date: null,
+    });
+    expect(email.text).toMatch(/final cycle/i);
+  });
+
+  it("shows next ship date when not the final cycle", () => {
+    const email = subscriptionCycleShipNoticeEmail(cycleCtx);
+    expect(email.text).toContain("2026-06-01");
+  });
+
+  it("CTA points at the tracking URL", () => {
+    const email = subscriptionCycleShipNoticeEmail(cycleCtx);
+    expect(email.html).toContain("tools.usps.com/go/");
+  });
+});
+
+describe("subscriptionPaymentDueEmail", () => {
+  const subId = "sub-12345-6789-aaaa-bbbb-cccccccccccc";
+  const dueCtx = {
+    subscription_id: subId,
+    customer: baseCtx.customer,
+    cycle_number: 3,
+    cycles_total: 6,
+    cycle_total_cents: 27500,
+    due_date: "2026-05-05",
+    days_remaining: 5,
+    subscription_memo: "BGP-SUB-sub-1234",
+    bill_pay_setup_url: "https://benchgradepeptides.com/account/subscription/bill-pay",
+  };
+
+  it("subject is 'Payment due in 5 days — Cycle N of M'", () => {
+    const email = subscriptionPaymentDueEmail(dueCtx);
+    expect(email.subject).toBe("Payment due in 5 days — Cycle 3 of 6");
+  });
+
+  it("body explains the 5-day grace warning", () => {
+    const email = subscriptionPaymentDueEmail(dueCtx);
+    expect(email.text).toMatch(/5 days/i);
+    expect(email.text.toLowerCase()).toMatch(/auto[- ]cancel|cycle.*cancel/);
+    expect(email.html).toMatch(/5 days/i);
+  });
+
+  it("body includes the subscription memo and due date", () => {
+    const email = subscriptionPaymentDueEmail(dueCtx);
+    expect(email.text).toContain("BGP-SUB-sub-1234");
+    expect(email.text).toContain("2026-05-05");
+  });
+
+  it("CTA links at the bill-pay setup URL", () => {
+    const email = subscriptionPaymentDueEmail(dueCtx);
+    expect(email.html).toContain("/account/subscription/bill-pay");
+  });
+});
+
+describe("subscriptionRenewalEmail", () => {
+  const subId = "sub-12345-6789-aaaa-bbbb-cccccccccccc";
+  const renewalCtx = {
+    subscription_id: subId,
+    customer: baseCtx.customer,
+    plan_duration_months: 6,
+    discount_percent: 15,
+    savings_to_date_cents: 24750,
+    plan_ends_in_days: 7,
+    renew_url:
+      "https://benchgradepeptides.com/account/subscription/renew?plan=" + subId,
+  };
+
+  it("subject is 'Your subscription ends in 7 days — renew at the same rate'", () => {
+    const email = subscriptionRenewalEmail(renewalCtx);
+    expect(email.subject).toBe(
+      "Your subscription ends in 7 days — renew at the same rate"
+    );
+  });
+
+  it("body mentions same discount tier and savings to date", () => {
+    const email = subscriptionRenewalEmail(renewalCtx);
+    expect(email.text).toMatch(/15%/);
+    expect(email.text).toContain("$247.50");
+    expect(email.html).toMatch(/15%/);
+  });
+
+  it("CTA label is 'Renew at <X>% off' and href is the renew URL", () => {
+    const email = subscriptionRenewalEmail(renewalCtx);
+    expect(email.html).toContain("Renew at 15% off");
+    expect(email.html).toContain("/account/subscription/renew?plan=");
   });
 });
 

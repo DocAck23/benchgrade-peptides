@@ -646,3 +646,417 @@ export function accountClaimEmail(ctx: ClaimContext): {
 
   return { subject, text, html };
 }
+
+// ---------- Sprint 2 Wave A3: subscription lifecycle emails ----------
+// Design choice: Wave A2 (`@/lib/subscriptions/cycles`) ships the
+// `billPayInstructions` helper. Rather than create a hard import
+// dependency on a sibling wave, these templates accept the formatted
+// memo + URL on the context and render the bill-pay instruction block
+// inline. This keeps Wave A3 independently buildable and testable.
+
+export type PaymentCadence = "prepay" | "bill_pay";
+export type ShipCadence = "monthly" | "quarterly" | "once";
+
+export interface SubscriptionStartedContext {
+  subscription_id: string;
+  customer: CustomerInfo;
+  items: CartItem[];
+  plan_duration_months: number;
+  payment_cadence: PaymentCadence;
+  ship_cadence: ShipCadence;
+  cycle_total_cents: number;
+  plan_total_cents: number;
+  next_ship_date: string;
+  /** Next 3 ship dates inline so customer knows what to expect. */
+  upcoming_ship_dates: string[];
+  savings_vs_retail_cents: number;
+}
+
+export interface SubscriptionCycleContext {
+  subscription_id: string;
+  customer: CustomerInfo;
+  items: CartItem[];
+  cycle_number: number;
+  cycles_total: number;
+  tracking_number: string;
+  tracking_carrier: "USPS" | "UPS" | "FedEx" | "DHL";
+  tracking_url: string;
+  coa_lot_urls: Array<{ sku: string; lot: string; url: string }>;
+  /** `null` => this is the final cycle; copy says "Final cycle of your plan." */
+  next_ship_date: string | null;
+}
+
+export interface SubscriptionPaymentDueContext {
+  subscription_id: string;
+  customer: CustomerInfo;
+  cycle_number: number;
+  cycles_total: number;
+  cycle_total_cents: number;
+  due_date: string;
+  days_remaining: number;
+  subscription_memo: string;
+  bill_pay_setup_url: string;
+}
+
+export interface SubscriptionRenewalContext {
+  subscription_id: string;
+  customer: CustomerInfo;
+  plan_duration_months: number;
+  discount_percent: number;
+  savings_to_date_cents: number;
+  plan_ends_in_days: number;
+  renew_url: string;
+}
+
+function subMemo(subscriptionId: string): string {
+  return `BGP-SUB-${subscriptionId.slice(0, 8)}`;
+}
+
+function shipCadenceLabel(c: ShipCadence): string {
+  switch (c) {
+    case "monthly":
+      return "monthly";
+    case "quarterly":
+      return "quarterly";
+    case "once":
+      return "single shipment";
+  }
+}
+
+function paymentCadenceLabel(c: PaymentCadence): string {
+  return c === "prepay" ? "Prepaid in full" : "Monthly bank bill-pay";
+}
+
+function billPayInstructionsText(memo: string): string {
+  const beneficiary = process.env.WIRE_BENEFICIARY ?? "Bench Grade Peptides LLC";
+  const bank = process.env.WIRE_BANK ?? "[Bank name — pending]";
+  const routing = process.env.WIRE_ROUTING ?? "[Routing — pending]";
+  const account = process.env.WIRE_ACCOUNT ?? "[Account — pending]";
+  return `Bank bill-pay setup
+-------------------
+Add Bench Grade Peptides as a payee in your bank's online bill-pay:
+
+Payee: ${beneficiary}
+Bank: ${bank}
+Routing: ${routing}
+Account: ${account}
+Memo / reference: ${memo}
+
+Schedule the cycle amount to arrive 3 business days before each cycle's
+due date. Include the memo on every payment so we can match it to your
+subscription. We ship within 1-2 business days of funds clearing.`;
+}
+
+function billPayInstructionsHtml(memo: string): string {
+  const beneficiary = process.env.WIRE_BENEFICIARY ?? "Bench Grade Peptides LLC";
+  const bank = process.env.WIRE_BANK ?? "[Bank name — pending]";
+  const routing = process.env.WIRE_ROUTING ?? "[Routing — pending]";
+  const account = process.env.WIRE_ACCOUNT ?? "[Account — pending]";
+  const rows: Array<[string, string, boolean?]> = [
+    ["Payee", beneficiary],
+    ["Bank", bank],
+    ["Routing", routing],
+    ["Account", account],
+    ["Memo", memo, true],
+  ];
+  const rowHtml = rows
+    .map(
+      ([label, value, highlight]) =>
+        `<tr><td style="padding:3px 0;color:#6B5350;width:120px;">${escapeHtml(label)}</td><td${
+          highlight ? ' style="color:#4A0E1A;"' : ""
+        }>${highlight ? "<strong>" : ""}${escapeHtml(value)}${highlight ? "</strong>" : ""}</td></tr>`
+    )
+    .join("");
+  return `<div style="background:#F4EBD7;border:1px solid #D4C8A8;padding:18px;margin:0 0 18px 0;">
+    <div style="font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;margin-bottom:8px;">Bank bill-pay setup</div>
+    <p style="margin:0 0 10px 0;font-family:Georgia,'Times New Roman',serif;font-size:14px;line-height:1.6;color:#1A0506;">Add Bench Grade Peptides as a payee in your bank's online bill-pay portal.</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;color:#1A0506;">
+      ${rowHtml}
+    </table>
+    <p style="margin:12px 0 0 0;font-family:Georgia,'Times New Roman',serif;font-size:13px;line-height:1.6;color:#4A2528;">Schedule the cycle amount to arrive 3 business days before each due date and include the memo on every payment.</p>
+  </div>`;
+}
+
+export function subscriptionStartedEmail(ctx: SubscriptionStartedContext): {
+  subject: string;
+  text: string;
+  html: string;
+} {
+  const memo = subMemo(ctx.subscription_id);
+  const subject = `Your subscription is active — ${memo}`;
+  const customerName = escapeHtml(ctx.customer.name);
+  const itemsText = ctx.items.map(lineText).join("\n");
+  const cycleTotal = formatPrice(ctx.cycle_total_cents);
+  const planTotal = formatPrice(ctx.plan_total_cents);
+  const savings = formatPrice(ctx.savings_vs_retail_cents);
+  const upcomingDates = ctx.upcoming_ship_dates.slice(0, 3);
+  const portalUrl = `${SITE_URL}/account/subscription`;
+
+  const text = [
+    `${ctx.customer.name} —`,
+    ``,
+    `Welcome to your stack. Your subscription is active.`,
+    ``,
+    `Plan`,
+    `----`,
+    `Duration: ${ctx.plan_duration_months} month${ctx.plan_duration_months === 1 ? "" : "s"}`,
+    `Ship cadence: ${shipCadenceLabel(ctx.ship_cadence)}`,
+    `Payment: ${paymentCadenceLabel(ctx.payment_cadence)}`,
+    `Per-cycle total: ${cycleTotal}`,
+    `Plan total: ${planTotal}`,
+    `Savings vs retail: ${savings}`,
+    ``,
+    `Stack`,
+    `-----`,
+    itemsText,
+    ``,
+    `Next ship date: ${ctx.next_ship_date}`,
+    upcomingDates.length
+      ? `Upcoming: ${upcomingDates.join(", ")}`
+      : ``,
+    ``,
+    ctx.payment_cadence === "bill_pay" ? billPayInstructionsText(memo) + "\n" : ``,
+    `View your subscription: ${portalUrl}`,
+    ``,
+    RUO_DISCLAIMER,
+    ``,
+    `Bench Grade Peptides · Made in USA`,
+  ]
+    .filter((line) => line !== ``)
+    .join("\n");
+
+  const upcomingHtml = upcomingDates.length
+    ? `<p style="margin:6px 0 0 0;font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#6B5350;letter-spacing:1px;">UPCOMING · ${upcomingDates
+        .map((d) => escapeHtml(d))
+        .join(" · ")}</p>`
+    : "";
+
+  const billPayBlock =
+    ctx.payment_cadence === "bill_pay" ? billPayInstructionsHtml(memo) : "";
+
+  const bodyHtml = `
+    <p style="margin:0 0 14px 0;">${customerName} —</p>
+    <p style="margin:0 0 14px 0;">Welcome to your stack. Your subscription is active and locked in at today's tier.</p>
+
+    <div style="background:#FDFAF1;border:1px solid #D4C8A8;padding:18px;margin:0 0 18px 0;">
+      <div style="font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;margin-bottom:8px;">Plan</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;color:#1A0506;">
+        <tr><td style="width:140px;color:#6B5350;padding:2px 0;">Duration</td><td>${ctx.plan_duration_months} month${ctx.plan_duration_months === 1 ? "" : "s"}</td></tr>
+        <tr><td style="width:140px;color:#6B5350;padding:2px 0;">Ship cadence</td><td>${escapeHtml(shipCadenceLabel(ctx.ship_cadence))}</td></tr>
+        <tr><td style="width:140px;color:#6B5350;padding:2px 0;">Payment</td><td>${escapeHtml(paymentCadenceLabel(ctx.payment_cadence))}</td></tr>
+        <tr><td style="width:140px;color:#6B5350;padding:2px 0;">Per cycle</td><td><strong>${cycleTotal}</strong></td></tr>
+        <tr><td style="width:140px;color:#6B5350;padding:2px 0;">Plan total</td><td>${planTotal}</td></tr>
+        <tr><td style="width:140px;color:#6B5350;padding:2px 0;">You save</td><td style="color:#4A0E1A;"><strong>${savings}</strong></td></tr>
+      </table>
+    </div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 8px 0;border-top:1px solid #1A0506;">
+      ${itemRowsHtmlEditorial(ctx.items)}
+    </table>
+
+    <p style="margin:14px 0 0 0;font-family:Georgia,'Times New Roman',serif;font-size:14px;color:#1A0506;">Next ship date: <strong>${escapeHtml(ctx.next_ship_date)}</strong>.</p>
+    ${upcomingHtml}
+
+    ${billPayBlock}`;
+
+  const html = editorialEmailHtml({
+    title: "Welcome to your stack.",
+    bodyHtml,
+    memo,
+    cta: { label: "View your subscription", href: portalUrl },
+  });
+
+  return { subject, text, html };
+}
+
+export function subscriptionCycleShipNoticeEmail(
+  ctx: SubscriptionCycleContext
+): { subject: string; text: string; html: string } {
+  const memo = subMemo(ctx.subscription_id);
+  const subject = `Cycle ${ctx.cycle_number} of ${ctx.cycles_total} shipped — ${memo}`;
+  const customerName = escapeHtml(ctx.customer.name);
+  const portalUrl = `${SITE_URL}/account/subscription`;
+  const isFinal = ctx.next_ship_date === null;
+
+  const coaTextLines = ctx.coa_lot_urls.length
+    ? ctx.coa_lot_urls.map((c) => `  ${c.sku} · lot ${c.lot} — ${c.url}`).join("\n")
+    : `  COA available in your portal — ${portalUrl}`;
+
+  const text = [
+    `${ctx.customer.name} —`,
+    ``,
+    `Cycle ${ctx.cycle_number} of ${ctx.cycles_total} of your subscription has shipped.`,
+    ``,
+    `Tracking`,
+    `--------`,
+    `Carrier: ${ctx.tracking_carrier}`,
+    `Number: ${ctx.tracking_number}`,
+    `Track: ${ctx.tracking_url}`,
+    ``,
+    STORAGE_PANEL_TEXT,
+    ``,
+    `Certificates of analysis`,
+    `------------------------`,
+    coaTextLines,
+    ``,
+    isFinal
+      ? `Final cycle of your plan.`
+      : `Next ship date: ${ctx.next_ship_date}`,
+    ``,
+    `Subscription ${memo}`,
+    `View in portal: ${portalUrl}`,
+    ``,
+    RUO_DISCLAIMER,
+    ``,
+    `Bench Grade Peptides · Made in USA`,
+  ].join("\n");
+
+  const coaHtml = ctx.coa_lot_urls.length
+    ? `<ul style="margin:8px 0 0 0;padding-left:18px;font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;color:#1A0506;">${ctx.coa_lot_urls
+        .map(
+          (c) =>
+            `<li style="margin-bottom:4px;">${escapeHtml(c.sku)} · lot ${escapeHtml(c.lot)} — <a href="${escapeHtml(c.url)}" style="color:#4A0E1A;text-decoration:underline;">view COA</a></li>`
+        )
+        .join("")}</ul>`
+    : `<p style="margin:8px 0 0 0;font-family:Georgia,'Times New Roman',serif;font-size:14px;color:#1A0506;">COA available in your portal — <a href="${escapeHtml(portalUrl)}" style="color:#4A0E1A;text-decoration:underline;">sign in to view</a>.</p>`;
+
+  const nextShipHtml = isFinal
+    ? `<p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:14px;color:#4A0E1A;"><strong>Final cycle of your plan.</strong></p>`
+    : `<p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:14px;color:#1A0506;">Next ship date: <strong>${escapeHtml(ctx.next_ship_date ?? "")}</strong></p>`;
+
+  const bodyHtml = `
+    <p style="margin:0 0 14px 0;">${customerName} —</p>
+    <p style="margin:0 0 18px 0;">Cycle <strong>${ctx.cycle_number}</strong> of <strong>${ctx.cycles_total}</strong> of your subscription has shipped.</p>
+
+    <div style="background:#F4EBD7;border:1px solid #D4C8A8;padding:18px;margin:0 0 18px 0;">
+      <div style="font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;margin-bottom:8px;">Tracking</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;color:#1A0506;">
+        <tr><td style="width:90px;color:#6B5350;padding:2px 0;">Carrier</td><td>${escapeHtml(ctx.tracking_carrier)}</td></tr>
+        <tr><td style="width:90px;color:#6B5350;padding:2px 0;">Number</td><td><strong>${escapeHtml(ctx.tracking_number)}</strong></td></tr>
+        <tr><td style="width:90px;color:#6B5350;padding:2px 0;">Status</td><td><a href="${escapeHtml(ctx.tracking_url)}" style="color:#4A0E1A;text-decoration:underline;">Track shipment</a></td></tr>
+      </table>
+    </div>
+
+    <div style="background:#FDFAF1;border:1px solid #D4C8A8;padding:18px;margin:0 0 18px 0;">
+      <div style="font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;margin-bottom:8px;">Storage &amp; handling</div>
+      <p style="margin:0 0 8px 0;font-family:Georgia,'Times New Roman',serif;font-size:14px;line-height:1.6;color:#1A0506;">Lyophilized vials: 2–8°C refrigerated (or –20°C for 6+ months).</p>
+      <p style="margin:0 0 8px 0;font-family:Georgia,'Times New Roman',serif;font-size:14px;line-height:1.6;color:#1A0506;">Light-protect; do not freeze-thaw repeatedly.</p>
+      <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:14px;line-height:1.6;color:#1A0506;">Reconstitute only when ready to use; per-peptide reconstituted shelf life on the COA enclosed.</p>
+    </div>
+
+    <div style="margin-bottom:18px;">
+      <div style="font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;">Certificates of analysis</div>
+      ${coaHtml}
+    </div>
+
+    ${nextShipHtml}`;
+
+  const html = editorialEmailHtml({
+    title: `Cycle ${ctx.cycle_number} of ${ctx.cycles_total} has shipped.`,
+    bodyHtml,
+    memo,
+    cta: { label: "Track shipment", href: ctx.tracking_url },
+  });
+
+  return { subject, text, html };
+}
+
+export function subscriptionPaymentDueEmail(
+  ctx: SubscriptionPaymentDueContext
+): { subject: string; text: string; html: string } {
+  const memo = ctx.subscription_memo || subMemo(ctx.subscription_id);
+  const subject = `Payment due in ${ctx.days_remaining} days — Cycle ${ctx.cycle_number} of ${ctx.cycles_total}`;
+  const customerName = escapeHtml(ctx.customer.name);
+  const cycleTotal = formatPrice(ctx.cycle_total_cents);
+
+  const text = [
+    `${ctx.customer.name} —`,
+    ``,
+    `Cycle ${ctx.cycle_number} of ${ctx.cycles_total} is due. Please send payment via your bank's bill-pay within ${ctx.days_remaining} days to avoid losing this cycle.`,
+    ``,
+    `Amount due: ${cycleTotal}`,
+    `Due date: ${ctx.due_date}`,
+    `Memo: ${memo}`,
+    ``,
+    `Grace period`,
+    `------------`,
+    `If we don't see your payment within 5 days of the due date, this cycle is automatically cancelled. You keep the remaining cycles in your plan — only this cycle is forfeited.`,
+    ``,
+    `Set up bill-pay or schedule the payment: ${ctx.bill_pay_setup_url}`,
+    ``,
+    RUO_DISCLAIMER,
+    ``,
+    `Bench Grade Peptides · Made in USA`,
+  ].join("\n");
+
+  const bodyHtml = `
+    <p style="margin:0 0 14px 0;">${customerName} —</p>
+    <p style="margin:0 0 14px 0;">Cycle <strong>${ctx.cycle_number}</strong> of <strong>${ctx.cycles_total}</strong> of your subscription is due. Please send payment via bank bill-pay within <strong>${ctx.days_remaining} days</strong>.</p>
+
+    <div style="background:#F4EBD7;border:1px solid #D4C8A8;padding:18px;margin:0 0 18px 0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;color:#1A0506;">
+        <tr><td style="width:120px;color:#6B5350;padding:2px 0;">Amount</td><td><strong>${cycleTotal}</strong></td></tr>
+        <tr><td style="width:120px;color:#6B5350;padding:2px 0;">Due date</td><td>${escapeHtml(ctx.due_date)}</td></tr>
+        <tr><td style="width:120px;color:#6B5350;padding:2px 0;">Memo</td><td style="color:#4A0E1A;"><strong>${escapeHtml(memo)}</strong></td></tr>
+      </table>
+    </div>
+
+    <p style="margin:0 0 14px 0;font-family:Georgia,'Times New Roman',serif;font-size:14px;color:#4A2528;"><strong>5-day grace period.</strong> If we don't see your payment within 5 days of the due date, this cycle is automatically cancelled. You keep the remaining cycles in your plan — only this cycle is forfeited.</p>`;
+
+  const html = editorialEmailHtml({
+    title: `Payment due in ${ctx.days_remaining} days.`,
+    bodyHtml,
+    memo,
+    cta: { label: "Pay now via bank bill pay", href: ctx.bill_pay_setup_url },
+  });
+
+  return { subject, text, html };
+}
+
+export function subscriptionRenewalEmail(
+  ctx: SubscriptionRenewalContext
+): { subject: string; text: string; html: string } {
+  const memo = subMemo(ctx.subscription_id);
+  const subject = `Your subscription ends in ${ctx.plan_ends_in_days} days — renew at the same rate`;
+  const customerName = escapeHtml(ctx.customer.name);
+  const savings = formatPrice(ctx.savings_to_date_cents);
+
+  const text = [
+    `${ctx.customer.name} —`,
+    ``,
+    `Your ${ctx.plan_duration_months}-month subscription ends in ${ctx.plan_ends_in_days} days. You can renew at the same ${ctx.discount_percent}% discount tier — one click, same stack, no price change.`,
+    ``,
+    `Savings to date: ${savings}`,
+    `Renewal discount: ${ctx.discount_percent}% off`,
+    ``,
+    `Renew: ${ctx.renew_url}`,
+    ``,
+    `If you'd rather not renew, no action needed — your subscription simply ends at the close of the current cycle.`,
+    ``,
+    RUO_DISCLAIMER,
+    ``,
+    `Bench Grade Peptides · Made in USA`,
+  ].join("\n");
+
+  const bodyHtml = `
+    <p style="margin:0 0 14px 0;">${customerName} —</p>
+    <p style="margin:0 0 14px 0;">Your ${ctx.plan_duration_months}-month subscription ends in <strong>${ctx.plan_ends_in_days} days</strong>. Renew at the same <strong>${ctx.discount_percent}%</strong> discount tier — one click, same stack, same rate.</p>
+
+    <div style="background:#FDFAF1;border:1px solid #D4C8A8;padding:18px;margin:0 0 18px 0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;color:#1A0506;">
+        <tr><td style="width:160px;color:#6B5350;padding:2px 0;">Savings to date</td><td><strong>${savings}</strong></td></tr>
+        <tr><td style="width:160px;color:#6B5350;padding:2px 0;">Renewal discount</td><td style="color:#4A0E1A;"><strong>${ctx.discount_percent}% off</strong></td></tr>
+      </table>
+    </div>
+
+    <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:13px;color:#6B5350;line-height:1.6;">If you'd rather not renew, no action needed — your subscription ends at the close of the current cycle.</p>`;
+
+  const html = editorialEmailHtml({
+    title: "Renew at today's rate.",
+    bodyHtml,
+    memo,
+    cta: { label: `Renew at ${ctx.discount_percent}% off`, href: ctx.renew_url },
+  });
+
+  return { subject, text, html };
+}
