@@ -307,6 +307,10 @@ Shipping: calculated after payment clears
 
 ${instructionsText(ctx.payment_method, memo)}
 
+Why no cards? RUO peptides face heavy merchant scrutiny. We're building the
+reputation to unlock card processing — your order helps us get there. Read
+more at ${SITE_URL}/why-no-cards
+
 Ship-to
 -------
 ${ctx.customer.name}
@@ -358,6 +362,13 @@ ${SITE_URL}
       </td></tr>
 
       ${instructionsHtml(ctx.payment_method, memo)}
+
+      <tr><td style="padding:0 28px 18px 28px;">
+        <p style="margin:0;font-size:13px;line-height:1.6;color:#5a5a5a;font-style:italic;">
+          Why no cards? RUO peptides face heavy merchant scrutiny. We're building the reputation to unlock card processing — your order helps us get there.
+          <a href="${escapeHtml(SITE_URL)}/why-no-cards" style="color:#8A6B3B;text-decoration:underline;">Read more</a>.
+        </p>
+      </td></tr>
 
       <tr><td style="padding:0 28px 28px 28px;">
         <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#5a5a5a;margin-bottom:6px;">Ship-to</div>

@@ -10,6 +10,7 @@ import { submitOrder, type CustomerInfo } from "@/app/actions/orders";
 import { formatPrice, cn } from "@/lib/utils";
 import { Callout } from "@/components/ui";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/site";
+import { CardProcessorFootnote } from "@/components/checkout/CardProcessorFootnote";
 import {
   type PaymentMethod,
   paymentMethodLabel,
@@ -36,7 +37,10 @@ interface CheckoutPageClientProps {
 
 export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps) {
   const router = useRouter();
-  const { items, subtotal, itemCount, clear } = useCart();
+  const { items, subtotal, itemCount, totals, clear } = useCart();
+  const hasStackSave = totals.stack_save_discount_cents > 0;
+  const hasSameSku = totals.same_sku_discount_cents > 0;
+  const hasAnyDiscount = hasStackSave || hasSameSku;
   const [form, setForm] = useState<CustomerInfo>(EMPTY);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "">(
     availableMethods[0] ?? ""
@@ -180,6 +184,7 @@ export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps
                 );
               })}
             </fieldset>
+            <CardProcessorFootnote />
           </Section>
 
           <Section title="Notes (optional)">
@@ -231,13 +236,50 @@ export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps
               ))}
             </ul>
           </div>
-          <div className="border-t rule pt-4 flex items-baseline justify-between">
-            <span className="text-sm text-ink-soft">
-              {itemCount} {itemCount === 1 ? "vial" : "vials"}
-            </span>
-            <span className="font-mono-data text-lg text-ink">
-              {formatPrice(subtotal * 100)}
-            </span>
+          <div className="border-t rule pt-4 space-y-2">
+            <div className="flex items-baseline justify-between">
+              <span className="text-xs label-eyebrow text-ink-muted">Subtotal</span>
+              <span
+                className={cn(
+                  "font-mono-data text-sm",
+                  hasAnyDiscount ? "text-ink-muted line-through" : "text-ink"
+                )}
+              >
+                {formatPrice(subtotal * 100)}
+              </span>
+            </div>
+            {hasStackSave && (
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs text-gold-dark">
+                  Stack &amp; Save · {totals.stack_save_tier_percent}% off
+                </span>
+                <span className="font-mono-data text-sm text-gold-dark">
+                  −{formatPrice(totals.stack_save_discount_cents)}
+                </span>
+              </div>
+            )}
+            {hasSameSku && (
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs text-gold-dark">Same-SKU bonus · 5% off</span>
+                <span className="font-mono-data text-sm text-gold-dark">
+                  −{formatPrice(totals.same_sku_discount_cents)}
+                </span>
+              </div>
+            )}
+            {totals.free_shipping && (
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs text-gold-dark">Free domestic shipping</span>
+                <span className="font-mono-data text-sm text-gold-dark">included</span>
+              </div>
+            )}
+            <div className="flex items-baseline justify-between pt-2">
+              <span className="text-sm text-ink-soft">
+                {itemCount} {itemCount === 1 ? "vial" : "vials"}
+              </span>
+              <span className="font-mono-data text-lg text-wine">
+                {formatPrice(totals.total_cents)}
+              </span>
+            </div>
           </div>
           <FreeShippingBar subtotal={subtotal} />
         </aside>

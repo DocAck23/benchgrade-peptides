@@ -24,6 +24,10 @@ export interface CartApi {
   items: CartItem[];
   itemCount: number;
   subtotal: number;
+  /** Stack & Save totals — discounts applied, free-shipping flag, etc. Wave 2d. */
+  totals: import("./discounts").CartTotals;
+  /** Next-tier nudge for the cart drawer / checkout summary; null at top tier. */
+  nextTier: import("./discounts").NextTierInfo | null;
   addItem: (product: CatalogProduct, variant: CatalogVariant, quantity: number) => void;
   updateQuantity: (sku: string, quantity: number) => void;
   removeItem: (sku: string) => void;

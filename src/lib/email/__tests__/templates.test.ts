@@ -235,3 +235,13 @@ describe("accountClaimEmail", () => {
     expect(email.text.toLowerCase()).toMatch(/same account|future magic link/);
   });
 });
+
+describe("orderConfirmationEmail — why-no-cards narrative line (Wave 2d)", () => {
+  it("includes the why-no-cards narrative line in both text and html", () => {
+    const email = orderConfirmationEmail({ ...baseCtx, payment_method: "wire" });
+    expect(email.text).toMatch(/Why no cards/);
+    expect(email.html).toMatch(/Why no cards/);
+    expect(email.html).toContain("/why-no-cards");
+    expect(email.text).toContain("/why-no-cards");
+  });
+});

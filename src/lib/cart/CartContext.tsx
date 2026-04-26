@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { CatalogProduct, CatalogVariant } from "@/lib/catalog/data";
 import type { CartApi, CartItem } from "./types";
+import { computeCartTotals, nextStackSaveTier } from "./discounts";
 
 // Bump the storage key on schema changes so stale carts from the
 // pre-pack-tier era don't resurface as broken line items.
@@ -116,11 +117,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const openDrawer = useCallback(() => setDrawerOpen(true), []);
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
+  const totals = useMemo(() => computeCartTotals(items), [items]);
+  const nextTier = useMemo(() => nextStackSaveTier(totals.vial_count), [totals.vial_count]);
+
   const api = useMemo<CartApi>(
     () => ({
       items,
       itemCount: items.reduce((n, i) => n + i.quantity, 0),
       subtotal: items.reduce((s, i) => s + i.unit_price * i.quantity, 0),
+      totals,
+      nextTier,
       addItem,
       updateQuantity,
       removeItem,
@@ -129,7 +135,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       closeDrawer,
       isDrawerOpen,
     }),
-    [items, addItem, updateQuantity, removeItem, clear, openDrawer, closeDrawer, isDrawerOpen]
+    [items, totals, nextTier, addItem, updateQuantity, removeItem, clear, openDrawer, closeDrawer, isDrawerOpen]
   );
 
   return <CartContext.Provider value={api}>{children}</CartContext.Provider>;
