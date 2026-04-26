@@ -126,6 +126,58 @@ export interface FreeVialEntitlementRow {
   status: 'available' | 'redeemed' | 'expired';
 }
 
+export interface AffiliateApplicationRow {
+  id: string;
+  applicant_email: string;
+  applicant_name: string;
+  audience_description: string;
+  website_or_social: string | null;
+  applicant_user_id: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewed_by_admin: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+}
+
+export interface AffiliateRow {
+  id: string;
+  user_id: string;
+  application_id: string | null;
+  tier: 'bronze' | 'silver' | 'gold' | 'eminent';
+  payout_method: 'zelle' | 'crypto' | 'wire';
+  payout_handle: string | null;
+  available_balance_cents: number;
+  total_earned_cents: number;
+  total_paid_cents: number;
+  total_redeemed_cents: number;
+  approved_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CommissionLedgerRow {
+  id: string;
+  affiliate_id: string;
+  source_referral_id: string | null;
+  source_order_id: string | null;
+  kind: 'earned' | 'clawback' | 'redemption_debit' | 'payout_debit';
+  amount_cents: number;
+  tier_at_time: string;
+  created_at: string;
+}
+
+export interface AffiliatePayoutRow {
+  id: string;
+  affiliate_id: string;
+  amount_cents: number;
+  method: 'zelle' | 'crypto' | 'wire';
+  external_reference: string | null;
+  status: 'pending' | 'sent' | 'failed';
+  created_at: string;
+  sent_at: string | null;
+  notes: string | null;
+}
+
 export interface RuoAcknowledgmentRow {
   id: string;
   order_id: string | null;
