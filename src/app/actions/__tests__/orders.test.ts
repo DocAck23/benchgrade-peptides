@@ -36,6 +36,15 @@ let nextGenerateLinkResult: {
   data: { properties: { action_link: "https://stub-magic-link.test/abc" } },
 };
 
+// Captured supabase UPDATE calls keyed by table — used by I-CHECKOUT-SUB-1
+// to assert the subscription_id back-link UPDATE on `orders`.
+interface UpdateCall {
+  table: string;
+  values: Record<string, unknown>;
+  eq: { column: string; value: unknown };
+}
+const updateCalls: UpdateCall[] = [];
+
 function makeStubSupabase() {
   return {
     from(table: string) {
@@ -48,6 +57,14 @@ function makeStubSupabase() {
         delete() {
           return {
             eq: () => Promise.resolve({ error: null }),
+          };
+        },
+        update(values: Record<string, unknown>) {
+          return {
+            eq: (column: string, value: unknown) => {
+              updateCalls.push({ table, values, eq: { column, value } });
+              return Promise.resolve({ error: null });
+            },
           };
         },
       };
@@ -122,6 +139,33 @@ vi.mock("@/lib/email/client", () => ({
   ADMIN_NOTIFICATION_EMAIL: "admin@test",
 }));
 
+// createSubscription mock — Wave C1 wires submitOrder to call this when
+// the customer toggled subscribe at checkout. The actual implementation
+// lives in subscriptions.ts (Wave B1, out of scope here); we replace it
+// with a vi.fn so tests can capture args and program the result.
+interface CreateSubArgs {
+  customer_user_id: string | null;
+  customer_email: string;
+  items: unknown[];
+  plan: {
+    duration_months: 1 | 3 | 6 | 9 | 12;
+    payment_cadence: "prepay" | "bill_pay";
+    ship_cadence: "monthly" | "quarterly" | "once";
+  };
+  first_order_id: string;
+}
+const createSubscriptionMock = vi.fn(
+  async (
+    _args: CreateSubArgs
+  ): Promise<{ ok: boolean; subscription_id?: string; error?: string }> => ({
+    ok: true,
+    subscription_id: "stub-sub-id",
+  })
+);
+vi.mock("@/app/actions/subscriptions", () => ({
+  createSubscription: (args: CreateSubArgs) => createSubscriptionMock(args),
+}));
+
 // Pull in submitOrder AFTER mocks are registered so the module-level
 // imports resolve to the stubs above.
 import { submitOrder } from "../orders";
@@ -147,10 +191,16 @@ beforeEach(() => {
   for (const k of Object.keys(insertedRows)) delete insertedRows[k];
   generateLinkCalls.length = 0;
   sentEmails.length = 0;
+  updateCalls.length = 0;
   resendShouldFire = false;
   nextGenerateLinkResult = {
     data: { properties: { action_link: "https://stub-magic-link.test/abc" } },
   };
+  createSubscriptionMock.mockClear();
+  createSubscriptionMock.mockResolvedValue({
+    ok: true,
+    subscription_id: "stub-sub-id",
+  });
 });
 
 describe("submitOrder — server-side discount computation", () => {
@@ -322,6 +372,78 @@ describe("submitOrder — server-side discount computation", () => {
     const claim = sentEmails[sentEmails.length - 1];
     expect(claim.to).toBe(VALID_CUSTOMER.email);
     expect(claim.html).toContain("https://stub-magic-link.test/existing");
+  });
+
+  it("I-CHECKOUT-SUB-1: subscription_mode triggers createSubscription + back-links subscription_id on the order", async () => {
+    createSubscriptionMock.mockResolvedValueOnce({
+      ok: true,
+      subscription_id: "sub-uuid-001",
+    });
+
+    const result = await submitOrder({
+      customer: VALID_CUSTOMER,
+      items: [{ sku: "BGP-GLP1S-5", quantity: 1 }],
+      acknowledgment: VALID_ACK,
+      payment_method: "wire",
+      subscription_mode: {
+        duration_months: 3,
+        payment_cadence: "prepay",
+        ship_cadence: "monthly",
+      },
+    });
+
+    if (!result.ok) throw new Error(`submitOrder failed: ${result.error}`);
+    expect(result.ok).toBe(true);
+
+    // createSubscription was invoked exactly once with plan + email + first_order_id.
+    expect(createSubscriptionMock).toHaveBeenCalledTimes(1);
+    const callArg = createSubscriptionMock.mock.calls[0][0];
+    expect(callArg.customer_email).toBe(VALID_CUSTOMER.email);
+    expect(callArg.customer_user_id).toBeNull();
+    expect(callArg.first_order_id).toBe(result.order_id);
+    expect(callArg.plan).toEqual({
+      duration_months: 3,
+      payment_cadence: "prepay",
+      ship_cadence: "monthly",
+    });
+    // items must be the server-resolved CartItem[] (not the raw client payload).
+    expect(Array.isArray(callArg.items)).toBe(true);
+    expect((callArg.items[0] as { sku: string }).sku).toBe("BGP-GLP1S-5");
+
+    // Back-link UPDATE: orders.update({ subscription_id }).eq('order_id', order_id)
+    const link = updateCalls.find(
+      (u) => u.table === "orders" && u.values.subscription_id === "sub-uuid-001"
+    );
+    expect(link).toBeDefined();
+    expect(link?.eq.column).toBe("order_id");
+    expect(link?.eq.value).toBe(result.order_id);
+  });
+
+  it("I-CHECKOUT-SUB-2: invalid subscription_mode (bill_pay + 1mo) → order still succeeds, no subscription created", async () => {
+    const result = await submitOrder({
+      customer: VALID_CUSTOMER,
+      items: [{ sku: "BGP-GLP1S-5", quantity: 1 }],
+      acknowledgment: VALID_ACK,
+      payment_method: "wire",
+      subscription_mode: {
+        // Invalid combo — bill_pay requires duration ≥ 3 months. The
+        // server-side discount-percent check returns 0 → we log a
+        // warning and let the order roll forward as one-shot.
+        duration_months: 1,
+        payment_cadence: "bill_pay",
+        ship_cadence: "monthly",
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(createSubscriptionMock).not.toHaveBeenCalled();
+    // The order row landed normally.
+    expect(insertedRows["orders"]).toHaveLength(1);
+    // No subscription_id back-link UPDATE either.
+    const link = updateCalls.find(
+      (u) => u.table === "orders" && "subscription_id" in u.values
+    );
+    expect(link).toBeUndefined();
   });
 
   it("account-claim failure does NOT roll back the order (best-effort dispatch)", async () => {

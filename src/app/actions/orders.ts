@@ -24,6 +24,8 @@ import {
   enabledPaymentMethods,
   type PaymentMethod,
 } from "@/lib/payments/methods";
+import { subscriptionDiscountPercent } from "@/lib/subscriptions/discounts";
+import { createSubscription } from "@/app/actions/subscriptions";
 
 // Dev-only fallback store — in prod we require Supabase-backed counting.
 const devMemoryStore = new MemoryRateLimitStore();
@@ -69,11 +71,25 @@ export interface ClientAcknowledgment {
   accepts_ruo: boolean;
 }
 
+/**
+ * Optional subscription selection. When set, the customer toggled the
+ * subscribe-and-save card at checkout; submitOrder will create a
+ * subscription row linked to this order via createSubscription. Validity
+ * of the (duration × payment × ship) combo is checked server-side via
+ * subscriptionDiscountPercent — invalid combos fall through to one-shot.
+ */
+export interface SubmitOrderSubscriptionMode {
+  duration_months: 1 | 3 | 6 | 9 | 12;
+  payment_cadence: "prepay" | "bill_pay";
+  ship_cadence: "monthly" | "quarterly" | "once";
+}
+
 export interface SubmitOrderInput {
   customer: CustomerInfo;
   items: ClientCartLine[];
   acknowledgment: ClientAcknowledgment;
   payment_method: PaymentMethod;
+  subscription_mode?: SubmitOrderSubscriptionMode | null;
 }
 
 export interface SubmitOrderResult {
@@ -130,11 +146,31 @@ const AcknowledgmentSchema = z.object({
 
 const PaymentMethodSchema = z.enum(PAYMENT_METHODS);
 
+// Plan-shape validation only. Cross-field validity (e.g. bill_pay+1mo) is
+// recomputed server-side via subscriptionDiscountPercent below; an
+// invalid combo there logs and falls through to a one-shot order rather
+// than rejecting the entire checkout.
+const SubscriptionModeSchema = z
+  .object({
+    duration_months: z.union([
+      z.literal(1),
+      z.literal(3),
+      z.literal(6),
+      z.literal(9),
+      z.literal(12),
+    ]),
+    payment_cadence: z.enum(["prepay", "bill_pay"]),
+    ship_cadence: z.enum(["monthly", "quarterly", "once"]),
+  })
+  .optional()
+  .nullable();
+
 const SubmitOrderSchema = z.object({
   customer: CustomerSchema,
   items: z.array(CartLineSchema).min(1, "Cart is empty.").max(20, "Cart too large."),
   acknowledgment: AcknowledgmentSchema,
   payment_method: PaymentMethodSchema,
+  subscription_mode: SubscriptionModeSchema,
 });
 
 function resolveCartOnServer(
@@ -319,6 +355,63 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
       ok: false,
       error: `Order submission failed at compliance step. Please retry in a minute; if it persists, email admin@benchgradepeptides.com with any reference you have.`,
     };
+  }
+
+  // Subscription branch — Wave C1. If the customer toggled the
+  // subscribe-and-save upsell, persist a subscription row linked to this
+  // order. Best-effort: if createSubscription or the back-link UPDATE
+  // fails, the order still succeeds (the customer paid for cycle 1 and
+  // admin can manually create the subscription later). We also recompute
+  // plan validity server-side via subscriptionDiscountPercent — never
+  // trust the client.
+  if (validInput.subscription_mode) {
+    const pct = subscriptionDiscountPercent({
+      duration_months: validInput.subscription_mode.duration_months,
+      payment_cadence: validInput.subscription_mode.payment_cadence,
+      ship_cadence: validInput.subscription_mode.ship_cadence,
+    });
+    if (pct === 0) {
+      console.warn(
+        "[submitOrder] invalid subscription plan combo, falling through to one-shot",
+        validInput.subscription_mode
+      );
+    } else {
+      try {
+        const subResult = await createSubscription({
+          customer_user_id: null, // null until magic-link claim binds it
+          customer_email: validInput.customer.email,
+          items: resolved.items,
+          plan: {
+            duration_months: validInput.subscription_mode.duration_months,
+            payment_cadence: validInput.subscription_mode.payment_cadence,
+            ship_cadence: validInput.subscription_mode.ship_cadence,
+          },
+          first_order_id: order_id,
+        });
+        if (!subResult.ok) {
+          console.error(
+            "[submitOrder] createSubscription failed:",
+            subResult.error
+          );
+        } else if (subResult.subscription_id) {
+          // Compensating back-link — the order was inserted before we
+          // knew the subscription id. Best-effort: if this fails, the
+          // order is just unlinked but otherwise normal.
+          const { error: linkErr } = await supa
+            .from("orders")
+            .update({ subscription_id: subResult.subscription_id })
+            .eq("order_id", order_id);
+          if (linkErr) {
+            console.error(
+              "[submitOrder] subscription_id link failed:",
+              linkErr
+            );
+          }
+        }
+      } catch (err) {
+        console.error("[submitOrder] subscription creation threw:", err);
+      }
+    }
   }
 
   // Emails are best-effort — the order is already durable in Supabase,

@@ -38,7 +38,7 @@ interface CheckoutPageClientProps {
 
 export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps) {
   const router = useRouter();
-  const { items, subtotal, itemCount, totals, clear } = useCart();
+  const { items, subtotal, itemCount, totals, subscriptionMode, clear } = useCart();
   const hasStackSave = totals.stack_save_discount_cents > 0;
   const hasSameSku = totals.same_sku_discount_cents > 0;
   const hasAnyDiscount = hasStackSave || hasSameSku;
@@ -109,6 +109,7 @@ export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps
           accepts_ruo: ack.accepts_ruo,
         },
         payment_method: paymentMethod,
+        subscription_mode: subscriptionMode,
       });
       if (!res.ok) {
         setError(res.error ?? "Order submission failed.");
