@@ -48,7 +48,7 @@ export function CartPageClient() {
                   alt={item.name}
                   fill
                   sizes="112px"
-                  className="object-cover"
+                  className="object-cover [object-position:65%_50%]"
                 />
               </div>
               <div className="flex-1 min-w-0 flex flex-col">
