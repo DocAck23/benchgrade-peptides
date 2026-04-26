@@ -9,6 +9,7 @@ import "./globals.css";
 
 import { RUOBanner } from "@/components/layout/RUOBanner";
 import { Header } from "@/components/layout/Header";
+import { HeaderAccountSlot } from "@/components/layout/HeaderAccountSlot";
 import { Footer } from "@/components/layout/Footer";
 import { CartProvider } from "@/lib/cart/CartContext";
 import { CartDrawer } from "@/components/cart/CartDrawer";
@@ -88,7 +89,7 @@ export default function RootLayout({
             Skip to main content
           </a>
           <RUOBanner />
-          <Header />
+          <Header accountSlot={<HeaderAccountSlot />} />
           <main id="main" className="flex-1">{children}</main>
           <Footer />
           <CartDrawer />

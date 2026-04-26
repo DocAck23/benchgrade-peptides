@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { CartButton } from "@/components/cart/CartButton";
@@ -25,8 +25,13 @@ const PRIMARY_NAV = [
  * group hint for surface-aware fallbacks).
  *
  * Microinteractions: 200ms ease-out — no springs.
+ *
+ * `accountSlot` is rendered server-side by the root layout (auth-aware
+ * Sign-in / account badge) and passed in as a child node so this client
+ * component never has to read the session itself. Right-side cluster
+ * order: nav | account | cart | mobile-menu-toggle.
  */
-export function Header() {
+export function Header({ accountSlot }: { accountSlot?: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   // Cinzel UI nav class — shared across desktop + mobile lists so the
@@ -63,12 +68,7 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-4 justify-self-end">
-          <Link
-            href="/account"
-            className={cn("hidden md:inline-block", navLinkBase, navLinkUnderline)}
-          >
-            Account
-          </Link>
+          {accountSlot}
           <span className="[&_button]:transition-colors [&_button]:duration-200 [&_button]:ease-out [&_button:hover]:text-gold-dark">
             <CartButton />
           </span>
