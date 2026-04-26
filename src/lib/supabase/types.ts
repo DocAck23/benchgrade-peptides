@@ -86,6 +86,46 @@ export interface SubscriptionRow {
   cancelled_at: string | null;
 }
 
+export interface MessageRow {
+  id: string;
+  customer_user_id: string;
+  sender: 'customer' | 'admin';
+  body: string;
+  created_at: string;
+  read_at: string | null;
+}
+
+export interface ReferralCodeRow {
+  code: string;
+  owner_user_id: string;
+  created_at: string;
+}
+
+export interface ReferralRow {
+  id: string;
+  referrer_user_id: string;
+  referee_user_id: string | null;
+  referee_email: string;
+  code: string;
+  attributed_at: string;
+  redeemed_at: string | null;
+  status: 'pending' | 'shipped' | 'redeemed' | 'cancelled';
+  first_order_id: string | null;
+  created_at: string;
+}
+
+export interface FreeVialEntitlementRow {
+  id: string;
+  customer_user_id: string;
+  size_mg: 5 | 10;
+  source: 'referral' | 'stack_save_8' | 'stack_save_12' | 'admin_grant';
+  source_referral_id: string | null;
+  granted_at: string;
+  redeemed_at: string | null;
+  redeemed_order_id: string | null;
+  status: 'available' | 'redeemed' | 'expired';
+}
+
 export interface RuoAcknowledgmentRow {
   id: string;
   order_id: string | null;
