@@ -7,6 +7,12 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   help?: string;
 }
 
+/**
+ * Locked brand text input (spec §16.1):
+ *   - paper bg, ink text, rule (gold-tinted) border
+ *   - gold-light focus ring (2px), gold border on focus
+ *   - danger border + danger text on error
+ */
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, label, error, help, id, ...props }, ref) => {
     const autoId = useId();
@@ -17,9 +23,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
-          <label htmlFor={inputId} className="label-eyebrow text-ink-soft">
+          <label htmlFor={inputId} className="label-eyebrow">
             {label}
-            {props.required && <span className="text-oxblood ml-1" aria-label="required">*</span>}
+            {props.required && (
+              <span className="text-[color:var(--color-danger)] ml-1" aria-label="required">*</span>
+            )}
           </label>
         )}
         <input
@@ -28,10 +36,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           aria-invalid={!!error}
           aria-describedby={[helpId, errorId].filter(Boolean).join(" ") || undefined}
           className={cn(
-            "h-11 px-3 bg-paper border rule text-ink placeholder:text-ink-faint",
-            "focus:outline-none focus:border-teal",
-            "disabled:bg-paper-soft disabled:text-ink-faint disabled:cursor-not-allowed",
-            error && "border-oxblood focus:border-oxblood",
+            "h-11 px-3 rounded-sm bg-paper border border-rule text-ink placeholder:text-ink-muted",
+            "focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold-light focus:ring-offset-0",
+            "disabled:bg-paper-soft disabled:text-ink-muted disabled:cursor-not-allowed",
+            "transition-[border-color,box-shadow] duration-200 ease-[var(--ease-default)]",
+            error && "border-[color:var(--color-danger)] focus:border-[color:var(--color-danger)] focus:ring-[color:var(--color-danger)]/30",
             className
           )}
           {...props}
@@ -40,7 +49,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           <p id={helpId} className="text-xs text-ink-muted">{help}</p>
         )}
         {error && (
-          <p id={errorId} className="text-xs text-oxblood" role="alert">{error}</p>
+          <p id={errorId} className="text-xs text-[color:var(--color-danger)]" role="alert">{error}</p>
         )}
       </div>
     );
@@ -64,9 +73,11 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
-          <label htmlFor={inputId} className="label-eyebrow text-ink-soft">
+          <label htmlFor={inputId} className="label-eyebrow">
             {label}
-            {props.required && <span className="text-oxblood ml-1" aria-label="required">*</span>}
+            {props.required && (
+              <span className="text-[color:var(--color-danger)] ml-1" aria-label="required">*</span>
+            )}
           </label>
         )}
         <textarea
@@ -76,10 +87,11 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           aria-invalid={!!error}
           aria-describedby={[helpId, errorId].filter(Boolean).join(" ") || undefined}
           className={cn(
-            "px-3 py-2.5 bg-paper border rule text-ink placeholder:text-ink-faint resize-y",
-            "focus:outline-none focus:border-teal",
-            "disabled:bg-paper-soft disabled:text-ink-faint disabled:cursor-not-allowed",
-            error && "border-oxblood focus:border-oxblood",
+            "px-3 py-2.5 rounded-sm bg-paper border border-rule text-ink placeholder:text-ink-muted resize-y",
+            "focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold-light focus:ring-offset-0",
+            "disabled:bg-paper-soft disabled:text-ink-muted disabled:cursor-not-allowed",
+            "transition-[border-color,box-shadow] duration-200 ease-[var(--ease-default)]",
+            error && "border-[color:var(--color-danger)] focus:border-[color:var(--color-danger)] focus:ring-[color:var(--color-danger)]/30",
             className
           )}
           {...props}
@@ -88,7 +100,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           <p id={helpId} className="text-xs text-ink-muted">{help}</p>
         )}
         {error && (
-          <p id={errorId} className="text-xs text-oxblood" role="alert">{error}</p>
+          <p id={errorId} className="text-xs text-[color:var(--color-danger)]" role="alert">{error}</p>
         )}
       </div>
     );
