@@ -33,6 +33,8 @@ export interface PopularStack {
   why: string;
   /** SKU + quantity tuples that compose the stack. */
   items: PopularStackLine[];
+  /** Group photo of the stack contents — the bundle the customer receives. */
+  image: string;
 }
 
 /**
@@ -53,6 +55,7 @@ export const POPULAR_STACKS: PopularStack[] = [
       { sku: "BGP-BPC-5", quantity: 1 },
       { sku: "BGP-TB-5", quantity: 1 },
     ],
+    image: "/brand/stacks/wolverine-stack.jpg?v=1",
   },
   {
     slug: "metabolic-pair",
@@ -63,6 +66,7 @@ export const POPULAR_STACKS: PopularStack[] = [
       { sku: "BGP-GLP1S-5", quantity: 1 },
       { sku: "BGP-AMYA-5", quantity: 1 },
     ],
+    image: "/brand/stacks/metabolic-pair.jpg?v=1",
   },
   {
     slug: "triple-agonist-gh",
@@ -73,6 +77,7 @@ export const POPULAR_STACKS: PopularStack[] = [
       { sku: "BGP-GLP3R-5", quantity: 1 },
       { sku: "BGP-IPA-5", quantity: 1 },
     ],
+    image: "/brand/stacks/triple-agonist-gh.jpg?v=1",
   },
   {
     slug: "gh-axis-stack",
@@ -83,6 +88,7 @@ export const POPULAR_STACKS: PopularStack[] = [
       { sku: "BGP-CJC-5", quantity: 1 },
       { sku: "BGP-IPA-5", quantity: 1 },
     ],
+    image: "/brand/stacks/gh-axis-stack.jpg?v=1",
   },
   {
     slug: "ghrh-pair",
@@ -93,6 +99,7 @@ export const POPULAR_STACKS: PopularStack[] = [
       { sku: "BGP-SER-5", quantity: 1 },
       { sku: "BGP-TES-5", quantity: 1 },
     ],
+    image: "/brand/stacks/ghrh-pair.jpg?v=1",
   },
   {
     slug: "mega-recovery-stack",
@@ -105,6 +112,7 @@ export const POPULAR_STACKS: PopularStack[] = [
       { sku: "BGP-BPC-5", quantity: 1 },
       { sku: "BGP-TB-5", quantity: 1 },
     ],
+    image: "/brand/stacks/mega-recovery-stack.jpg?v=1",
   },
   {
     slug: "metabolic-mitochondrial-stack",
@@ -116,6 +124,7 @@ export const POPULAR_STACKS: PopularStack[] = [
       { sku: "BGP-TES-5", quantity: 1 },
       { sku: "BGP-MOTS-10", quantity: 1 },
     ],
+    image: "/brand/stacks/metabolic-mitochondrial-stack.jpg?v=1",
   },
   {
     slug: "metabolic-cu-tripeptide-stack",
@@ -127,6 +136,7 @@ export const POPULAR_STACKS: PopularStack[] = [
       { sku: "BGP-TES-5", quantity: 1 },
       { sku: "BGP-GHK-50", quantity: 1 },
     ],
+    image: "/brand/stacks/metabolic-cu-tripeptide-stack.jpg?v=1",
   },
 ];
 

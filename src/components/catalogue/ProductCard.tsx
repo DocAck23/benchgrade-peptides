@@ -39,7 +39,7 @@ export function ProductCard({ product, categorySlug }: ProductCardProps) {
           alt={`${product.name} research vial`}
           fill
           sizes="(min-width: 1280px) 25vw, (min-width: 768px) 33vw, 50vw"
-          className="object-cover scale-[1.3] [object-position:75%_50%]"
+          className="object-cover scale-[1.2] [object-position:35%_50%]"
         />
       </div>
 

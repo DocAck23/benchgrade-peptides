@@ -53,6 +53,19 @@ export function PopularStacks() {
             className="border border-rule bg-paper-soft p-6 sm:p-7 flex flex-col gap-4"
             aria-labelledby={`stack-${r.stack.slug}`}
           >
+            <Link
+              href={`/catalogue/stacks/${r.stack.slug}`}
+              className="-mx-6 sm:-mx-7 -mt-6 sm:-mt-7 mb-1 block bg-paper border-b border-rule"
+              aria-hidden="true"
+              tabIndex={-1}
+            >
+              <img
+                src={r.stack.image}
+                alt={`${r.stack.name} — ${r.lines.length} vials`}
+                loading="lazy"
+                className="w-full aspect-square object-contain"
+              />
+            </Link>
             <header>
               <div className="label-eyebrow text-gold-dark text-[10px] sm:text-xs mb-1.5">
                 {r.lines.length}-vial stack

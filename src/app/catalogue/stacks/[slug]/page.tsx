@@ -59,22 +59,31 @@ export default async function StackPickerPage({ params }: RouteParams) {
           ]}
         />
 
-        <header className="mt-4 sm:mt-6 mb-8 sm:mb-12 border-b rule pb-6 sm:pb-10">
-          <div className="label-eyebrow text-gold-dark mb-2 text-[10px] sm:text-xs">
-            Customize your stack
+        <header className="mt-4 sm:mt-6 mb-8 sm:mb-12 border-b rule pb-6 sm:pb-10 grid lg:grid-cols-[1fr_minmax(360px,480px)] gap-8 lg:gap-12 items-start">
+          <div>
+            <div className="label-eyebrow text-gold-dark mb-2 text-[10px] sm:text-xs">
+              Customize your stack
+            </div>
+            <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl text-ink leading-[1.08] sm:leading-[1.05] mb-3 sm:mb-5">
+              {stack.name}
+            </h1>
+            <p
+              className="text-base sm:text-lg lg:text-xl italic text-ink-soft max-w-3xl leading-relaxed"
+              style={{ fontFamily: "var(--font-editorial)" }}
+            >
+              {stack.tagline}
+            </p>
+            <p className="text-sm sm:text-[15px] text-ink-soft max-w-3xl mt-4 leading-relaxed">
+              {stack.why}
+            </p>
           </div>
-          <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl text-ink leading-[1.08] sm:leading-[1.05] mb-3 sm:mb-5">
-            {stack.name}
-          </h1>
-          <p
-            className="text-base sm:text-lg lg:text-xl italic text-ink-soft max-w-3xl leading-relaxed"
-            style={{ fontFamily: "var(--font-editorial)" }}
-          >
-            {stack.tagline}
-          </p>
-          <p className="text-sm sm:text-[15px] text-ink-soft max-w-3xl mt-4 leading-relaxed">
-            {stack.why}
-          </p>
+          <div className="bg-paper-soft border border-rule">
+            <img
+              src={stack.image}
+              alt={`${stack.name} — ${resolved.lines.length} vials`}
+              className="w-full aspect-square object-contain"
+            />
+          </div>
         </header>
 
         <StackPickerForm stackName={stack.name} lines={pickerLines} />
