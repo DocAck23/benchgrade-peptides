@@ -87,7 +87,7 @@ function ProductCarouselCard({ product }: { product: CatalogProduct }) {
             alt={`${product.name} research vial`}
             fill
             sizes="280px"
-            className="object-cover scale-[1.2] [object-position:35%_50%]"
+            className="object-cover scale-[1.1] [object-position:60%_50%]"
           />
         </div>
 

@@ -46,16 +46,16 @@ export function PopularStacks() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-5 sm:gap-6 lg:gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
         {resolved.map((r) => (
           <article
             key={r.stack.slug}
-            className="border border-rule bg-paper-soft p-6 sm:p-7 flex flex-col gap-4"
+            className="border border-rule bg-paper-soft p-3 sm:p-5 lg:p-6 flex flex-col gap-3"
             aria-labelledby={`stack-${r.stack.slug}`}
           >
             <Link
               href={`/catalogue/stacks/${r.stack.slug}`}
-              className="-mx-6 sm:-mx-7 -mt-6 sm:-mt-7 mb-1 block bg-paper border-b border-rule"
+              className="-mx-3 sm:-mx-5 lg:-mx-6 -mt-3 sm:-mt-5 lg:-mt-6 mb-1 block bg-paper border-b border-rule"
               aria-hidden="true"
               tabIndex={-1}
             >
@@ -63,7 +63,7 @@ export function PopularStacks() {
                 src={r.stack.image}
                 alt={`${r.stack.name} — ${r.lines.length} vials`}
                 loading="lazy"
-                className="w-full aspect-square object-contain"
+                className="w-full aspect-[4/5] object-contain"
               />
             </Link>
             <header>
@@ -72,7 +72,7 @@ export function PopularStacks() {
               </div>
               <h3
                 id={`stack-${r.stack.slug}`}
-                className="font-display text-xl sm:text-2xl lg:text-[26px] text-ink leading-tight mb-2"
+                className="font-display text-lg sm:text-xl lg:text-2xl text-ink leading-tight mb-2"
               >
                 {r.stack.name}
               </h3>

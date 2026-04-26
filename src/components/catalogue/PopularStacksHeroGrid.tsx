@@ -3,19 +3,18 @@ import { resolveAllStacks } from "@/lib/catalogue/stacks";
 import { formatPrice } from "@/lib/utils";
 import { AddStackToCartButton } from "./AddStackToCartButton";
 
-/**
- * Hero-side popular-stacks grid. Renders the right column of the homepage
- * hero — a compact list of curated stack mini-cards. Each card click-
- * throughs to the stack picker at `/catalogue/stacks/[slug]` where the
- * customer chooses vial sizes per line, optionally removes/swaps items,
- * sets stack quantity, and adds the whole thing to cart in one step.
- *
- * Pure server component for SEO. Card surface stays cream/paper-soft so
- * the cards "pop" against either a paper or wine hero background.
- */
+const HERO_STACK_SLUGS = [
+  "wolverine-stack",
+  "mega-recovery-stack",
+  "metabolic-cu-tripeptide-stack",
+] as const;
+
 export function PopularStacksHeroGrid() {
-  const resolved = resolveAllStacks().filter((r) => r.lines.length >= 2);
-  if (resolved.length === 0) return null;
+  const all = resolveAllStacks().filter((r) => r.lines.length >= 2);
+  const featured = HERO_STACK_SLUGS
+    .map((slug) => all.find((r) => r.stack.slug === slug))
+    .filter((r): r is NonNullable<typeof r> => r !== undefined);
+  if (featured.length === 0) return null;
 
   return (
     <aside aria-labelledby="hero-stacks-heading" className="lg:pt-2">
@@ -24,12 +23,12 @@ export function PopularStacksHeroGrid() {
       </div>
       <h2
         id="hero-stacks-heading"
-        className="font-display text-2xl sm:text-3xl lg:text-[32px] text-wine leading-tight mb-5 sm:mb-6"
+        className="font-display text-2xl sm:text-3xl lg:text-[32px] text-wine leading-tight mb-4 sm:mb-5"
       >
         Browse popular peptide stacks.
       </h2>
       <p
-        className="text-[14px] sm:text-[15px] italic text-ink-soft leading-snug mb-6 sm:mb-7"
+        className="text-[14px] sm:text-[15px] italic text-ink-soft leading-snug mb-5 sm:mb-6"
         style={{ fontFamily: "var(--font-editorial)" }}
       >
         Click any stack to choose vial sizes, swap items, and add the whole
@@ -37,42 +36,56 @@ export function PopularStacksHeroGrid() {
       </p>
 
       <ul className="space-y-3 sm:space-y-4">
-        {resolved.map((r) => (
+        {featured.map((r) => (
           <li
             key={r.stack.slug}
             className="border border-rule bg-paper-soft hover:border-gold-dark transition-colors duration-200"
           >
             <Link
               href={`/catalogue/stacks/${r.stack.slug}`}
-              className="group block px-4 sm:px-5 pt-3.5 sm:pt-4 pb-3 focus-visible:outline-none"
+              className="group flex gap-3 sm:gap-4 px-3 sm:px-4 pt-3 pb-2.5 focus-visible:outline-none"
             >
-              <div className="flex items-baseline justify-between gap-3 mb-1.5">
-                <h3 className="font-display text-base sm:text-[17px] text-ink leading-tight">
-                  {r.stack.name}
-                </h3>
-                <span className="font-mono-data text-xs text-ink-muted whitespace-nowrap">
-                  {r.lines.length} vial{r.lines.length === 1 ? "" : "s"}
-                </span>
-              </div>
-              <p className="text-[12.5px] sm:text-[13px] text-ink-soft leading-snug mb-2">
-                {r.stack.tagline}
-              </p>
-              <div className="flex items-center justify-between gap-3 pt-2 border-t border-rule">
-                <span className="font-mono-data text-[13px] text-ink">
-                  {formatPrice(r.retail_total_cents)}
-                </span>
-                <span className="text-[11px] uppercase tracking-[0.1em] text-gold-dark font-display group-hover:underline underline-offset-4">
-                  Customize →
-                </span>
+              <img
+                src={r.stack.image}
+                alt={`${r.stack.name} — ${r.lines.length} vials`}
+                loading="lazy"
+                className="w-16 h-16 sm:w-20 sm:h-20 flex-none object-contain bg-paper border border-rule"
+              />
+              <div className="flex-1 min-w-0 flex flex-col">
+                <div className="flex items-baseline justify-between gap-2 mb-1">
+                  <h3 className="font-display text-base sm:text-[17px] text-ink leading-tight truncate">
+                    {r.stack.name}
+                  </h3>
+                  <span className="font-mono-data text-[11px] text-ink-muted whitespace-nowrap">
+                    {r.lines.length} vials
+                  </span>
+                </div>
+                <p className="text-[12px] sm:text-[12.5px] text-ink-soft leading-snug line-clamp-2 mb-1.5">
+                  {r.stack.tagline}
+                </p>
+                <div className="mt-auto flex items-center justify-between gap-3 pt-1.5 border-t border-rule">
+                  <span className="font-mono-data text-[12.5px] text-ink">
+                    {formatPrice(r.retail_total_cents)}
+                  </span>
+                  <span className="text-[10.5px] uppercase tracking-[0.1em] text-gold-dark font-display group-hover:underline underline-offset-4">
+                    Customize →
+                  </span>
+                </div>
               </div>
             </Link>
-            {/* Add full stack — sibling to Link so click doesn't navigate */}
-            <div className="px-4 sm:px-5 pb-3.5 sm:pb-4">
+            <div className="px-3 sm:px-4 pb-3">
               <AddStackToCartButton resolved={r} />
             </div>
           </li>
         ))}
       </ul>
+
+      <Link
+        href="/catalogue#popular-stacks"
+        className="mt-5 sm:mt-6 inline-flex items-center justify-center w-full px-4 py-3 border border-wine text-wine font-display text-[13px] uppercase tracking-[0.12em] hover:bg-wine hover:text-paper transition-colors duration-200"
+      >
+        View all stacks →
+      </Link>
     </aside>
   );
 }
