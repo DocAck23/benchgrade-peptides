@@ -27,7 +27,7 @@ export function DataRow({ label, value, mono = false, wrap = false, className }:
   return (
     <div
       className={cn(
-        "grid grid-cols-[140px_1fr] items-baseline gap-4 py-3 px-3",
+        "grid grid-cols-[100px_minmax(0,1fr)] sm:grid-cols-[140px_1fr] items-baseline gap-3 sm:gap-4 py-3 px-3",
         "border-t border-rule first:border-t-0",
         "even:bg-paper-soft",
         className
@@ -36,9 +36,9 @@ export function DataRow({ label, value, mono = false, wrap = false, className }:
       <dt className="label-eyebrow">{label}</dt>
       <dd
         className={cn(
-          "text-sm text-ink",
+          "text-sm text-ink min-w-0",
           mono ? "font-mono-data" : "font-sans",
-          wrap ? "break-words" : "truncate"
+          wrap ? "break-words" : "break-words sm:truncate"
         )}
       >
         {value}

@@ -41,8 +41,8 @@ export function CartPageClient() {
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-10">
         <ul className="divide-y rule border rule bg-paper">
           {items.map((item) => (
-            <li key={item.sku} className="p-5 flex gap-5">
-              <div className="relative w-28 h-28 bg-paper-soft border rule shrink-0 overflow-hidden">
+            <li key={item.sku} className="p-3 sm:p-5 flex gap-3 sm:gap-5">
+              <div className="relative w-20 h-20 sm:w-28 sm:h-28 bg-paper-soft border rule shrink-0 overflow-hidden">
                 <Image
                   src={item.vial_image}
                   alt={item.name}
@@ -67,32 +67,32 @@ export function CartPageClient() {
                     Remove
                   </button>
                 </div>
-                <div className="font-mono-data text-xs text-ink-muted mb-3">
+                <div className="font-mono-data text-[11px] sm:text-xs text-ink-muted mb-2 sm:mb-3 break-words">
                   {item.pack_size}-vial pack · {item.size_mg}mg ea. · {item.sku} · {formatPrice((item.unit_price / item.pack_size) * 100)}/vial
                 </div>
-                <div className="mt-auto flex items-center justify-between gap-2">
-                  <div className="inline-flex items-center border rule">
+                <div className="mt-auto flex items-center justify-between gap-2 flex-wrap">
+                  <div className="inline-flex items-center border rule shrink-0">
                     <button
                       type="button"
                       onClick={() => updateQuantity(item.sku, item.quantity - 1)}
-                      className="w-9 h-9 flex items-center justify-center text-ink-soft hover:bg-paper-soft"
+                      className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-ink-soft hover:bg-paper-soft"
                       aria-label="Decrease quantity"
                     >
                       <Minus className="w-3 h-3" strokeWidth={1.5} />
                     </button>
-                    <span className="w-12 text-center font-mono-data text-sm text-ink">
+                    <span className="w-10 sm:w-12 text-center font-mono-data text-sm text-ink">
                       {item.quantity}
                     </span>
                     <button
                       type="button"
                       onClick={() => updateQuantity(item.sku, item.quantity + 1)}
-                      className="w-9 h-9 flex items-center justify-center text-ink-soft hover:bg-paper-soft"
+                      className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-ink-soft hover:bg-paper-soft"
                       aria-label="Increase quantity"
                     >
                       <Plus className="w-3 h-3" strokeWidth={1.5} />
                     </button>
                   </div>
-                  <span className="font-mono-data text-base text-ink">
+                  <span className="font-mono-data text-sm sm:text-base text-ink shrink-0">
                     {formatPrice(item.unit_price * item.quantity * 100)}
                   </span>
                 </div>

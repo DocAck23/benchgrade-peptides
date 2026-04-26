@@ -107,7 +107,7 @@ export function PopularStacks() {
               {r.stack.why}
             </p>
 
-            <div className="mt-auto pt-3 border-t border-rule flex items-center justify-between gap-4">
+            <div className="mt-auto pt-3 border-t border-rule flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
               <div>
                 <div className="text-[10px] uppercase tracking-[0.1em] text-ink-muted font-display">
                   Retail total
@@ -116,7 +116,7 @@ export function PopularStacks() {
                   {formatPrice(r.retail_total_cents)}
                 </div>
               </div>
-              <div className="flex-1 max-w-[200px]">
+              <div className="w-full sm:w-auto sm:flex-1 sm:max-w-[200px]">
                 <AddStackToCartButton resolved={r} />
               </div>
             </div>
