@@ -4,6 +4,7 @@ import {
   nextStackSaveTier,
   computeSameSkuMultiplier,
   computeCartTotals,
+  computeCartTotalsForCheckout,
 } from "../discounts";
 import type { CartItem } from "../types";
 
@@ -120,5 +121,69 @@ describe('computeCartTotals', () => {
     // Cents math must be deterministic and not lose money.
     const expectedStack = Math.round(29700 * 0.15); // 4455
     expect(t.stack_save_discount_cents).toBe(expectedStack);
+  });
+});
+
+describe('computeCartTotalsForCheckout', () => {
+  it('U-COMBO-SUB-1: subscriptionMode=null → identical shape to computeCartTotals', () => {
+    const items = [vial('A', 100, 3)];
+    const base = computeCartTotals(items);
+    const checkout = computeCartTotalsForCheckout(items, null);
+    expect(checkout.subtotal_cents).toBe(base.subtotal_cents);
+    expect(checkout.stack_save_tier_percent).toBe(base.stack_save_tier_percent);
+    expect(checkout.stack_save_discount_cents).toBe(base.stack_save_discount_cents);
+    expect(checkout.same_sku_discount_cents).toBe(base.same_sku_discount_cents);
+    expect(checkout.total_cents).toBe(base.total_cents);
+    expect(checkout.subscription_discount_percent).toBe(0);
+    expect(checkout.subscription_discount_cents).toBe(0);
+  });
+
+  it('U-COMBO-SUB-2: prepay 6mo monthly → Stack&Save replaced with 25% subscription discount', () => {
+    const items = [vial('A', 100, 3)]; // 3 vials → would normally be 15% Stack&Save
+    const checkout = computeCartTotalsForCheckout(items, {
+      duration_months: 6,
+      payment_cadence: 'prepay',
+      ship_cadence: 'monthly',
+    });
+    expect(checkout.subtotal_cents).toBe(30000);
+    expect(checkout.stack_save_tier_percent).toBe(0); // overridden
+    expect(checkout.stack_save_discount_cents).toBe(0);
+    expect(checkout.subscription_discount_percent).toBe(25);
+    expect(checkout.subscription_discount_cents).toBe(7500); // 25% of 30000
+    expect(checkout.total_cents).toBe(30000 - 7500);
+  });
+
+  it('U-COMBO-SUB-3: prepay 12mo + ship_once → 38% subscription discount, smaller total than monthly', () => {
+    const items = [vial('A', 100, 3)];
+    const monthly = computeCartTotalsForCheckout(items, {
+      duration_months: 12,
+      payment_cadence: 'prepay',
+      ship_cadence: 'monthly',
+    });
+    const once = computeCartTotalsForCheckout(items, {
+      duration_months: 12,
+      payment_cadence: 'prepay',
+      ship_cadence: 'once',
+    });
+    expect(monthly.subscription_discount_percent).toBe(35);
+    expect(once.subscription_discount_percent).toBe(38);
+    expect(once.total_cents).toBeLessThan(monthly.total_cents);
+  });
+
+  it('U-COMBO-SUB-4: same-SKU multiplier 5+ AND subscription mode → both apply', () => {
+    const items = [vial('A', 100, 5)]; // 5 vials of same SKU
+    const checkout = computeCartTotalsForCheckout(items, {
+      duration_months: 6,
+      payment_cadence: 'prepay',
+      ship_cadence: 'monthly',
+    });
+    expect(checkout.subtotal_cents).toBe(50000);
+    expect(checkout.stack_save_tier_percent).toBe(0); // replaced
+    expect(checkout.subscription_discount_percent).toBe(25);
+    expect(checkout.subscription_discount_cents).toBe(12500); // 25% of 50000
+    expect(checkout.same_sku_multiplier_percent).toBe(5);
+    // Same-SKU stacks on top of subscription discount, applied to post-subscription total
+    expect(checkout.same_sku_discount_cents).toBe(Math.round((50000 - 12500) * 0.05));
+    expect(checkout.total_cents).toBe(50000 - 12500 - checkout.same_sku_discount_cents);
   });
 });

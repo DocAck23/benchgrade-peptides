@@ -1,4 +1,16 @@
 import type { CartItem } from "./types";
+import { subscriptionDiscountPercent } from "@/lib/subscriptions/discounts";
+
+export interface SubscriptionModeForCart {
+  duration_months: 1 | 3 | 6 | 9 | 12;
+  payment_cadence: "prepay" | "bill_pay";
+  ship_cadence: "monthly" | "quarterly" | "once";
+}
+
+export interface CheckoutCartTotals extends CartTotals {
+  subscription_discount_percent: number;
+  subscription_discount_cents: number;
+}
 
 export interface StackSaveResult {
   tier_percent: 0 | 15 | 20 | 25 | 28;
@@ -91,5 +103,60 @@ export function computeCartTotals(items: CartItem[]): CartTotals {
     free_shipping: ss.free_shipping,
     free_vial_entitlement: ss.free_vial_size_mg ? { size_mg: ss.free_vial_size_mg } : null,
     total_cents: post_stack - same_sku_discount_cents,
+  };
+}
+
+/**
+ * Cart totals when subscription mode is active. The subscription discount
+ * REPLACES the Stack & Save tier (per spec §E — subscription discount is
+ * strictly larger). The same-SKU multiplier still stacks on top of the
+ * post-subscription total. When `subscriptionMode` is null, the result is
+ * value-equivalent to `computeCartTotals` (with the two new subscription
+ * fields set to 0).
+ */
+export function computeCartTotalsForCheckout(
+  items: CartItem[],
+  subscriptionMode: SubscriptionModeForCart | null,
+): CheckoutCartTotals {
+  const base = computeCartTotals(items);
+
+  if (subscriptionMode === null) {
+    return {
+      ...base,
+      subscription_discount_percent: 0,
+      subscription_discount_cents: 0,
+    };
+  }
+
+  const subPct = subscriptionDiscountPercent(subscriptionMode);
+  if (subPct <= 0) {
+    // Invalid combo — fall back to base totals.
+    return {
+      ...base,
+      subscription_discount_percent: 0,
+      subscription_discount_cents: 0,
+    };
+  }
+
+  const subtotal_cents = base.subtotal_cents;
+  const subscription_discount_cents = Math.round((subtotal_cents * subPct) / 100);
+  const post_sub = subtotal_cents - subscription_discount_cents;
+  const sameSku = computeSameSkuMultiplier(items);
+  const same_sku_discount_cents = Math.round((post_sub * sameSku) / 100);
+
+  return {
+    subtotal_cents,
+    vial_count: base.vial_count,
+    // Subscription replaces Stack & Save — zero out the tier fields so
+    // the order summary doesn't double-count.
+    stack_save_tier_percent: 0,
+    stack_save_discount_cents: 0,
+    same_sku_multiplier_percent: sameSku,
+    same_sku_discount_cents,
+    free_shipping: base.free_shipping,
+    free_vial_entitlement: base.free_vial_entitlement,
+    total_cents: post_sub - same_sku_discount_cents,
+    subscription_discount_percent: subPct,
+    subscription_discount_cents,
   };
 }

@@ -11,6 +11,7 @@ import { formatPrice, cn } from "@/lib/utils";
 import { Callout } from "@/components/ui";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/site";
 import { CardProcessorFootnote } from "@/components/checkout/CardProcessorFootnote";
+import { SubscriptionUpsellCard } from "@/components/checkout/SubscriptionUpsellCard";
 import {
   type PaymentMethod,
   paymentMethodLabel,
@@ -236,6 +237,7 @@ export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps
               ))}
             </ul>
           </div>
+          <SubscriptionUpsellCard />
           <div className="border-t rule pt-4 space-y-2">
             <div className="flex items-baseline justify-between">
               <span className="text-xs label-eyebrow text-ink-muted">Subtotal</span>

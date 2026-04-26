@@ -9,12 +9,40 @@ import {
   useState,
 } from "react";
 import type { CatalogProduct, CatalogVariant } from "@/lib/catalog/data";
-import type { CartApi, CartItem } from "./types";
-import { computeCartTotals, nextStackSaveTier } from "./discounts";
+import type { CartApi, CartItem, SubscriptionMode } from "./types";
+import {
+  computeCartTotals,
+  computeCartTotalsForCheckout,
+  nextStackSaveTier,
+} from "./discounts";
 
 // Bump the storage key on schema changes so stale carts from the
 // pre-pack-tier era don't resurface as broken line items.
 const STORAGE_KEY = "bgp.cart.v2";
+// Separate key so the cart and subscription draft can evolve independently.
+const SUB_MODE_STORAGE_KEY = "bgp.subscription_mode.v1";
+
+function isSubscriptionMode(x: unknown): x is SubscriptionMode {
+  if (!x || typeof x !== "object") return false;
+  const o = x as Record<string, unknown>;
+  return (
+    [1, 3, 6, 9, 12].includes(o.duration_months as number) &&
+    (o.payment_cadence === "prepay" || o.payment_cadence === "bill_pay") &&
+    (o.ship_cadence === "monthly" || o.ship_cadence === "quarterly" || o.ship_cadence === "once")
+  );
+}
+
+function readStoredSubscriptionMode(): SubscriptionMode | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(SUB_MODE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return isSubscriptionMode(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
 const CartContext = createContext<CartApi | null>(null);
 
 function readStoredItems(): CartItem[] {
@@ -50,6 +78,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
+  const [subscriptionMode, setSubscriptionModeState] =
+    useState<SubscriptionMode | null>(null);
 
   useEffect(() => {
     const stored = readStoredItems();
@@ -63,6 +93,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
       return [...merged.values()];
     });
+    setSubscriptionModeState(readStoredSubscriptionMode());
     setHydrated(true);
   }, []);
 
@@ -74,6 +105,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       // Ignore quota / private-mode failures — cart is ephemeral then.
     }
   }, [items, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      if (subscriptionMode === null) {
+        window.localStorage.removeItem(SUB_MODE_STORAGE_KEY);
+      } else {
+        window.localStorage.setItem(
+          SUB_MODE_STORAGE_KEY,
+          JSON.stringify(subscriptionMode),
+        );
+      }
+    } catch {
+      // Same swallow as the cart write — survives quota / private-mode.
+    }
+  }, [subscriptionMode, hydrated]);
 
   const addItem = useCallback(
     (product: CatalogProduct, variant: CatalogVariant, quantity: number) => {
@@ -117,7 +164,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const openDrawer = useCallback(() => setDrawerOpen(true), []);
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
+  const setSubscriptionMode = useCallback((mode: SubscriptionMode | null) => {
+    setSubscriptionModeState(mode);
+  }, []);
+
   const totals = useMemo(() => computeCartTotals(items), [items]);
+  const checkoutTotals = useMemo(
+    () => computeCartTotalsForCheckout(items, subscriptionMode),
+    [items, subscriptionMode],
+  );
   const nextTier = useMemo(() => nextStackSaveTier(totals.vial_count), [totals.vial_count]);
 
   const api = useMemo<CartApi>(
@@ -126,7 +181,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       itemCount: items.reduce((n, i) => n + i.quantity, 0),
       subtotal: items.reduce((s, i) => s + i.unit_price * i.quantity, 0),
       totals,
+      checkoutTotals,
       nextTier,
+      subscriptionMode,
+      setSubscriptionMode,
       addItem,
       updateQuantity,
       removeItem,
@@ -135,7 +193,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       closeDrawer,
       isDrawerOpen,
     }),
-    [items, totals, nextTier, addItem, updateQuantity, removeItem, clear, openDrawer, closeDrawer, isDrawerOpen]
+    [
+      items,
+      totals,
+      checkoutTotals,
+      nextTier,
+      subscriptionMode,
+      setSubscriptionMode,
+      addItem,
+      updateQuantity,
+      removeItem,
+      clear,
+      openDrawer,
+      closeDrawer,
+      isDrawerOpen,
+    ],
   );
 
   return <CartContext.Provider value={api}>{children}</CartContext.Provider>;
