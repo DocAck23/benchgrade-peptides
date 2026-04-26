@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/client";
+import { linkOrdersToUser } from "@/app/actions/account";
 
 /**
  * Open-redirect guard for the `next` query param. Only same-origin
@@ -31,8 +32,22 @@ export async function GET(req: Request) {
     if (error || !data?.session) {
       return NextResponse.redirect(new URL("/login?error=invalid-link", url));
     }
-    // TODO: Sprint 1 Task 9 — call linkOrdersToUser(user.id, user.email)
-    // to backfill any guest orders matching this email.
+    // Sprint 1 Task 9 — backfill guest orders that match this email.
+    // First-claim-wins inside linkOrdersToUser: a second user signing
+    // in with the same email gets `linked: 0` and the orders stay
+    // with the first claimant. Failures are logged but do NOT block
+    // the redirect — the user is already authenticated, and the
+    // link-up will retry on next sign-in.
+    try {
+      if (data.session.user.email) {
+        await linkOrdersToUser(
+          data.session.user.id,
+          data.session.user.email
+        );
+      }
+    } catch (err) {
+      console.error("[auth/callback] linkOrdersToUser failed:", err);
+    }
     return NextResponse.redirect(new URL(safeNextRedirect(next), url));
   } catch {
     return NextResponse.redirect(new URL("/login?error=invalid-link", url));

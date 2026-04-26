@@ -20,6 +20,22 @@ vi.mock("next/headers", () => ({
 // In-memory capture for orders.insert(row).
 const insertedRows: Record<string, unknown[]> = {};
 
+// Captures every generateLink({type,email,options}) call so I-SUBMIT-3
+// can assert we called the Supabase admin API correctly. The result
+// returned to submitOrder is configurable per test.
+interface GenerateLinkArgs {
+  type: string;
+  email: string;
+  options?: { redirectTo?: string };
+}
+const generateLinkCalls: GenerateLinkArgs[] = [];
+let nextGenerateLinkResult: {
+  data?: { properties?: { action_link?: string }; user?: { id: string } };
+  error?: unknown;
+} = {
+  data: { properties: { action_link: "https://stub-magic-link.test/abc" } },
+};
+
 function makeStubSupabase() {
   return {
     from(table: string) {
@@ -35,6 +51,14 @@ function makeStubSupabase() {
           };
         },
       };
+    },
+    auth: {
+      admin: {
+        generateLink: async (args: GenerateLinkArgs) => {
+          generateLinkCalls.push(args);
+          return nextGenerateLinkResult;
+        },
+      },
     },
   };
 }
@@ -64,8 +88,36 @@ vi.mock("@/lib/payments/methods", async () => {
   };
 });
 
+// Captured Resend.emails.send() payloads — one entry per call. Tests
+// that need to ignore Resend (the original I-SUBMIT-1 tests) clear the
+// array in beforeEach; tests that need to assert (I-SUBMIT-2/3) inspect
+// the captured calls. Returning a stub from getResend rather than null
+// means the email-dispatch block in submitOrder runs end to end.
+interface SentEmail {
+  from: string;
+  to: string;
+  subject: string;
+  text?: string;
+  html?: string;
+}
+const sentEmails: SentEmail[] = [];
+// Default OFF — the I-SUBMIT-1/forged tests don't care about email
+// dispatch and predate the account-claim wiring. I-SUBMIT-2 and -3
+// flip this on for their cases.
+let resendShouldFire: boolean = false;
+
 vi.mock("@/lib/email/client", () => ({
-  getResend: () => null,
+  getResend: () =>
+    resendShouldFire
+      ? {
+          emails: {
+            send: async (payload: SentEmail) => {
+              sentEmails.push(payload);
+              return { id: `stub-${sentEmails.length}` };
+            },
+          },
+        }
+      : null,
   EMAIL_FROM: "test <test@test>",
   ADMIN_NOTIFICATION_EMAIL: "admin@test",
 }));
@@ -93,6 +145,12 @@ const VALID_ACK = {
 
 beforeEach(() => {
   for (const k of Object.keys(insertedRows)) delete insertedRows[k];
+  generateLinkCalls.length = 0;
+  sentEmails.length = 0;
+  resendShouldFire = false;
+  nextGenerateLinkResult = {
+    data: { properties: { action_link: "https://stub-magic-link.test/abc" } },
+  };
 });
 
 describe("submitOrder — server-side discount computation", () => {
@@ -181,6 +239,107 @@ describe("submitOrder — server-side discount computation", () => {
     expect(orderRow.free_vial_entitlement).toEqual(engine.free_vial_entitlement);
   });
 
-  it.todo("I-SUBMIT-2: account-claim email sent after Sprint 1 Task 9");
-  it.todo("I-SUBMIT-3: magic-link account-claim flow — Sprint 1 Task 9");
+  it("I-SUBMIT-2: account-claim email fires alongside customer + admin confirmation", async () => {
+    resendShouldFire = true;
+    nextGenerateLinkResult = {
+      data: {
+        properties: { action_link: "https://stub-magic-link.test/new-user" },
+      },
+    };
+
+    const result = await submitOrder({
+      customer: VALID_CUSTOMER,
+      items: [{ sku: "BGP-GLP1S-5", quantity: 1 }],
+      acknowledgment: VALID_ACK,
+      payment_method: "wire",
+    });
+
+    expect(result.ok).toBe(true);
+
+    // THREE Resend.send calls, in order: customer confirmation, admin
+    // notification, then account-claim. We don't lock the order between
+    // confirmation/admin (they're Promise.all'd) but the claim email
+    // must be the LAST one — it lives outside the Promise.all.
+    expect(sentEmails).toHaveLength(3);
+
+    const recipients = sentEmails.map((e) => e.to);
+    expect(recipients).toContain(VALID_CUSTOMER.email); // confirmation
+    expect(recipients).toContain("admin@test"); // admin notification
+    // The claim email must go to the customer.
+    const customerEmails = sentEmails.filter(
+      (e) => e.to === VALID_CUSTOMER.email
+    );
+    expect(customerEmails).toHaveLength(2);
+
+    // Account-claim is the third send (after the Promise.all).
+    const claim = sentEmails[2];
+    expect(claim.to).toBe(VALID_CUSTOMER.email);
+    expect(claim.subject.toLowerCase()).toMatch(/account|claim|sign in|access/);
+    // The magic link URL must show up in the rendered HTML body.
+    expect(claim.html).toContain("https://stub-magic-link.test/new-user");
+
+    // generateLink was invoked exactly once with the customer email + the
+    // /auth/callback redirectTo (the route already wired up linkOrdersToUser).
+    expect(generateLinkCalls).toHaveLength(1);
+    expect(generateLinkCalls[0].type).toBe("magiclink");
+    expect(generateLinkCalls[0].email).toBe(VALID_CUSTOMER.email);
+    expect(generateLinkCalls[0].options?.redirectTo).toMatch(/\/auth\/callback/);
+  });
+
+  it("I-SUBMIT-3: magic-link signs into existing auth user (no duplicate created)", async () => {
+    // Simulate Supabase's behavior when the email already maps to an
+    // auth.users row: generateLink returns a link that signs INTO the
+    // existing user's id rather than creating a new one. Our
+    // contract-level assertion is that we call generateLink with the
+    // customer email and dispatch the resulting link via Resend — the
+    // single-account-per-email guarantee is Supabase's responsibility.
+    resendShouldFire = true;
+    nextGenerateLinkResult = {
+      data: {
+        properties: { action_link: "https://stub-magic-link.test/existing" },
+        user: { id: "existing-user-id-123" },
+      },
+    };
+
+    const result = await submitOrder({
+      customer: VALID_CUSTOMER,
+      items: [{ sku: "BGP-GLP1S-5", quantity: 1 }],
+      acknowledgment: VALID_ACK,
+      payment_method: "wire",
+    });
+    expect(result.ok).toBe(true);
+
+    expect(generateLinkCalls).toHaveLength(1);
+    expect(generateLinkCalls[0]).toMatchObject({
+      type: "magiclink",
+      email: VALID_CUSTOMER.email,
+    });
+
+    // The claim email is dispatched with the link returned by
+    // generateLink — whether it signs into a new or existing account
+    // is Supabase's call. We only check that the link we got back is
+    // what we sent.
+    const claim = sentEmails[sentEmails.length - 1];
+    expect(claim.to).toBe(VALID_CUSTOMER.email);
+    expect(claim.html).toContain("https://stub-magic-link.test/existing");
+  });
+
+  it("account-claim failure does NOT roll back the order (best-effort dispatch)", async () => {
+    resendShouldFire = true;
+    // Simulate generateLink returning no action_link (e.g. transient
+    // Supabase auth-admin failure). The order must still succeed and
+    // the customer + admin emails must still have fired.
+    nextGenerateLinkResult = { data: { properties: {} } };
+
+    const result = await submitOrder({
+      customer: VALID_CUSTOMER,
+      items: [{ sku: "BGP-GLP1S-5", quantity: 1 }],
+      acknowledgment: VALID_ACK,
+      payment_method: "wire",
+    });
+
+    expect(result.ok).toBe(true);
+    // Two sends — customer + admin — but no third (claim skipped).
+    expect(sentEmails).toHaveLength(2);
+  });
 });

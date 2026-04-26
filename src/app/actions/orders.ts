@@ -9,7 +9,12 @@ import type { CartItem } from "@/lib/cart/types";
 import { computeCartTotals } from "@/lib/cart/discounts";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getResend, EMAIL_FROM, ADMIN_NOTIFICATION_EMAIL } from "@/lib/email/client";
-import { orderConfirmationEmail, adminOrderNotification } from "@/lib/email/templates";
+import {
+  orderConfirmationEmail,
+  adminOrderNotification,
+  accountClaimEmail,
+} from "@/lib/email/templates";
+import { SITE_URL } from "@/lib/site";
 import { SupabaseRateLimitStore } from "@/lib/ratelimit/supabase-store";
 import { MemoryRateLimitStore } from "@/lib/ratelimit/memory-store";
 import { enforceOrderRateLimit } from "@/lib/ratelimit/enforce";
@@ -350,6 +355,38 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
       ]);
     } catch (err) {
       console.error("[submitOrder] email dispatch failed:", err);
+    }
+
+    // Sprint 1 Task 9 — account-claim email. We generate a single-use
+    // magic link via Supabase admin so the customer can transition from
+    // guest to authenticated user with one click. If an auth.users row
+    // already exists for this email, generateLink emits a sign-in link
+    // for that existing account (no duplicate user is created); if not,
+    // it provisions one. Best-effort: any failure here logs and falls
+    // through — the order is durable regardless.
+    try {
+      const { data: linkData } = await supa.auth.admin.generateLink({
+        type: "magiclink",
+        email: validInput.customer.email,
+        options: { redirectTo: `${SITE_URL}/auth/callback?next=/account` },
+      });
+      const actionLink = linkData?.properties?.action_link;
+      if (actionLink) {
+        const claim = accountClaimEmail({
+          ...emailCtx,
+          magic_link_url: actionLink,
+        });
+        await resend.emails.send({
+          from: EMAIL_FROM,
+          to: validInput.customer.email,
+          subject: claim.subject,
+          text: claim.text,
+          html: claim.html,
+        });
+      }
+    } catch (err) {
+      console.error("[submitOrder] account-claim email failed:", err);
+      // Best-effort: do NOT fail the order on email/auth-admin error.
     }
   }
 
