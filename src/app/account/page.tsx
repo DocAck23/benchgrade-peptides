@@ -7,6 +7,9 @@ import { SubscriptionCard } from "@/components/account/SubscriptionCard";
 import { isValidStatus, type OrderStatus } from "@/lib/orders/status";
 import type { SubscriptionRow } from "@/lib/supabase/types";
 import { formatPrice } from "@/lib/utils";
+import { getMyAffiliateState } from "@/app/actions/affiliate";
+import { TierBadge } from "@/components/affiliate/TierBadge";
+import type { AffiliateTier } from "@/lib/affiliate/tiers";
 
 export const metadata: Metadata = {
   title: "Account",
@@ -104,6 +107,24 @@ export default async function AccountDashboardPage() {
   const successfulReferrals = Array.isArray(successfulRefRes.data)
     ? successfulRefRes.data.length
     : 0;
+
+  // Sprint 4 Wave C — affiliate snapshot for the dashboard card. Best-effort:
+  // any failure → no card (affiliate is opt-in; we never up-sell apply here).
+  let affiliateSnapshot: {
+    tier: AffiliateTier;
+    available_balance_cents: number;
+  } | null = null;
+  try {
+    const affState = await getMyAffiliateState();
+    if (affState.ok && affState.is_affiliate && affState.affiliate) {
+      affiliateSnapshot = {
+        tier: affState.affiliate.tier,
+        available_balance_cents: affState.affiliate.available_balance_cents,
+      };
+    }
+  } catch {
+    affiliateSnapshot = null;
+  }
 
   const activeSub: SubscriptionRow | null =
     Array.isArray(subRows) &&
@@ -247,6 +268,7 @@ export default async function AccountDashboardPage() {
           availableEntitlements={availableEntitlements}
           successfulReferrals={successfulReferrals}
         />
+        {affiliateSnapshot && <AffiliateDashboardCard snapshot={affiliateSnapshot} />}
       </div>
     </article>
   );
@@ -318,6 +340,37 @@ function ReferralsDashboardCard({
         className="mt-4 inline-flex items-center font-display uppercase text-[11px] tracking-[0.14em] text-gold-dark hover:text-ink transition-colors duration-200 ease-out"
       >
         View your referral link →
+      </Link>
+    </section>
+  );
+}
+
+function AffiliateDashboardCard({
+  snapshot,
+}: {
+  snapshot: { tier: AffiliateTier; available_balance_cents: number };
+}) {
+  return (
+    <section className="border rule bg-paper-soft p-6 flex flex-col">
+      <div className="flex items-center justify-between gap-2">
+        <div className="label-eyebrow text-ink-muted">Affiliate</div>
+        <TierBadge tier={snapshot.tier} />
+      </div>
+      <h3
+        className="mt-2 font-editorial text-2xl text-ink leading-snug"
+        style={{ fontFamily: "var(--font-editorial)" }}
+      >
+        {formatPrice(snapshot.available_balance_cents)} available.
+      </h3>
+      <p className="mt-3 text-sm text-ink-soft flex-1">
+        Track referrals, redeem commission for vial credit, and watch your tier
+        climb.
+      </p>
+      <Link
+        href="/account/affiliate"
+        className="mt-4 inline-flex items-center font-display uppercase text-[11px] tracking-[0.14em] text-gold-dark hover:text-ink transition-colors duration-200 ease-out"
+      >
+        View dashboard →
       </Link>
     </section>
   );

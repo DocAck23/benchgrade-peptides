@@ -28,6 +28,11 @@ import { subscriptionDiscountPercent } from "@/lib/subscriptions/discounts";
 import { createSubscription } from "@/app/actions/subscriptions";
 import { parseReferralCookie } from "@/lib/referrals/cookie";
 import { claimReferralOnOrder } from "@/app/actions/referrals";
+import { createServerSupabase } from "@/lib/supabase/client";
+import {
+  personalVialDiscount,
+  type AffiliateTier,
+} from "@/lib/affiliate/tiers";
 
 // Dev-only fallback store — in prod we require Supabase-backed counting.
 const devMemoryStore = new MemoryRateLimitStore();
@@ -257,7 +262,50 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
   // engine is the single source of truth so a hostile client can't
   // forge a $0 total.
   const totals = computeCartTotals(resolved.items);
-  const discount_cents = totals.subtotal_cents - totals.total_cents;
+
+  // Sprint 4 Wave C — affiliate personal-discount hook. If the buyer is
+  // authenticated AND has an `affiliates` row, apply their tier's personal
+  // vial discount to the post-Stack-&-Save total. Affiliate discount STACKS
+  // with Stack & Save — they're rewards from different programs (loyalty
+  // bulk vs. partner perk).
+  //
+  // Caveat: customer_user_id is captured asynchronously (claim-on-first-
+  // order via the magic-link email). For a v1 first-order checkout, the
+  // customer is NOT yet an affiliate (they have no auth.uid bound to their
+  // email yet). This hook only fires for repeat customers who have signed
+  // in to their account, hit checkout, and whose user.id resolves to an
+  // affiliates row. Best-effort: any error here → no affiliate discount,
+  // order proceeds normally.
+  let affiliateDiscountPct = 0;
+  let affiliateDiscountCents = 0;
+  try {
+    const cookieClient = await createServerSupabase();
+    const {
+      data: { user: authedUser },
+    } = await cookieClient.auth.getUser();
+    if (authedUser) {
+      const { data: aff } = await cookieClient
+        .from("affiliates")
+        .select("tier")
+        .eq("user_id", authedUser.id)
+        .maybeSingle();
+      if (aff && typeof (aff as { tier?: string }).tier === "string") {
+        const tier = (aff as { tier: AffiliateTier }).tier;
+        affiliateDiscountPct = personalVialDiscount(tier);
+        affiliateDiscountCents = Math.round(
+          totals.total_cents * (affiliateDiscountPct / 100)
+        );
+      }
+    }
+  } catch (err) {
+    console.error("[submitOrder] affiliate discount lookup failed:", err);
+    affiliateDiscountPct = 0;
+    affiliateDiscountCents = 0;
+  }
+
+  const finalTotalCents = totals.total_cents - affiliateDiscountCents;
+  const discount_cents =
+    totals.subtotal_cents - totals.total_cents + affiliateDiscountCents;
 
   // Certification text + timestamp are stamped from server-side constants,
   // not from the client. The hash binds compound inputs that make the ack
@@ -284,7 +332,7 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
     items: resolved.items,
     subtotal_cents: resolved.subtotal_cents,
     discount_cents,
-    total_cents: totals.total_cents,
+    total_cents: finalTotalCents,
     free_vial_entitlement: totals.free_vial_entitlement,
     payment_method,
     acknowledgment: {

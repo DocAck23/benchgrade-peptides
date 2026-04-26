@@ -18,6 +18,10 @@ import {
   paymentMethodLabel,
   paymentMethodBlurb,
 } from "@/lib/payments/methods";
+import {
+  personalVialDiscount,
+  type AffiliateTier,
+} from "@/lib/affiliate/tiers";
 
 const EMPTY: CustomerInfo = {
   name: "",
@@ -35,9 +39,19 @@ const EMPTY: CustomerInfo = {
 interface CheckoutPageClientProps {
   /** Methods the server has confirmed are configured + available. */
   availableMethods: PaymentMethod[];
+  /**
+   * Affiliate state for the current viewer, resolved server-side. When set,
+   * we surface a "personal discount" preview line in the summary aside
+   * (Sprint 4 Wave C). The actual discount is applied authoritatively in
+   * `submitOrder` — this prop is COSMETIC.
+   */
+  affiliate?: { tier: AffiliateTier } | null;
 }
 
-export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps) {
+export function CheckoutPageClient({
+  availableMethods,
+  affiliate = null,
+}: CheckoutPageClientProps) {
   const router = useRouter();
   const { items, subtotal, itemCount, totals, subscriptionMode, clear } = useCart();
   const hasStackSave = totals.stack_save_discount_cents > 0;
@@ -288,6 +302,34 @@ export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps
                 </span>
                 <span className="font-mono-data text-sm text-gold-dark">
                   −{formatPrice(referralPreview.discountCents)}
+                </span>
+              </div>
+            )}
+            {affiliate && (
+              <div
+                className="flex items-baseline justify-between"
+                data-testid="affiliate-discount-preview"
+              >
+                <span
+                  className="text-xs text-gold-dark italic"
+                  style={{ fontFamily: "var(--font-editorial)" }}
+                >
+                  Affiliate discount · {personalVialDiscount(affiliate.tier)}% off
+                  <span className="text-ink-muted not-italic">
+                    {" "}
+                    (your tier:{" "}
+                    {affiliate.tier.charAt(0).toUpperCase() +
+                      affiliate.tier.slice(1)}
+                    )
+                  </span>
+                </span>
+                <span className="font-mono-data text-sm text-gold-dark">
+                  −
+                  {formatPrice(
+                    Math.round(
+                      subtotal * 100 * (personalVialDiscount(affiliate.tier) / 100)
+                    )
+                  )}
                 </span>
               </div>
             )}
