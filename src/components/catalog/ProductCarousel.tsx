@@ -31,7 +31,7 @@ export function ProductCarousel() {
             From the catalog
           </h2>
         </div>
-        <Link href="/catalog" className="text-sm text-teal hover:underline whitespace-nowrap">
+        <Link href="/catalog" className="text-sm text-gold hover:underline whitespace-nowrap">
           Browse all {PRODUCTS.length} →
         </Link>
       </div>
@@ -75,10 +75,10 @@ function ProductCarouselCard({ product }: { product: CatalogProduct }) {
   return (
     <Link
       href={`/catalog/${product.category_slug}/${product.slug}`}
-      className="block w-[240px] lg:w-[280px] shrink-0 bg-paper border rule p-5 hover:bg-paper-deep transition-colors"
+      className="block w-[240px] lg:w-[280px] shrink-0 bg-paper border rule p-5 hover:bg-paper-soft transition-colors"
     >
       {/* Vial photograph */}
-      <div className="relative aspect-square bg-paper-deep border rule mb-4 overflow-hidden">
+      <div className="relative aspect-square bg-paper-soft border rule mb-4 overflow-hidden">
         <Image
           src={product.vial_image}
           alt={`${product.name} research vial`}

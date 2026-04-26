@@ -30,12 +30,41 @@ describe("resolveClientIp", () => {
     expect(got).toEqual({ ok: true, ip: "9.9.9.9" });
   });
 
-  it("falls back to the first x-forwarded-for entry", () => {
+  it("falls back to the LAST x-forwarded-for entry (closest trusted hop)", () => {
+    // The first entry is client-set and forgeable. Well-behaved proxies
+    // append their own IP; the last entry is the most-trusted hop.
     const got = resolveClientIp(
       h({ "x-forwarded-for": "1.2.3.4, 10.0.0.1" }),
       { isProduction: true }
     );
+    expect(got).toEqual({ ok: true, ip: "10.0.0.1" });
+  });
+
+  it("ignores attacker-prepended XFF entries", () => {
+    // Attacker sends "X-Forwarded-For: 1.2.3.4" hoping to spoof their IP;
+    // edge appends real IP, leaving "1.2.3.4, <real>". We must NOT pick
+    // the first entry — the attacker controls it.
+    const got = resolveClientIp(
+      h({ "x-forwarded-for": "ATTACKER, 5.6.7.8" }),
+      { isProduction: true }
+    );
+    expect(got).toEqual({ ok: true, ip: "5.6.7.8" });
+  });
+
+  it("handles a single XFF entry without a comma", () => {
+    const got = resolveClientIp(
+      h({ "x-forwarded-for": "1.2.3.4" }),
+      { isProduction: true }
+    );
     expect(got).toEqual({ ok: true, ip: "1.2.3.4" });
+  });
+
+  it("trims whitespace inside XFF entries", () => {
+    const got = resolveClientIp(
+      h({ "x-forwarded-for": "1.2.3.4 ,   10.0.0.1   " }),
+      { isProduction: true }
+    );
+    expect(got).toEqual({ ok: true, ip: "10.0.0.1" });
   });
 
   it("returns an error in production when no IP header is present", () => {

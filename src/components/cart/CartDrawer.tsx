@@ -6,13 +6,25 @@ import Link from "next/link";
 import { X, Minus, Plus } from "lucide-react";
 import { useCart } from "@/lib/cart/CartContext";
 import { formatPrice, cn } from "@/lib/utils";
+import { StackSaveProgress } from "./StackSaveProgress";
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 export function CartDrawer() {
-  const { items, itemCount, subtotal, updateQuantity, removeItem, isDrawerOpen, closeDrawer } =
-    useCart();
+  const {
+    items,
+    itemCount,
+    subtotal,
+    totals,
+    updateQuantity,
+    removeItem,
+    isDrawerOpen,
+    closeDrawer,
+  } = useCart();
+  const hasStackSave = totals.stack_save_discount_cents > 0;
+  const hasSameSku = totals.same_sku_discount_cents > 0;
+  const hasAnyDiscount = hasStackSave || hasSameSku;
   const panelRef = useRef<HTMLElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
 
@@ -111,7 +123,7 @@ export function CartDrawer() {
               <Link
                 href="/catalog"
                 onClick={closeDrawer}
-                className="inline-flex items-center h-11 px-6 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-teal transition-colors"
+                className="inline-flex items-center h-11 px-6 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-gold transition-colors"
               >
                 Browse the catalog
               </Link>
@@ -136,14 +148,14 @@ export function CartDrawer() {
                       <Link
                         href={`/catalog/${item.category_slug}/${item.product_slug}`}
                         onClick={closeDrawer}
-                        className="font-display text-base text-ink hover:text-teal truncate"
+                        className="font-display text-base text-ink hover:text-gold truncate"
                       >
                         {item.name}
                       </Link>
                       <button
                         type="button"
                         onClick={() => removeItem(item.sku)}
-                        className="text-xs text-ink-muted hover:text-oxblood shrink-0"
+                        className="text-xs text-ink-muted hover:text-wine shrink-0"
                         aria-label={`Remove ${item.name} ${item.pack_size}-vial pack from cart`}
                       >
                         Remove
@@ -184,12 +196,54 @@ export function CartDrawer() {
             </ul>
 
             <div className="border-t rule px-6 py-5 space-y-4 bg-paper-soft">
+              <StackSaveProgress />
+
               <div className="flex items-baseline justify-between">
                 <span className="label-eyebrow text-ink-muted">Subtotal</span>
-                <span className="font-mono-data text-lg text-ink">
+                <span
+                  className={cn(
+                    "font-mono-data text-sm",
+                    hasAnyDiscount ? "text-ink-muted line-through" : "text-ink"
+                  )}
+                >
                   {formatPrice(subtotal * 100)}
                 </span>
               </div>
+
+              {hasStackSave && (
+                <div className="flex items-baseline justify-between">
+                  <span className="text-xs text-gold-dark">
+                    Stack &amp; Save · {totals.stack_save_tier_percent}% off
+                  </span>
+                  <span className="font-mono-data text-sm text-gold-dark">
+                    −{formatPrice(totals.stack_save_discount_cents)}
+                  </span>
+                </div>
+              )}
+
+              {hasSameSku && (
+                <div className="flex items-baseline justify-between">
+                  <span className="text-xs text-gold-dark">Same-SKU bonus · 5% off</span>
+                  <span className="font-mono-data text-sm text-gold-dark">
+                    −{formatPrice(totals.same_sku_discount_cents)}
+                  </span>
+                </div>
+              )}
+
+              {totals.free_shipping && (
+                <div className="flex items-baseline justify-between">
+                  <span className="text-xs text-gold-dark">Free domestic shipping</span>
+                  <span className="font-mono-data text-sm text-gold-dark">included</span>
+                </div>
+              )}
+
+              <div className="flex items-baseline justify-between border-t rule pt-3">
+                <span className="label-eyebrow text-ink">Total</span>
+                <span className="font-mono-data text-2xl text-wine">
+                  {formatPrice(totals.total_cents)}
+                </span>
+              </div>
+
               <p className="text-xs text-ink-muted leading-relaxed">
                 Shipping calculated at checkout. Payment by bank transfer only — order confirmation
                 email includes wire instructions.
@@ -197,7 +251,7 @@ export function CartDrawer() {
               <Link
                 href="/checkout"
                 onClick={closeDrawer}
-                className="flex items-center justify-center w-full h-12 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-teal transition-colors"
+                className="flex items-center justify-center w-full h-12 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-gold transition-colors"
               >
                 Proceed to checkout
               </Link>

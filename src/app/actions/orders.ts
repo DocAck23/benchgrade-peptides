@@ -6,9 +6,15 @@ import { z } from "zod";
 import { RUO_STATEMENTS } from "@/lib/compliance";
 import { PRODUCTS } from "@/lib/catalog/data";
 import type { CartItem } from "@/lib/cart/types";
+import { computeCartTotals } from "@/lib/cart/discounts";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getResend, EMAIL_FROM, ADMIN_NOTIFICATION_EMAIL } from "@/lib/email/client";
-import { orderConfirmationEmail, adminOrderNotification } from "@/lib/email/templates";
+import {
+  orderConfirmationEmail,
+  adminOrderNotification,
+  accountClaimEmail,
+} from "@/lib/email/templates";
+import { SITE_URL } from "@/lib/site";
 import { SupabaseRateLimitStore } from "@/lib/ratelimit/supabase-store";
 import { MemoryRateLimitStore } from "@/lib/ratelimit/memory-store";
 import { enforceOrderRateLimit } from "@/lib/ratelimit/enforce";
@@ -18,6 +24,18 @@ import {
   enabledPaymentMethods,
   type PaymentMethod,
 } from "@/lib/payments/methods";
+import {
+  subscriptionDiscountPercent,
+  computeSubscriptionTotals,
+} from "@/lib/subscriptions/discounts";
+import { createSubscription } from "@/app/actions/subscriptions";
+import { parseReferralCookie } from "@/lib/referrals/cookie";
+import { claimReferralOnOrder } from "@/app/actions/referrals";
+import { createServerSupabase } from "@/lib/supabase/client";
+import {
+  personalVialDiscount,
+  type AffiliateTier,
+} from "@/lib/affiliate/tiers";
 
 // Dev-only fallback store — in prod we require Supabase-backed counting.
 const devMemoryStore = new MemoryRateLimitStore();
@@ -63,11 +81,25 @@ export interface ClientAcknowledgment {
   accepts_ruo: boolean;
 }
 
+/**
+ * Optional subscription selection. When set, the customer toggled the
+ * subscribe-and-save card at checkout; submitOrder will create a
+ * subscription row linked to this order via createSubscription. Validity
+ * of the (duration × payment × ship) combo is checked server-side via
+ * subscriptionDiscountPercent — invalid combos fall through to one-shot.
+ */
+export interface SubmitOrderSubscriptionMode {
+  duration_months: 1 | 3 | 6 | 9 | 12;
+  payment_cadence: "prepay" | "bill_pay";
+  ship_cadence: "monthly" | "quarterly" | "once";
+}
+
 export interface SubmitOrderInput {
   customer: CustomerInfo;
   items: ClientCartLine[];
   acknowledgment: ClientAcknowledgment;
   payment_method: PaymentMethod;
+  subscription_mode?: SubmitOrderSubscriptionMode | null;
 }
 
 export interface SubmitOrderResult {
@@ -124,11 +156,31 @@ const AcknowledgmentSchema = z.object({
 
 const PaymentMethodSchema = z.enum(PAYMENT_METHODS);
 
+// Plan-shape validation only. Cross-field validity (e.g. bill_pay+1mo) is
+// recomputed server-side via subscriptionDiscountPercent below; an
+// invalid combo there logs and falls through to a one-shot order rather
+// than rejecting the entire checkout.
+const SubscriptionModeSchema = z
+  .object({
+    duration_months: z.union([
+      z.literal(1),
+      z.literal(3),
+      z.literal(6),
+      z.literal(9),
+      z.literal(12),
+    ]),
+    payment_cadence: z.enum(["prepay", "bill_pay"]),
+    ship_cadence: z.enum(["monthly", "quarterly", "once"]),
+  })
+  .optional()
+  .nullable();
+
 const SubmitOrderSchema = z.object({
   customer: CustomerSchema,
   items: z.array(CartLineSchema).min(1, "Cart is empty.").max(20, "Cart too large."),
   acknowledgment: AcknowledgmentSchema,
   payment_method: PaymentMethodSchema,
+  subscription_mode: SubscriptionModeSchema,
 });
 
 function resolveCartOnServer(
@@ -207,6 +259,130 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
   const resolved = resolveCartOnServer(validInput.items);
   if ("error" in resolved) return { ok: false, error: resolved.error };
 
+  // Authoritative discount math — server-side only. Anything the client
+  // sent in `discount_cents` / `total_cents` was schema-stripped by Zod
+  // upstream; even if they slipped through, we ignore them here. The
+  // engine is the single source of truth so a hostile client can't
+  // forge a $0 total.
+  const oneShotTotals = computeCartTotals(resolved.items);
+
+  // Codex review #3 H1: when the customer toggled subscription mode at
+  // checkout, the order itself must reflect subscription pricing — not
+  // the one-shot Stack&Save engine. Prepay charges plan_total upfront
+  // (cycle_total × duration); bill-pay charges only cycle 1.
+  // Non-subscription orders keep the one-shot path (Stack&Save +
+  // free-vial entitlement).
+  let basePricing: {
+    subtotal_cents: number;
+    total_cents: number;
+    free_vial_entitlement: typeof oneShotTotals.free_vial_entitlement;
+  };
+  let subscriptionPlanValid = false;
+  if (validInput.subscription_mode) {
+    const pct = subscriptionDiscountPercent({
+      duration_months: validInput.subscription_mode.duration_months,
+      payment_cadence: validInput.subscription_mode.payment_cadence,
+      ship_cadence: validInput.subscription_mode.ship_cadence,
+    });
+    if (pct > 0) {
+      subscriptionPlanValid = true;
+      const subTotals = computeSubscriptionTotals(
+        oneShotTotals.subtotal_cents,
+        {
+          duration_months: validInput.subscription_mode.duration_months,
+          payment_cadence: validInput.subscription_mode.payment_cadence,
+          ship_cadence: validInput.subscription_mode.ship_cadence,
+        }
+      );
+      const duration = validInput.subscription_mode.duration_months;
+      if (validInput.subscription_mode.payment_cadence === "prepay") {
+        // Prepay: charge full plan upfront (post-discount × N).
+        basePricing = {
+          subtotal_cents: subTotals.cycle_subtotal_cents * duration,
+          total_cents: subTotals.plan_total_cents,
+          free_vial_entitlement: null,
+        };
+      } else {
+        // Bill-pay: charge cycle 1 only; cycles 2+ via customer's bank
+        // bill-pay (created in createSubscription with next_charge_date).
+        basePricing = {
+          subtotal_cents: subTotals.cycle_subtotal_cents,
+          total_cents: subTotals.cycle_total_cents,
+          free_vial_entitlement: null,
+        };
+      }
+    } else {
+      // Invalid subscription combo (e.g. bill_pay+1mo). Fall through to
+      // one-shot pricing; the warning + skip happens in the
+      // createSubscription branch below.
+      basePricing = {
+        subtotal_cents: oneShotTotals.subtotal_cents,
+        total_cents: oneShotTotals.total_cents,
+        free_vial_entitlement: oneShotTotals.free_vial_entitlement,
+      };
+    }
+  } else {
+    basePricing = {
+      subtotal_cents: oneShotTotals.subtotal_cents,
+      total_cents: oneShotTotals.total_cents,
+      free_vial_entitlement: oneShotTotals.free_vial_entitlement,
+    };
+  }
+  // Reference for backward compat with downstream code that previously
+  // read `totals.subtotal_cents` / `totals.total_cents`.
+  const totals = {
+    subtotal_cents: basePricing.subtotal_cents,
+    total_cents: basePricing.total_cents,
+    free_vial_entitlement: basePricing.free_vial_entitlement,
+  };
+  // Mark used so the linter doesn't flag plan-validity bookkeeping that
+  // is consumed in the createSubscription branch below.
+  void subscriptionPlanValid;
+
+  // Sprint 4 Wave C — affiliate personal-discount hook. If the buyer is
+  // authenticated AND has an `affiliates` row, apply their tier's personal
+  // vial discount to the post-Stack-&-Save total. Affiliate discount STACKS
+  // with Stack & Save — they're rewards from different programs (loyalty
+  // bulk vs. partner perk).
+  //
+  // Caveat: customer_user_id is captured asynchronously (claim-on-first-
+  // order via the magic-link email). For a v1 first-order checkout, the
+  // customer is NOT yet an affiliate (they have no auth.uid bound to their
+  // email yet). This hook only fires for repeat customers who have signed
+  // in to their account, hit checkout, and whose user.id resolves to an
+  // affiliates row. Best-effort: any error here → no affiliate discount,
+  // order proceeds normally.
+  let affiliateDiscountPct = 0;
+  let affiliateDiscountCents = 0;
+  try {
+    const cookieClient = await createServerSupabase();
+    const {
+      data: { user: authedUser },
+    } = await cookieClient.auth.getUser();
+    if (authedUser) {
+      const { data: aff } = await cookieClient
+        .from("affiliates")
+        .select("tier")
+        .eq("user_id", authedUser.id)
+        .maybeSingle();
+      if (aff && typeof (aff as { tier?: string }).tier === "string") {
+        const tier = (aff as { tier: AffiliateTier }).tier;
+        affiliateDiscountPct = personalVialDiscount(tier);
+        affiliateDiscountCents = Math.round(
+          totals.total_cents * (affiliateDiscountPct / 100)
+        );
+      }
+    }
+  } catch (err) {
+    console.error("[submitOrder] affiliate discount lookup failed:", err);
+    affiliateDiscountPct = 0;
+    affiliateDiscountCents = 0;
+  }
+
+  const finalTotalCents = totals.total_cents - affiliateDiscountCents;
+  const discount_cents =
+    totals.subtotal_cents - totals.total_cents + affiliateDiscountCents;
+
   // Certification text + timestamp are stamped from server-side constants,
   // not from the client. The hash binds compound inputs that make the ack
   // evidence-unique per order (HIGH H6 codex fix).
@@ -230,7 +406,14 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
     order_id,
     customer: validInput.customer,
     items: resolved.items,
-    subtotal_cents: resolved.subtotal_cents,
+    // Codex review #3 H1: in subscription mode `totals.subtotal_cents`
+    // already reflects plan vs cycle math (prepay → cycle_subtotal × N;
+    // bill_pay → cycle_subtotal). Non-subscription orders preserve the
+    // one-shot subtotal exactly (= resolved.subtotal_cents).
+    subtotal_cents: totals.subtotal_cents,
+    discount_cents,
+    total_cents: finalTotalCents,
+    free_vial_entitlement: totals.free_vial_entitlement,
     payment_method,
     acknowledgment: {
       certification_text,
@@ -304,6 +487,63 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
     };
   }
 
+  // Subscription branch — Wave C1. If the customer toggled the
+  // subscribe-and-save upsell, persist a subscription row linked to this
+  // order. Best-effort: if createSubscription or the back-link UPDATE
+  // fails, the order still succeeds (the customer paid for cycle 1 and
+  // admin can manually create the subscription later). We also recompute
+  // plan validity server-side via subscriptionDiscountPercent — never
+  // trust the client.
+  if (validInput.subscription_mode) {
+    const pct = subscriptionDiscountPercent({
+      duration_months: validInput.subscription_mode.duration_months,
+      payment_cadence: validInput.subscription_mode.payment_cadence,
+      ship_cadence: validInput.subscription_mode.ship_cadence,
+    });
+    if (pct === 0) {
+      console.warn(
+        "[submitOrder] invalid subscription plan combo, falling through to one-shot",
+        validInput.subscription_mode
+      );
+    } else {
+      try {
+        const subResult = await createSubscription({
+          customer_user_id: null, // null until magic-link claim binds it
+          customer_email: validInput.customer.email,
+          items: resolved.items,
+          plan: {
+            duration_months: validInput.subscription_mode.duration_months,
+            payment_cadence: validInput.subscription_mode.payment_cadence,
+            ship_cadence: validInput.subscription_mode.ship_cadence,
+          },
+          first_order_id: order_id,
+        });
+        if (!subResult.ok) {
+          console.error(
+            "[submitOrder] createSubscription failed:",
+            subResult.error
+          );
+        } else if (subResult.subscription_id) {
+          // Compensating back-link — the order was inserted before we
+          // knew the subscription id. Best-effort: if this fails, the
+          // order is just unlinked but otherwise normal.
+          const { error: linkErr } = await supa
+            .from("orders")
+            .update({ subscription_id: subResult.subscription_id })
+            .eq("order_id", order_id);
+          if (linkErr) {
+            console.error(
+              "[submitOrder] subscription_id link failed:",
+              linkErr
+            );
+          }
+        }
+      } catch (err) {
+        console.error("[submitOrder] subscription creation threw:", err);
+      }
+    }
+  }
+
   // Emails are best-effort — the order is already durable in Supabase,
   // so a transient Resend failure shouldn't flip the response to an
   // error the customer sees. We log and move on; ops can resend from
@@ -339,6 +579,88 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
     } catch (err) {
       console.error("[submitOrder] email dispatch failed:", err);
     }
+
+    // Sprint 1 Task 9 — account-claim email. We generate a single-use
+    // magic link via Supabase admin so the customer can transition from
+    // guest to authenticated user with one click. If an auth.users row
+    // already exists for this email, generateLink emits a sign-in link
+    // for that existing account (no duplicate user is created); if not,
+    // it provisions one. Best-effort: any failure here logs and falls
+    // through — the order is durable regardless.
+    try {
+      const { data: linkData } = await supa.auth.admin.generateLink({
+        type: "magiclink",
+        email: validInput.customer.email,
+        options: { redirectTo: `${SITE_URL}/auth/callback?next=/account` },
+      });
+      const actionLink = linkData?.properties?.action_link;
+      // Defense-in-depth: explicitly assert https scheme before passing
+      // the URL into an email template. escapeHtml() in editorialEmailHtml
+      // handles attribute escaping, but a non-https value (javascript:,
+      // data:, http:) would survive escaping and remain clickable.
+      // Supabase admin.generateLink always returns https in normal flow;
+      // this guards against any future regression.
+      if (actionLink && actionLink.startsWith("https://")) {
+        const claim = accountClaimEmail({
+          ...emailCtx,
+          magic_link_url: actionLink,
+        });
+        await resend.emails.send({
+          from: EMAIL_FROM,
+          to: validInput.customer.email,
+          subject: claim.subject,
+          text: claim.text,
+          html: claim.html,
+        });
+      }
+    } catch (err) {
+      console.error("[submitOrder] account-claim email failed:", err);
+      // Best-effort: do NOT fail the order on email/auth-admin error.
+    }
+  }
+
+  // Sprint 3 Task 9 — referral attribution. If the request has a bgp_ref
+  // cookie, link this order to the referral. Self-referral and repeat-buyer
+  // guards live inside claimReferralOnOrder. Best-effort — never block
+  // the order.
+  //
+  // Stacking policy: when subscription_mode is set, the subscription
+  // discount wins (already applied via createSubscription) and the
+  // referral 10% does not stack. When subscription_mode is null AND a
+  // referral cookie is present, we apply the 10% via a compensating
+  // UPDATE on the order's discount_cents / total_cents.
+  try {
+    if (!validInput.subscription_mode) {
+      const cookieHeader = headerBag.get("cookie");
+      const attribution = parseReferralCookie(cookieHeader);
+      if (attribution) {
+        const result = await claimReferralOnOrder({
+          customer_email: validInput.customer.email,
+          cookie_code: attribution.code,
+          order_id,
+        });
+        if (result.ok && result.ten_percent_off_applied) {
+          const refDiscount = Math.round(resolved.subtotal_cents * 0.1);
+          const refTotal = resolved.subtotal_cents - refDiscount;
+          const { error: discountErr } = await supa
+            .from("orders")
+            .update({
+              discount_cents: refDiscount,
+              total_cents: refTotal,
+            })
+            .eq("order_id", order_id);
+          if (discountErr) {
+            console.error(
+              "[submitOrder] referral discount apply failed:",
+              discountErr
+            );
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error("[submitOrder] referral hook threw:", err);
+    // Best-effort — never propagate.
   }
 
   return { ok: true, order_id };

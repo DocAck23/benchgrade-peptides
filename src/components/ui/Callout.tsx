@@ -11,36 +11,60 @@ interface CalloutProps {
   className?: string;
 }
 
-const VARIANT_CONFIG: Record<Variant, { icon: typeof Info; classes: string }> = {
+/**
+ * Locked brand callout variants (spec §16.1, §16.4 RUO is high-importance):
+ *   - info  → paper-soft cream surface, gold-dark rule
+ *   - warn  → paper-soft surface, danger rule, ink text
+ *   - ruo   → wine surface, gold accent rule, paper text
+ *             (RUO is a compliance surface and must remain visually distinct)
+ */
+type VariantConfig = {
+  icon: typeof Info;
+  surface?: "wine";
+  containerClasses: string;
+  titleClasses: string;
+  bodyClasses: string;
+};
+
+const VARIANT_CONFIG: Record<Variant, VariantConfig> = {
   info: {
     icon: Info,
-    classes: "border-l-teal bg-teal-soft text-ink",
+    containerClasses: "border-l-4 border-l-gold-dark bg-paper-soft text-ink",
+    titleClasses: "text-ink",
+    bodyClasses: "text-ink-soft",
   },
   warn: {
     icon: AlertTriangle,
-    classes: "border-l-[color:var(--color-warn)] bg-paper-soft text-ink",
+    containerClasses: "border-l-4 border-l-[color:var(--color-danger)] bg-paper-soft text-ink",
+    titleClasses: "text-ink",
+    bodyClasses: "text-ink-soft",
   },
   ruo: {
     icon: AlertTriangle,
-    classes: "border-l-oxblood bg-paper-soft text-ink",
+    surface: "wine",
+    containerClasses: "border-l-4 border-l-gold bg-wine text-paper",
+    titleClasses: "text-paper",
+    bodyClasses: "text-paper/85",
   },
 };
 
 export function Callout({ variant = "info", title, children, className }: CalloutProps) {
-  const { icon: Icon, classes } = VARIANT_CONFIG[variant];
+  const config = VARIANT_CONFIG[variant];
+  const { icon: Icon, surface, containerClasses, titleClasses, bodyClasses } = config;
   return (
     <div
       role="note"
+      data-surface={surface}
       className={cn(
-        "border-l-4 p-5 flex gap-4",
-        classes,
+        "p-5 flex gap-4 rounded-sm",
+        containerClasses,
         className
       )}
     >
       <Icon className="w-5 h-5 shrink-0 mt-0.5" strokeWidth={1.5} />
       <div className="flex flex-col gap-1.5 text-sm">
-        {title && <div className="font-medium text-ink">{title}</div>}
-        <div className="text-ink-soft leading-relaxed">{children}</div>
+        {title && <div className={cn("font-medium", titleClasses)}>{title}</div>}
+        <div className={cn("leading-relaxed", bodyClasses)}>{children}</div>
       </div>
     </div>
   );

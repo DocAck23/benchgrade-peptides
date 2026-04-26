@@ -1,18 +1,27 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Flag, ShieldCheck, QrCode, Snowflake, Check } from "lucide-react";
 import { useCart } from "@/lib/cart/CartContext";
 import { RUOGate, type RUOAcknowledgmentPayload } from "@/components/compliance/RUOGate";
 import { submitOrder, type CustomerInfo } from "@/app/actions/orders";
 import { formatPrice, cn } from "@/lib/utils";
 import { Callout } from "@/components/ui";
+import { FREE_SHIPPING_THRESHOLD } from "@/lib/site";
+import { CardProcessorFootnote } from "@/components/checkout/CardProcessorFootnote";
+import { SubscriptionUpsellCard } from "@/components/checkout/SubscriptionUpsellCard";
+import { parseReferralCookie } from "@/lib/referrals/cookie";
 import {
   type PaymentMethod,
   paymentMethodLabel,
   paymentMethodBlurb,
 } from "@/lib/payments/methods";
+import {
+  personalVialDiscount,
+  type AffiliateTier,
+} from "@/lib/affiliate/tiers";
 
 const EMPTY: CustomerInfo = {
   name: "",
@@ -30,11 +39,24 @@ const EMPTY: CustomerInfo = {
 interface CheckoutPageClientProps {
   /** Methods the server has confirmed are configured + available. */
   availableMethods: PaymentMethod[];
+  /**
+   * Affiliate state for the current viewer, resolved server-side. When set,
+   * we surface a "personal discount" preview line in the summary aside
+   * (Sprint 4 Wave C). The actual discount is applied authoritatively in
+   * `submitOrder` — this prop is COSMETIC.
+   */
+  affiliate?: { tier: AffiliateTier } | null;
 }
 
-export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps) {
+export function CheckoutPageClient({
+  availableMethods,
+  affiliate = null,
+}: CheckoutPageClientProps) {
   const router = useRouter();
-  const { items, subtotal, itemCount, clear } = useCart();
+  const { items, subtotal, itemCount, totals, subscriptionMode, clear } = useCart();
+  const hasStackSave = totals.stack_save_discount_cents > 0;
+  const hasSameSku = totals.same_sku_discount_cents > 0;
+  const hasAnyDiscount = hasStackSave || hasSameSku;
   const [form, setForm] = useState<CustomerInfo>(EMPTY);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "">(
     availableMethods[0] ?? ""
@@ -43,13 +65,36 @@ export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Sprint 3 Wave C — referral discount preview line.
+  //
+  // Cosmetic only: we read `bgp_ref` from `document.cookie` to show a "10% off"
+  // line above the Stack & Save / Subscription discounts. The cookie is
+  // HttpOnly in production, so this preview will only render when a non-
+  // HttpOnly mirror is set (e.g., dev/test). The authoritative discount is
+  // applied server-side in `submitOrder` based on the request cookie + the
+  // first-time-buyer check; we deliberately do NOT try to validate that here.
+  const [referralPreview, setReferralPreview] = useState<{
+    code: string;
+    discountCents: number;
+  } | null>(null);
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const attribution = parseReferralCookie(document.cookie);
+    if (!attribution) {
+      setReferralPreview(null);
+      return;
+    }
+    const discountCents = Math.round(subtotal * 100 * 0.1);
+    setReferralPreview({ code: attribution.code, discountCents });
+  }, [subtotal]);
+
   if (items.length === 0 && !submitting) {
     return (
       <article className="max-w-3xl mx-auto px-6 lg:px-10 py-20 text-center">
         <h1 className="font-display text-4xl text-ink mb-6">Your cart is empty.</h1>
         <Link
           href="/catalog"
-          className="inline-flex items-center h-12 px-8 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-teal transition-colors"
+          className="inline-flex items-center h-12 px-8 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-gold transition-colors"
         >
           Browse the catalog
         </Link>
@@ -102,6 +147,7 @@ export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps
           accepts_ruo: ack.accepts_ruo,
         },
         payment_method: paymentMethod,
+        subscription_mode: subscriptionMode,
       });
       if (!res.ok) {
         setError(res.error ?? "Order submission failed.");
@@ -178,6 +224,7 @@ export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps
                 );
               })}
             </fieldset>
+            <CardProcessorFootnote />
           </Section>
 
           <Section title="Notes (optional)">
@@ -195,18 +242,22 @@ export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps
           </Callout>
 
           {error && (
-            <div className="border border-oxblood/40 bg-oxblood/5 text-oxblood px-4 py-3 text-sm">
+            <div className="border border-danger/40 bg-danger/5 text-danger px-4 py-3 text-sm">
               {error}
             </div>
           )}
 
+          <TrustStrip />
+
           <button
             type="submit"
             disabled={submitting || !paymentMethod}
-            className="flex items-center justify-center w-full h-12 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-teal transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex items-center justify-center w-full h-12 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-gold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {submitting ? "Submitting…" : "Review RUO certification & submit"}
           </button>
+
+          <NextStepsTimeline />
         </form>
 
         <aside className="lg:sticky lg:top-8 h-fit border rule bg-paper-soft p-6 space-y-4">
@@ -225,14 +276,97 @@ export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps
               ))}
             </ul>
           </div>
-          <div className="border-t rule pt-4 flex items-baseline justify-between">
-            <span className="text-sm text-ink-soft">
-              {itemCount} {itemCount === 1 ? "vial" : "vials"}
-            </span>
-            <span className="font-mono-data text-lg text-ink">
-              {formatPrice(subtotal * 100)}
-            </span>
+          <SubscriptionUpsellCard />
+          <div className="border-t rule pt-4 space-y-2">
+            <div className="flex items-baseline justify-between">
+              <span className="text-xs label-eyebrow text-ink-muted">Subtotal</span>
+              <span
+                className={cn(
+                  "font-mono-data text-sm",
+                  hasAnyDiscount ? "text-ink-muted line-through" : "text-ink"
+                )}
+              >
+                {formatPrice(subtotal * 100)}
+              </span>
+            </div>
+            {referralPreview && (
+              <div
+                className="flex items-baseline justify-between"
+                data-testid="referral-discount-preview"
+              >
+                <span
+                  className="text-xs text-gold-dark italic"
+                  style={{ fontFamily: "var(--font-editorial)" }}
+                >
+                  Referred by friend
+                </span>
+                <span className="font-mono-data text-sm text-gold-dark">
+                  −{formatPrice(referralPreview.discountCents)}
+                </span>
+              </div>
+            )}
+            {affiliate && (
+              <div
+                className="flex items-baseline justify-between"
+                data-testid="affiliate-discount-preview"
+              >
+                <span
+                  className="text-xs text-gold-dark italic"
+                  style={{ fontFamily: "var(--font-editorial)" }}
+                >
+                  Affiliate discount · {personalVialDiscount(affiliate.tier)}% off
+                  <span className="text-ink-muted not-italic">
+                    {" "}
+                    (your tier:{" "}
+                    {affiliate.tier.charAt(0).toUpperCase() +
+                      affiliate.tier.slice(1)}
+                    )
+                  </span>
+                </span>
+                <span className="font-mono-data text-sm text-gold-dark">
+                  −
+                  {formatPrice(
+                    Math.round(
+                      subtotal * 100 * (personalVialDiscount(affiliate.tier) / 100)
+                    )
+                  )}
+                </span>
+              </div>
+            )}
+            {hasStackSave && (
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs text-gold-dark">
+                  Stack &amp; Save · {totals.stack_save_tier_percent}% off
+                </span>
+                <span className="font-mono-data text-sm text-gold-dark">
+                  −{formatPrice(totals.stack_save_discount_cents)}
+                </span>
+              </div>
+            )}
+            {hasSameSku && (
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs text-gold-dark">Same-SKU bonus · 5% off</span>
+                <span className="font-mono-data text-sm text-gold-dark">
+                  −{formatPrice(totals.same_sku_discount_cents)}
+                </span>
+              </div>
+            )}
+            {totals.free_shipping && (
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs text-gold-dark">Free domestic shipping</span>
+                <span className="font-mono-data text-sm text-gold-dark">included</span>
+              </div>
+            )}
+            <div className="flex items-baseline justify-between pt-2">
+              <span className="text-sm text-ink-soft">
+                {itemCount} {itemCount === 1 ? "vial" : "vials"}
+              </span>
+              <span className="font-mono-data text-lg text-wine">
+                {formatPrice(totals.total_cents)}
+              </span>
+            </div>
           </div>
+          <FreeShippingBar subtotal={subtotal} />
         </aside>
       </div>
 
@@ -242,6 +376,108 @@ export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps
         onCancel={() => setRuoOpen(false)}
       />
     </article>
+  );
+}
+
+function FreeShippingBar({ subtotal }: { subtotal: number }) {
+  const remaining = Math.max(FREE_SHIPPING_THRESHOLD - subtotal, 0);
+  const pct = Math.min((subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
+  const unlocked = remaining === 0 && subtotal > 0;
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 text-xs">
+        {unlocked ? (
+          <>
+            <Check className="w-3.5 h-3.5 text-gold" strokeWidth={2} aria-hidden />
+            <span className="text-ink">Free domestic shipping unlocked.</span>
+          </>
+        ) : (
+          <span className="text-ink-soft">
+            <span className="font-mono-data text-ink">{formatPrice(remaining * 100)}</span>{" "}
+            away from free domestic shipping
+          </span>
+        )}
+      </div>
+      <div
+        className="h-1 w-full bg-paper border rule overflow-hidden"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={FREE_SHIPPING_THRESHOLD}
+        aria-valuenow={Math.min(subtotal, FREE_SHIPPING_THRESHOLD)}
+        aria-label="Free shipping progress"
+      >
+        <div
+          className={cn("h-full transition-all duration-300", unlocked ? "bg-gold" : "bg-ink")}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+const TRUST_ITEMS = [
+  { icon: Flag, label: "Made in USA", sub: "Synthesized + tested stateside" },
+  { icon: ShieldCheck, label: "≥99% HPLC", sub: "Verified per lot" },
+  { icon: QrCode, label: "QR-COA on every vial", sub: "Scan to see receipts" },
+  { icon: Snowflake, label: "Cold-chain shipped", sub: "Insulated, tracked" },
+] as const;
+
+function TrustStrip() {
+  return (
+    <ul className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-y rule py-4">
+      {TRUST_ITEMS.map(({ icon: Icon, label, sub }) => (
+        <li key={label} className="flex items-start gap-2">
+          <Icon className="w-4 h-4 mt-0.5 text-ink shrink-0" strokeWidth={1.5} aria-hidden />
+          <div className="min-w-0">
+            <div className="text-xs font-medium text-ink leading-tight">{label}</div>
+            <div className="text-[10px] text-ink-muted leading-tight mt-0.5">{sub}</div>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+const TIMELINE_STEPS = [
+  {
+    when: "Now",
+    title: "You submit your order",
+    body: "RUO certification recorded; order locked for our team.",
+  },
+  {
+    when: "Within minutes",
+    title: "Payment instructions in your inbox",
+    body: "We email wire / crypto / card details for the method you chose.",
+  },
+  {
+    when: "1–2 business days",
+    title: "Ships from our US lab",
+    body: "Cold-chain pack with QR-COA on every vial. Tracking included.",
+  },
+] as const;
+
+function NextStepsTimeline() {
+  return (
+    <section aria-label="What happens after you submit" className="space-y-3">
+      <div className="label-eyebrow text-ink-muted">What happens next</div>
+      <ol className="space-y-3">
+        {TIMELINE_STEPS.map((step, i) => (
+          <li key={step.title} className="flex gap-3">
+            <div
+              className="font-mono-data text-xs text-ink-muted w-6 shrink-0 pt-0.5"
+              aria-hidden
+            >
+              0{i + 1}
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs label-eyebrow text-ink-muted">{step.when}</div>
+              <div className="text-sm text-ink leading-snug">{step.title}</div>
+              <div className="text-xs text-ink-soft leading-snug mt-0.5">{step.body}</div>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }
 
@@ -271,7 +507,7 @@ function Field({ label, value, onChange, required, type = "text", autoComplete, 
     <label className="block">
       <span className="block text-xs text-ink-muted mb-1">
         {label}
-        {required && <span className="text-oxblood"> *</span>}
+        {required && <span className="text-wine"> *</span>}
       </span>
       {multiline ? (
         <textarea

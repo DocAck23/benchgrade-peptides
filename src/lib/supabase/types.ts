@@ -38,6 +38,12 @@ export interface OrderRow {
     vial_image: string;
   }>;
   subtotal_cents: number;
+  /** Server-computed discount in cents (Stack&Save + Same-SKU multiplier). */
+  discount_cents?: number;
+  /** Server-computed amount owed in cents (subtotal_cents - discount_cents). */
+  total_cents?: number;
+  /** Free-vial entitlement captured at order time; null if no tier reached. */
+  free_vial_entitlement?: { size_mg: 5 | 10 } | null;
   acknowledgment: {
     certification_text: string;
     certification_version: string;
@@ -50,8 +56,126 @@ export interface OrderRow {
     user_agent: string;
   };
   status: OrderStatus;
+  tracking_number?: string | null;
+  tracking_carrier?: 'USPS' | 'UPS' | 'FedEx' | 'DHL' | null;
+  shipped_at?: string | null;
+  customer_user_id?: string | null;
+  subscription_id?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface SubscriptionRow {
+  id: string;
+  customer_user_id: string;
+  plan_duration_months: 1 | 3 | 6 | 9 | 12;
+  payment_cadence: 'prepay' | 'bill_pay';
+  ship_cadence: 'monthly' | 'quarterly' | 'once';
+  items: OrderRow['items'];
+  cycle_subtotal_cents: number;
+  cycle_total_cents: number;
+  discount_percent: number;
+  status: 'active' | 'paused' | 'cancelled' | 'completed';
+  next_ship_date: string | null;
+  next_charge_date: string | null;
+  cycles_completed: number;
+  cycles_total: number;
+  created_at: string;
+  updated_at: string;
+  paused_at: string | null;
+  cancelled_at: string | null;
+}
+
+export interface MessageRow {
+  id: string;
+  customer_user_id: string;
+  sender: 'customer' | 'admin';
+  body: string;
+  created_at: string;
+  read_at: string | null;
+}
+
+export interface ReferralCodeRow {
+  code: string;
+  owner_user_id: string;
+  created_at: string;
+}
+
+export interface ReferralRow {
+  id: string;
+  referrer_user_id: string;
+  referee_user_id: string | null;
+  referee_email: string;
+  code: string;
+  attributed_at: string;
+  redeemed_at: string | null;
+  status: 'pending' | 'shipped' | 'redeemed' | 'cancelled';
+  first_order_id: string | null;
+  created_at: string;
+}
+
+export interface FreeVialEntitlementRow {
+  id: string;
+  customer_user_id: string;
+  size_mg: 5 | 10;
+  source: 'referral' | 'stack_save_8' | 'stack_save_12' | 'admin_grant';
+  source_referral_id: string | null;
+  granted_at: string;
+  redeemed_at: string | null;
+  redeemed_order_id: string | null;
+  status: 'available' | 'redeemed' | 'expired';
+}
+
+export interface AffiliateApplicationRow {
+  id: string;
+  applicant_email: string;
+  applicant_name: string;
+  audience_description: string;
+  website_or_social: string | null;
+  applicant_user_id: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewed_by_admin: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+}
+
+export interface AffiliateRow {
+  id: string;
+  user_id: string;
+  application_id: string | null;
+  tier: 'bronze' | 'silver' | 'gold' | 'eminent';
+  payout_method: 'zelle' | 'crypto' | 'wire';
+  payout_handle: string | null;
+  available_balance_cents: number;
+  total_earned_cents: number;
+  total_paid_cents: number;
+  total_redeemed_cents: number;
+  approved_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CommissionLedgerRow {
+  id: string;
+  affiliate_id: string;
+  source_referral_id: string | null;
+  source_order_id: string | null;
+  kind: 'earned' | 'clawback' | 'redemption_debit' | 'payout_debit';
+  amount_cents: number;
+  tier_at_time: string;
+  created_at: string;
+}
+
+export interface AffiliatePayoutRow {
+  id: string;
+  affiliate_id: string;
+  amount_cents: number;
+  method: 'zelle' | 'crypto' | 'wire';
+  external_reference: string | null;
+  status: 'pending' | 'sent' | 'failed';
+  created_at: string;
+  sent_at: string | null;
+  notes: string | null;
 }
 
 export interface RuoAcknowledgmentRow {

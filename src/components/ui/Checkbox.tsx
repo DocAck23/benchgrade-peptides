@@ -13,8 +13,13 @@ interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "typ
 /**
  * Checkbox with inline label and error state.
  *
- * Used for the RUO certification checkbox at checkout — required prop styles
- * the label with a critical-state asterisk.
+ * Locked brand styling (spec §16.1):
+ *   - paper bg, rule border, gold-dark hover, gold-light focus ring
+ *   - checked: wine fill, paper checkmark, gold-dark border
+ *   - error: danger border / text
+ *
+ * Used for the RUO certification checkbox at checkout — the `required` prop
+ * styles the label with a critical-state asterisk.
  */
 export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
   ({ className, label, error, help, id, required, checked, ...props }, ref) => {
@@ -36,12 +41,12 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
               aria-invalid={!!error}
               aria-describedby={[helpId, errorId].filter(Boolean).join(" ") || undefined}
               className={cn(
-                "appearance-none w-[18px] h-[18px] border rule bg-paper cursor-pointer",
-                "checked:bg-ink checked:border-ink",
-                "group-hover:border-rule-strong",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2",
-                error && "border-oxblood",
-                "transition-colors",
+                "appearance-none w-[18px] h-[18px] rounded-sm border border-rule bg-paper cursor-pointer",
+                "checked:bg-wine checked:border-wine-deep",
+                "group-hover:border-gold-dark",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light focus-visible:ring-offset-2",
+                error && "border-[color:var(--color-danger)]",
+                "transition-colors duration-200 ease-[var(--ease-default)]",
                 className
               )}
               {...props}
@@ -55,14 +60,16 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
           </span>
           <span className="text-sm text-ink-soft leading-relaxed">
             {label}
-            {required && <span className="text-oxblood ml-1" aria-label="required">*</span>}
+            {required && (
+              <span className="text-[color:var(--color-danger)] ml-1" aria-label="required">*</span>
+            )}
           </span>
         </label>
         {help && !error && (
           <p id={helpId} className="text-xs text-ink-muted ml-[30px]">{help}</p>
         )}
         {error && (
-          <p id={errorId} className="text-xs text-oxblood ml-[30px]" role="alert">{error}</p>
+          <p id={errorId} className="text-xs text-[color:var(--color-danger)] ml-[30px]" role="alert">{error}</p>
         )}
       </div>
     );

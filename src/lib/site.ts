@@ -8,3 +8,7 @@ export const SITE_URL = (() => {
 })();
 
 export const SITE_NAME = "Bench Grade Peptides";
+
+/** Free-shipping threshold in whole dollars. Tuned above single-vial pricing
+ *  so a 2-item cart unlocks it. Surfaced in cart drawer + checkout summary. */
+export const FREE_SHIPPING_THRESHOLD = 150;

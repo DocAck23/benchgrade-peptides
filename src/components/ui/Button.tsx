@@ -1,7 +1,7 @@
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
-type Variant = "primary" | "secondary" | "ghost" | "destructive";
+type Variant = "primary" | "secondary" | "ghost" | "destructive" | "gold";
 type Size = "sm" | "md" | "lg";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -10,15 +10,25 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
 }
 
+/**
+ * Locked brand variants (spec §16.1):
+ *   - primary    → wine surface, paper text, gold-light hover, wine-deep pressed
+ *   - secondary  → cream surface, ink text, gold border on hover/focus
+ *   - ghost      → transparent, ink-soft text, gold-dark hover
+ *   - destructive→ danger surface, paper text (refund/cancel only)
+ *   - gold       → gold surface, wine text, gold-dark pressed (high-emphasis CTAs)
+ */
 const VARIANT_CLASSES: Record<Variant, string> = {
   primary:
-    "bg-ink text-paper hover:bg-teal disabled:bg-ink-faint disabled:cursor-not-allowed",
+    "bg-wine text-paper border border-wine-deep hover:bg-gold-light hover:text-wine hover:border-gold-light active:bg-wine-deep disabled:bg-ink-muted disabled:border-ink-muted disabled:cursor-not-allowed",
   secondary:
-    "border rule text-ink bg-paper hover:bg-paper-soft disabled:text-ink-faint disabled:cursor-not-allowed",
+    "bg-paper text-ink border border-rule hover:border-gold focus-visible:border-gold disabled:text-ink-muted disabled:cursor-not-allowed",
   ghost:
-    "text-ink-soft hover:text-teal disabled:text-ink-faint disabled:cursor-not-allowed",
+    "bg-transparent text-ink-soft border border-transparent hover:text-gold-dark disabled:text-ink-muted disabled:cursor-not-allowed",
   destructive:
-    "bg-oxblood text-paper hover:bg-oxblood-hover disabled:opacity-50 disabled:cursor-not-allowed",
+    "bg-danger text-paper border border-danger hover:bg-wine-deep hover:border-wine-deep disabled:opacity-50 disabled:cursor-not-allowed",
+  gold:
+    "bg-gold text-wine border border-gold hover:bg-gold-light active:bg-gold-dark disabled:bg-ink-muted disabled:text-paper disabled:border-ink-muted disabled:cursor-not-allowed",
 };
 
 const SIZE_CLASSES: Record<Size, string> = {
@@ -34,7 +44,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled || loading}
         className={cn(
-          "inline-flex items-center justify-center font-medium transition-colors",
+          "inline-flex items-center justify-center font-sans font-medium rounded-sm",
+          "transition-[background-color,border-color,color] duration-300 ease-[var(--ease-default)]",
           VARIANT_CLASSES[variant],
           SIZE_CLASSES[size],
           className

@@ -20,54 +20,88 @@
  */
 
 @theme {
-  /* ---- Surfaces ---- */
-  --color-paper: #f7f4ee;          /* primary background */
-  --color-paper-soft: #efeae1;     /* card/elevated surfaces */
-  --color-paper-deep: #e7e0d0;     /* secondary surface, below-fold sections */
-  --color-rule: #d7d1c4;           /* 1px hairline borders */
-  --color-rule-strong: #b8b0a1;    /* emphasis borders, selected state */
+  /* ---- Brand colors (locked 2026-04-25, spec §16.1) ---- */
+  --color-wine: #4A0E1A;            /* primary brand bg, hero, premium tier surfaces */
+  --color-wine-deep: #2E0810;       /* shadow / depth on wine surfaces */
+  --color-gold: #B89254;            /* primary accent — wordmarks, rules, signature */
+  --color-gold-light: #D4B47A;      /* hover states, soft-emboss highlights */
+  --color-gold-dark: #8B6E3F;       /* pressed states, secondary depth */
+  --color-paper: #FDFAF1;           /* default page background (warm cream) */
+  --color-paper-soft: #F4EBD7;      /* card backgrounds, table stripes, secondary surfaces */
+  --color-ink: #1A0506;             /* body text on cream — wine-tinged near-black */
+  --color-ink-soft: #4A2528;        /* secondary text on cream */
+  --color-ink-muted: #6B5350;       /* tertiary, eyebrow labels, fine print */
+  --color-rule: #D4C8A8;            /* hairline dividers on cream surfaces */
+  --color-rule-wine: #6E2531;       /* hairline dividers on wine surfaces */
+  --color-success: #3F6B47;         /* confirmation states (sparingly used) */
+  --color-danger: #7A2128;          /* error / refund / cancel states */
 
-  /* ---- Ink ---- */
-  --color-ink: #1a1a1a;            /* primary body text */
-  --color-ink-soft: #4a4a4a;       /* secondary text */
-  --color-ink-muted: #6b6b6b;      /* tertiary text, meta */
-  --color-ink-faint: #8a8a8a;      /* disabled, placeholder */
-
-  /* ---- Accents ---- */
-  --color-teal: #0a5c7d;           /* data, links, trust signals */
+  /* ---- Legacy tokens (deprecated 2026-04-25 — sprint 0 swap) ----
+   * Kept to avoid breaking other components mid-sprint. Wave 2 sweeps these. */
+  /* deprecated 2026-04-25 — sprint 0 swap */
+  --color-paper-deep: #e7e0d0;
+  /* deprecated 2026-04-25 — sprint 0 swap */
+  --color-rule-strong: #b8b0a1;
+  /* deprecated 2026-04-25 — sprint 0 swap */
+  --color-ink-faint: #8a8a8a;
+  /* deprecated 2026-04-25 — sprint 0 swap */
+  --color-teal: #0a5c7d;
+  /* deprecated 2026-04-25 — sprint 0 swap */
   --color-teal-hover: #084a65;
-  --color-teal-soft: #e7f0f4;      /* teal background tint for highlights */
-  --color-oxblood: #7a1e1e;        /* RUO banner + destructive only */
+  /* deprecated 2026-04-25 — sprint 0 swap */
+  --color-teal-soft: #e7f0f4;
+  /* deprecated 2026-04-25 — sprint 0 swap */
+  --color-oxblood: #7a1e1e;
+  /* deprecated 2026-04-25 — sprint 0 swap */
   --color-oxblood-hover: #5f1717;
-  --color-amber: #d6a15c;          /* rare highlight, used sparingly */
-
-  /* ---- Feedback ---- */
-  --color-success: #2d5a3d;
+  /* deprecated 2026-04-25 — sprint 0 swap */
+  --color-amber: #d6a15c;
+  /* deprecated 2026-04-25 — sprint 0 swap */
   --color-warn: #8a6d28;
+  /* deprecated 2026-04-25 — sprint 0 swap */
   --color-error: #7a1e1e;
 
   /* ---- Background / foreground aliases for Next scaffold ---- */
   --color-background: var(--color-paper);
   --color-foreground: var(--color-ink);
 
-  /* ---- Typography ----
-   * Display: Geist (clinical geometric sans — Vercel's technical typeface)
-   * Body:    Inter (humanist sans, high legibility at small sizes)
-   * Mono:    JetBrains Mono (tabular numerals for data, prices, sequences) */
-  --font-sans: var(--font-inter);
-  --font-display: var(--font-geist);
-  --font-mono: var(--font-jetbrains-mono);
+  /* ---- Typography (locked 2026-04-25, spec §16.1) ----
+   * Display:   Cinzel             — Roman-cap headlines, wordmark, virtue marks
+   * Editorial: Cormorant Garamond — email headlines, /why-no-cards prose
+   * UI:        Inter              — nav, forms, body, dashboard
+   * Data:      JetBrains Mono     — prices, lot numbers, COA IDs, SKUs
+   * Variables come from next/font/google in src/app/layout.tsx. */
+  --font-display: var(--font-cinzel), Georgia, "Times New Roman", serif;
+  --font-editorial: var(--font-cormorant), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: var(--font-jetbrains-mono), "SF Mono", Menlo, monospace;
+  /* deprecated 2026-04-25 — sprint 0 swap (Geist removed in favor of Cinzel) */
+  --font-geist: var(--font-cinzel);
 
-  /* ---- Radius ---- */
+  /* ---- Radius (tight, premium feel) ---- */
   --radius-none: 0px;
   --radius-sm: 2px;
-  --radius-md: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
 
   /* ---- Motion ---- */
   --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
   --dur-fast: 150ms;
   --dur-med: 250ms;
   --dur-slow: 400ms;
+}
+
+/* Wine-surface context — pages or sections that flip to the dark brand surface.
+   Apply via `<section data-surface="wine">` or `<html data-surface="wine">`. */
+[data-surface="wine"] {
+  background: var(--color-wine);
+  color: var(--color-paper);
+}
+[data-surface="wine"] hr {
+  border-color: var(--color-rule-wine);
+}
+[data-surface="wine"] a {
+  color: var(--color-gold-light);
 }
 
 html {
@@ -121,11 +155,26 @@ body {
 
 /* Small-caps, letter-spaced utility for section eyebrows */
 .label-eyebrow {
-  font-family: var(--font-inter), sans-serif;
-  font-size: 0.6875rem;
+  font-family: var(--font-sans);
+  font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  font-weight: 500;
+  font-weight: 600;
+  color: var(--color-gold-dark);
+}
+
+/* Wordmark utility — Cinzel uppercase tracked, used by the Logo wordmark
+   variant and any inline brand mark fallback. */
+.display-wordmark {
+  font-family: var(--font-display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* Wine-surface hairline rule utility companion to .rule */
+.rule-wine {
+  border-color: var(--color-rule-wine);
 }
 
 /* Hairline rule utility (use with border-{side}) */

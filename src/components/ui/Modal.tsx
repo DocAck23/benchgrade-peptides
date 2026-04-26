@@ -131,9 +131,9 @@ export function Modal({ open, onClose, blocking = false, title, description, chi
       aria-labelledby={title ? titleId : undefined}
       aria-describedby={description ? descId : undefined}
     >
-      {/* Backdrop */}
+      {/* Backdrop — wine overlay (spec §16.1) */}
       <div
-        className="absolute inset-0 bg-ink/60 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-wine/70 backdrop-blur-[2px]"
         onClick={blocking ? undefined : onClose}
         aria-hidden="true"
       />
@@ -141,7 +141,7 @@ export function Modal({ open, onClose, blocking = false, title, description, chi
       <div
         ref={dialogRef}
         className={cn(
-          "relative w-full bg-paper border rule shadow-none",
+          "relative w-full bg-paper border border-gold-dark rounded-md shadow-none",
           "max-h-[calc(100vh-2rem)] overflow-y-auto",
           SIZE_CLASSES[size],
           className
@@ -150,7 +150,7 @@ export function Modal({ open, onClose, blocking = false, title, description, chi
         {!blocking && onClose && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-ink-muted hover:text-ink transition-colors"
+            className="absolute top-4 right-4 text-ink-muted hover:text-gold-dark transition-colors"
             aria-label="Close dialog"
           >
             <X className="w-5 h-5" strokeWidth={1.5} />
