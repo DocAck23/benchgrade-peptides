@@ -5,6 +5,8 @@ import {
   mapPaymentStatusToOrderStatus,
 } from "@/lib/payments/nowpayments/webhook";
 import type { OrderStatus } from "@/lib/orders/status";
+import type { OrderRow } from "@/lib/supabase/types";
+import { sendPaymentConfirmed } from "@/lib/email/notifications/send-order-emails";
 
 /**
  * NOWPayments IPN (webhook) endpoint.
@@ -140,7 +142,7 @@ export async function POST(req: Request) {
     .update({ status: target })
     .eq("order_id", orderId)
     .in("status", allowedSources)
-    .select("status");
+    .select("*");
   if (updateError) {
     return NextResponse.json(
       { ok: false, error: `Update failed: ${updateError.message}` },
@@ -148,6 +150,13 @@ export async function POST(req: Request) {
     );
   }
   const applied = Array.isArray(updated) && updated.length > 0;
+  // Best-effort lifecycle email. Only fires on actual transition
+  // (rowcount > 0) so duplicate IPN retries don't spam the customer.
+  // We await but ignore the result — a Resend outage MUST NOT roll
+  // back the funded transition that already landed in Postgres.
+  if (applied && target === "funded" && updated && updated[0]) {
+    await sendPaymentConfirmed(updated[0] as OrderRow);
+  }
   return NextResponse.json({
     ok: true,
     applied,
