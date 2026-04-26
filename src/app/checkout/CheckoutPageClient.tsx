@@ -3,11 +3,13 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Flag, ShieldCheck, QrCode, Snowflake, Check } from "lucide-react";
 import { useCart } from "@/lib/cart/CartContext";
 import { RUOGate, type RUOAcknowledgmentPayload } from "@/components/compliance/RUOGate";
 import { submitOrder, type CustomerInfo } from "@/app/actions/orders";
 import { formatPrice, cn } from "@/lib/utils";
 import { Callout } from "@/components/ui";
+import { FREE_SHIPPING_THRESHOLD } from "@/lib/site";
 import {
   type PaymentMethod,
   paymentMethodLabel,
@@ -200,6 +202,8 @@ export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps
             </div>
           )}
 
+          <TrustStrip />
+
           <button
             type="submit"
             disabled={submitting || !paymentMethod}
@@ -207,6 +211,8 @@ export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps
           >
             {submitting ? "Submitting…" : "Review RUO certification & submit"}
           </button>
+
+          <NextStepsTimeline />
         </form>
 
         <aside className="lg:sticky lg:top-8 h-fit border rule bg-paper-soft p-6 space-y-4">
@@ -233,6 +239,7 @@ export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps
               {formatPrice(subtotal * 100)}
             </span>
           </div>
+          <FreeShippingBar subtotal={subtotal} />
         </aside>
       </div>
 
@@ -242,6 +249,108 @@ export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps
         onCancel={() => setRuoOpen(false)}
       />
     </article>
+  );
+}
+
+function FreeShippingBar({ subtotal }: { subtotal: number }) {
+  const remaining = Math.max(FREE_SHIPPING_THRESHOLD - subtotal, 0);
+  const pct = Math.min((subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
+  const unlocked = remaining === 0 && subtotal > 0;
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 text-xs">
+        {unlocked ? (
+          <>
+            <Check className="w-3.5 h-3.5 text-teal" strokeWidth={2} aria-hidden />
+            <span className="text-ink">Free domestic shipping unlocked.</span>
+          </>
+        ) : (
+          <span className="text-ink-soft">
+            <span className="font-mono-data text-ink">{formatPrice(remaining * 100)}</span>{" "}
+            away from free domestic shipping
+          </span>
+        )}
+      </div>
+      <div
+        className="h-1 w-full bg-paper border rule overflow-hidden"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={FREE_SHIPPING_THRESHOLD}
+        aria-valuenow={Math.min(subtotal, FREE_SHIPPING_THRESHOLD)}
+        aria-label="Free shipping progress"
+      >
+        <div
+          className={cn("h-full transition-all duration-300", unlocked ? "bg-teal" : "bg-ink")}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+const TRUST_ITEMS = [
+  { icon: Flag, label: "Made in USA", sub: "Synthesized + tested stateside" },
+  { icon: ShieldCheck, label: "≥99% HPLC", sub: "Verified per lot" },
+  { icon: QrCode, label: "QR-COA on every vial", sub: "Scan to see receipts" },
+  { icon: Snowflake, label: "Cold-chain shipped", sub: "Insulated, tracked" },
+] as const;
+
+function TrustStrip() {
+  return (
+    <ul className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-y rule py-4">
+      {TRUST_ITEMS.map(({ icon: Icon, label, sub }) => (
+        <li key={label} className="flex items-start gap-2">
+          <Icon className="w-4 h-4 mt-0.5 text-ink shrink-0" strokeWidth={1.5} aria-hidden />
+          <div className="min-w-0">
+            <div className="text-xs font-medium text-ink leading-tight">{label}</div>
+            <div className="text-[10px] text-ink-muted leading-tight mt-0.5">{sub}</div>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+const TIMELINE_STEPS = [
+  {
+    when: "Now",
+    title: "You submit your order",
+    body: "RUO certification recorded; order locked for our team.",
+  },
+  {
+    when: "Within minutes",
+    title: "Payment instructions in your inbox",
+    body: "We email wire / crypto / card details for the method you chose.",
+  },
+  {
+    when: "1–2 business days",
+    title: "Ships from our US lab",
+    body: "Cold-chain pack with QR-COA on every vial. Tracking included.",
+  },
+] as const;
+
+function NextStepsTimeline() {
+  return (
+    <section aria-label="What happens after you submit" className="space-y-3">
+      <div className="label-eyebrow text-ink-muted">What happens next</div>
+      <ol className="space-y-3">
+        {TIMELINE_STEPS.map((step, i) => (
+          <li key={step.title} className="flex gap-3">
+            <div
+              className="font-mono-data text-xs text-ink-muted w-6 shrink-0 pt-0.5"
+              aria-hidden
+            >
+              0{i + 1}
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs label-eyebrow text-ink-muted">{step.when}</div>
+              <div className="text-sm text-ink leading-snug">{step.title}</div>
+              <div className="text-xs text-ink-soft leading-snug mt-0.5">{step.body}</div>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }
 
