@@ -22,16 +22,17 @@ export function ProductCarousel() {
   return (
     <section
       aria-label="Featured compounds"
-      className="border-b rule py-14 overflow-hidden bg-paper-soft"
+      data-surface="wine"
+      className="py-16 sm:py-20 overflow-hidden bg-wine"
     >
       <div className="max-w-[1440px] mx-auto px-6 lg:px-10 mb-10 flex items-end justify-between gap-4">
         <div>
-          <div className="label-eyebrow text-ink-muted mb-2">Featured compounds</div>
-          <h2 className="font-display text-3xl lg:text-4xl text-ink leading-tight">
+          <div className="label-eyebrow text-gold-light mb-2">Featured compounds</div>
+          <h2 className="font-display text-3xl lg:text-4xl text-paper leading-tight">
             From the catalog
           </h2>
         </div>
-        <Link href="/catalog" className="text-sm text-gold hover:underline whitespace-nowrap">
+        <Link href="/catalog" className="text-sm text-gold-light hover:underline whitespace-nowrap">
           Browse all {PRODUCTS.length} →
         </Link>
       </div>
@@ -39,8 +40,8 @@ export function ProductCarousel() {
       {/* Marquee viewport */}
       <div className="relative">
         {/* edge fades for a premium feel */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-16 lg:w-32 bg-gradient-to-r from-paper-soft to-transparent z-10" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-16 lg:w-32 bg-gradient-to-l from-paper-soft to-transparent z-10" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-16 lg:w-32 bg-gradient-to-r from-wine to-transparent z-10" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-16 lg:w-32 bg-gradient-to-l from-wine to-transparent z-10" />
 
         <div className="marquee-track flex gap-4 lg:gap-5 w-max px-6 lg:px-10">
           {/* Real set — keyboard-reachable, announced */}

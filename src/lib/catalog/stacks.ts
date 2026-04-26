@@ -45,13 +45,33 @@ export interface PopularStack {
  */
 export const POPULAR_STACKS: PopularStack[] = [
   {
-    slug: "tissue-repair-stack",
-    name: "Tissue Repair Stack",
-    tagline: "BPC-157 + TB-500 — the bench standard pair.",
+    slug: "wolverine-stack",
+    name: "Wolverine Stack",
+    tagline: "BPC-157 + TB-500 — the bench standard healing pair.",
     why: "BPC-157 and TB-500 are the two most-cited compounds in tissue-repair research. Studied together for synergistic effects on angiogenesis and ECM remodeling assays.",
     items: [
       { sku: "BGP-BPC-5", quantity: 1 },
       { sku: "BGP-TB-5", quantity: 1 },
+    ],
+  },
+  {
+    slug: "metabolic-pair",
+    name: "Metabolic Pair",
+    tagline: "GLP-1 S + AMY-A — incretin + amylin analog combination.",
+    why: "Class-coded incretin and amylin analog studied together in metabolic-pathway research. Both ship with full identity on per-lot COA.",
+    items: [
+      { sku: "BGP-GLP1S-5", quantity: 1 },
+      { sku: "BGP-AMYA-5", quantity: 1 },
+    ],
+  },
+  {
+    slug: "triple-agonist-gh",
+    name: "Triple-Agonist + GH Pair",
+    tagline: "GLP-3 R + Ipamorelin — incretin + GH-axis combination.",
+    why: "Triple-receptor incretin agonist paired with a selective ghrelin receptor agonist. Used in cross-pathway metabolic + GH-axis research.",
+    items: [
+      { sku: "BGP-GLP3R-5", quantity: 1 },
+      { sku: "BGP-IPA-5", quantity: 1 },
     ],
   },
   {
@@ -65,7 +85,7 @@ export const POPULAR_STACKS: PopularStack[] = [
     ],
   },
   {
-    slug: "ghrh-stack",
+    slug: "ghrh-pair",
     name: "GHRH Pair",
     tagline: "Sermorelin + Tesamorelin — comparative GHRH analog set.",
     why: "Two distinct GHRH analogs side-by-side for comparative receptor-pathway research. Useful for class-level pharmacology studies referencing endogenous GHRH.",
@@ -75,13 +95,15 @@ export const POPULAR_STACKS: PopularStack[] = [
     ],
   },
   {
-    slug: "metabolic-class-stack",
-    name: "Metabolic Class Stack",
-    tagline: "GLP-1 S + AMY-A — incretin + amylin analog pair.",
-    why: "Class-coded incretin and amylin analog studied together in metabolic-pathway research. Both ship with full identity on per-lot COA.",
+    slug: "mega-recovery-stack",
+    name: "Mega Recovery Stack",
+    tagline: "GLP-3 R + Sermorelin + BPC-157 + TB-500 — four-vial cross-axis study set.",
+    why: "Four-compound combination spanning incretin, GH-axis, and tissue-repair research arms. Designed for researchers running multi-pathway protocols who want a single bundled order.",
     items: [
-      { sku: "BGP-GLP1S-5", quantity: 1 },
-      { sku: "BGP-AMYA-5", quantity: 1 },
+      { sku: "BGP-GLP3R-5", quantity: 1 },
+      { sku: "BGP-SER-5", quantity: 1 },
+      { sku: "BGP-BPC-5", quantity: 1 },
+      { sku: "BGP-TB-5", quantity: 1 },
     ],
   },
 ];
