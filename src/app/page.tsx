@@ -101,29 +101,46 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Featured products (cream surface) ──────────────────────────────
-          ProductCarousel internals are catalog-component territory and owned
-          by Wave 2c's sweep. We render it as-is. */}
-      <ProductCarousel />
+      {/* ── Catalog + Build your stack (single wine surface) ────────────
+          Combines the previously-split "From the catalog" carousel and
+          "Build your stack" CTA into one cohesive wine-surface section.
+          Carousel renders inline, gold "Build your stack" button below. */}
+      <section data-surface="wine" className="border-t border-rule-wine">
+        <div className="max-w-[1280px] mx-auto px-5 sm:px-6 lg:px-10 py-20 sm:py-24 lg:py-28">
+          <div className="text-center mb-12 sm:mb-16">
+            <div className="label-eyebrow text-gold-light mb-3 text-[11px] sm:text-xs">
+              From the catalog
+            </div>
+            <h2 className="font-display font-display-heavy text-4xl sm:text-5xl lg:text-6xl tracking-tight text-paper">
+              Build your stack.
+            </h2>
+            <p
+              className="mt-5 text-lg sm:text-xl italic max-w-2xl mx-auto"
+              style={{ fontFamily: "var(--font-editorial)", color: "var(--color-paper-soft)" }}
+            >
+              One catalog. One standard. Receipts on every vial.
+            </p>
+          </div>
 
-      
-      {/* ── Bottom CTA ─────────────────────────────────────────────────── */}
-      <section data-surface="wine">
-        <div className="max-w-[1280px] mx-auto px-5 sm:px-6 lg:px-10 py-24 sm:py-32 text-center">
-          <h2 className="font-display font-display-heavy text-4xl sm:text-5xl lg:text-6xl tracking-tight">
-            Build your stack.
-          </h2>
-          <p
-            className="mt-5 text-lg sm:text-xl italic"
-            style={{ fontFamily: "var(--font-editorial)" }}
-          >
-            One catalog. One standard. Receipts on every vial.
-          </p>
-          <div className="mt-10 flex justify-center">
+          <div className="bg-paper rounded-sm overflow-hidden border border-rule-wine">
+            <ProductCarousel />
+          </div>
+
+          <div className="mt-12 sm:mt-14 flex flex-wrap items-center justify-center gap-5 sm:gap-7">
             <Link href="/catalog" className="inline-flex">
               <Button variant="gold" size="lg">
-                Start the catalog →
+                Build your stack →
               </Button>
+            </Link>
+            <Link
+              href="/catalog#popular-stacks"
+              className="inline-flex items-center text-sm tracking-[0.04em] underline underline-offset-[6px] decoration-1 transition-colors duration-200 hover:opacity-80"
+              style={{
+                color: "var(--color-gold-light)",
+                textDecorationColor: "var(--color-gold)",
+              }}
+            >
+              View popular stacks →
             </Link>
           </div>
         </div>

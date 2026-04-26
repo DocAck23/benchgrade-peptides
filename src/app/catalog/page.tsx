@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Breadcrumb, Callout } from "@/components/ui";
 import { ProductCard } from "@/components/catalog/ProductCard";
+import { PopularStacks } from "@/components/catalog/PopularStacks";
 import { CATEGORIES, PRODUCTS } from "@/lib/catalog/data";
 
 export const metadata: Metadata = {
@@ -42,6 +43,9 @@ export default function CatalogPage() {
           checkout per our{" "}
           <Link href="/terms" className="text-teal underline">Terms of Sale</Link>.
         </Callout>
+
+        {/* Curated combinations — surface popular stacks above category browse. */}
+        <PopularStacks />
 
         {/* Category sections */}
         {CATEGORIES.map((category) => {

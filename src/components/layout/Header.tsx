@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 
 const PRIMARY_NAV = [
   { href: "/catalog", label: "Catalog" },
+  { href: "/research", label: "Research" },
+  { href: "/news", label: "News" },
   { href: "/compliance", label: "Compliance" },
   { href: "/shipping", label: "Shipping" },
   { href: "/about", label: "About" },
@@ -37,7 +39,7 @@ export function Header({ accountSlot }: { accountSlot?: ReactNode }) {
   // Cinzel UI nav class — shared across desktop + mobile lists so the
   // typographic system is consistent. 13px, uppercase, tracked.
   const navLinkBase =
-    "font-display uppercase text-[13px] tracking-[0.12em] text-paper-soft transition-colors duration-200 ease-out";
+    "font-display uppercase text-[15px] md:text-[16px] tracking-[0.1em] text-paper-soft transition-colors duration-200 ease-out";
   const navLinkUnderline =
     "relative after:absolute after:left-0 after:right-0 after:-bottom-1 after:h-px after:bg-gold after:scale-x-0 after:origin-left after:transition-transform after:duration-200 after:ease-out hover:text-paper hover:after:scale-x-100";
 
@@ -53,7 +55,7 @@ export function Header({ accountSlot }: { accountSlot?: ReactNode }) {
         <Logo variant="mark" surface="wine" size="xl" priority />
 
         <nav
-          className="hidden md:flex items-center justify-center gap-10 lg:gap-12"
+          className="hidden md:flex items-center justify-center gap-7 lg:gap-9"
           aria-label="Primary"
         >
           {PRIMARY_NAV.map((item) => (
