@@ -1,0 +1,932 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Honorable Peptides — Logo Concepts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F7F4EE;
+    --paper-soft: #EFEAE1;
+    --rule: #D7D1C4;
+    --ink: #1A1A1A;
+    --ink-soft: #3A3A3A;
+    --ink-muted: #6B6B6B;
+    --teal: #0A5C7D;
+    --oxblood: #7A1E1E;
+
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --display: "Cormorant Garamond", "Times New Roman", serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.55;
+  }
+
+  .top-bar {
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 10px 16px;
+  }
+
+  .page {
+    max-width: 1360px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  header.doc-head {
+    text-align: center;
+    padding-bottom: 40px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 56px;
+  }
+  header.doc-head .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--teal);
+  }
+  header.doc-head h1 {
+    font-family: var(--display);
+    font-size: clamp(2.5rem, 5vw, 3.8rem);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.05;
+    margin: 14px 0 10px 0;
+    color: var(--ink);
+  }
+  header.doc-head p {
+    max-width: 640px;
+    margin: 0 auto;
+    color: var(--ink-soft);
+    font-size: 17px;
+  }
+
+  .family-header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin: 72px 0 28px 0;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .family-header .tag {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    padding: 4px 10px;
+    border: 1px solid var(--rule);
+  }
+  .family-header h2 {
+    font-family: var(--display);
+    font-size: 2rem;
+    font-weight: 500;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .family-header .desc {
+    margin-left: auto;
+    color: var(--ink-muted);
+    font-size: 14px;
+    max-width: 420px;
+    text-align: right;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 32px;
+  }
+
+  .card {
+    background: var(--paper-soft);
+    border: 1px solid var(--rule);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: transform 150ms, box-shadow 150ms;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(26,26,26,0.08);
+  }
+  .card .image-wrap {
+    aspect-ratio: 1 / 1;
+    background: var(--ink);
+    overflow: hidden;
+    position: relative;
+  }
+  .card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .card .body {
+    padding: 18px 20px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .card .id {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--teal);
+  }
+  .card .title {
+    font-family: var(--display);
+    font-size: 1.3rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--ink);
+  }
+  .card .concept-line {
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+  .card .swatches {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+    align-items: center;
+  }
+  .swatch {
+    width: 18px;
+    height: 18px;
+    border: 1px solid rgba(26,26,26,0.15);
+    border-radius: 3px;
+  }
+  .swatches .label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-muted);
+    margin-left: 8px;
+    letter-spacing: 0.05em;
+  }
+  .card .feel {
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    font-style: italic;
+    margin-top: 6px;
+    padding-top: 10px;
+    border-top: 1px solid var(--rule);
+  }
+
+  .decision-panel {
+    margin-top: 96px;
+    padding: 36px 40px;
+    background: var(--paper-soft);
+    border: 1px solid var(--rule);
+  }
+  .decision-panel h2 {
+    font-family: var(--display);
+    font-size: 1.7rem;
+    font-weight: 600;
+    margin: 0 0 16px 0;
+  }
+  .decision-panel p {
+    color: var(--ink-soft);
+    max-width: 720px;
+  }
+  .decision-panel ol {
+    margin-top: 16px;
+    padding-left: 20px;
+    color: var(--ink-soft);
+  }
+  .decision-panel li { margin: 8px 0; }
+  .decision-panel code {
+    font-family: var(--mono);
+    font-size: 13px;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--ink);
+  }
+
+  footer {
+    margin-top: 64px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-muted);
+    letter-spacing: 0.05em;
+  }
+
+  @media (max-width: 720px) {
+    .page { padding: 32px 20px 64px; }
+    .family-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .family-header .desc { text-align: left; margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">BENCH GRADE PEPTIDES LLC · INTERNAL BRAND REVIEW · NOT FOR DISTRIBUTION</div>
+
+<div class="page">
+  <header class="doc-head">
+    <div class="eyebrow">New brand line · 2026-04-24</div>
+    <h1>Honorable Peptides</h1>
+    <p>12 logo concepts across two families, each with a distinct illustration style and colorway.
+    The brand is positioned premium — the emotional spine is warrior, honor, strength, endurance,
+    grit, integrity, trustworthiness. Every mark carries "by Bench Grade Peptides" as corporate
+    attribution.</p>
+  </header>
+
+  <!-- ROUND 3 — WAX SEAL · GAME OF THRONES -->
+  <div class="family-header">
+    <span class="tag">Round 3 · NEW</span>
+    <h2>Wax Seal · Game of Thrones</h2>
+    <span class="desc">Photoreal wax seals pressed on aged parchment — the brand mark as a House sigil. 13 variations across colorways (crimson, oxblood, gold, navy, charcoal, forest, royal purple, black) and contexts (loose seal, sealed letter, rolled scroll, broken seal, candlelit desk).</span>
+  </div>
+
+  <div class="grid">
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/d1-wax-crimson-fold.jpg" alt="D1 Crimson wax seal with fingerprint and fold"></div>
+      <div class="body">
+        <span class="id">D1 · Crimson · Folded</span>
+        <h3 class="title">Crimson Wax, Fingerprint &amp; Fold</h3>
+        <div class="concept-line">A loose seal pressed in haste — visible thumbprint, paper fold, soft foxing on the parchment.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#7A1E1E"></span>
+          <span class="swatch" style="background:#EFE6D2"></span>
+          <span class="label">Crimson on parchment</span>
+        </div>
+        <div class="feel">Feels like: a letter from the front, urgency stamped in wax.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/d2-wax-crimson-letter.jpg" alt="D2 Crimson wax seal on partially folded letter, House Stark feel"></div>
+      <div class="body">
+        <span class="id">D2 · Crimson · Letter</span>
+        <h3 class="title">Crimson Seal on Open Letter</h3>
+        <div class="concept-line">Partially folded letter, seal centered — the editorial hero shot. Catalog cover material.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#7A1E1E"></span>
+          <span class="swatch" style="background:#EBE2CC"></span>
+          <span class="label">Crimson on parchment</span>
+        </div>
+        <div class="feel">Feels like: a House missive — formal, sealed, untampered.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/d3-wax-black-nightswatch.jpg" alt="D3 Black wax seal, Night's Watch aesthetic"></div>
+      <div class="body">
+        <span class="id">D3 · Black · Night's Watch</span>
+        <h3 class="title">Black Wax, Spartan</h3>
+        <div class="concept-line">Black on ivory — austere, monastic. Reads premium without color.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#0E0E0E"></span>
+          <span class="swatch" style="background:#EFE6D2"></span>
+          <span class="label">Black on parchment</span>
+        </div>
+        <div class="feel">Feels like: a vow taken, an order of duty.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/d4-wax-forest-tyrell.jpg" alt="D4 Deep forest green wax seal, House Tyrell"></div>
+      <div class="body">
+        <span class="id">D4 · Forest · Tyrell</span>
+        <h3 class="title">Forest Green Wax</h3>
+        <div class="concept-line">Deep forest green — natural, restorative. Pulls toward the apothecary lane.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#1F3A2A"></span>
+          <span class="swatch" style="background:#EFE6D2"></span>
+          <span class="label">Forest on parchment</span>
+        </div>
+        <div class="feel">Feels like: a botanical herbarium plate, restorative tradition.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/d5-wax-purple-targaryen.jpg" alt="D5 Royal purple wax seal with golden ribbon, House Targaryen"></div>
+      <div class="body">
+        <span class="id">D5 · Royal Purple · Ribbon</span>
+        <h3 class="title">Royal Purple, Golden Ribbon</h3>
+        <div class="concept-line">Royal purple over a trailing golden ribbon. The most ornate of the set — almost too royal.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#3A1F4A"></span>
+          <span class="swatch" style="background:#B8923A"></span>
+          <span class="label">Purple + gold ribbon</span>
+        </div>
+        <div class="feel">Feels like: a Targaryen decree, dragonglass-and-gold.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/d6-wax-oxblood-drip.jpg" alt="D6 Oxblood wax seal with visible drip"></div>
+      <div class="body">
+        <span class="id">D6 · Oxblood · Drip</span>
+        <h3 class="title">Oxblood Wax, Bold Drip</h3>
+        <div class="concept-line">Oxblood with a pronounced wax drip — pressed hot, slightly imperfect, very alive.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#5C1414"></span>
+          <span class="swatch" style="background:#EFE6D2"></span>
+          <span class="label">Oxblood on parchment</span>
+        </div>
+        <div class="feel">Feels like: a Bolton dispatch — visceral, earned.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/d7-wax-gold-lannister.jpg" alt="D7 Antique gold wax seal, House Lannister"></div>
+      <div class="body">
+        <span class="id">D7 · Gold · Lannister</span>
+        <h3 class="title">Antique Gold Wax</h3>
+        <div class="concept-line">Antique gold — premium, monetary, almost too on-the-nose. Worth seeing for contrast.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#B8923A"></span>
+          <span class="swatch" style="background:#EFE6D2"></span>
+          <span class="label">Gold on parchment</span>
+        </div>
+        <div class="feel">Feels like: a debt called in, a Lannister letter.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/d8-wax-navy-scroll.jpg" alt="D8 Navy wax seal with frayed silk cord"></div>
+      <div class="body">
+        <span class="id">D8 · Navy · Cord</span>
+        <h3 class="title">Navy Wax over Silk Cord</h3>
+        <div class="concept-line">Navy seal sealing a frayed silk cord — implies a rolled scroll behind frame.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#0B1F3A"></span>
+          <span class="swatch" style="background:#EFE6D2"></span>
+          <span class="label">Navy on parchment</span>
+        </div>
+        <div class="feel">Feels like: a cartographer's commission, a sealed map.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/d9-wax-crimson-ribbon.jpg" alt="D9 Crimson wax seal with golden ribbon"></div>
+      <div class="body">
+        <span class="id">D9 · Crimson · Ribbon</span>
+        <h3 class="title">Crimson Wax, Golden Ribbon</h3>
+        <div class="concept-line">Crimson over gold ribbon — Targaryen-meets-Lannister. The "high-ceremony" reading.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#7A1E1E"></span>
+          <span class="swatch" style="background:#B8923A"></span>
+          <span class="label">Crimson + gold</span>
+        </div>
+        <div class="feel">Feels like: a coronation seal, the most formal of the set.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/d10-wax-scroll-overhead.jpg" alt="D10 Rolled parchment scroll sealed in oxblood wax, overhead"></div>
+      <div class="body">
+        <span class="id">D10 · Scroll · Overhead</span>
+        <h3 class="title">Sealed Scroll, Overhead</h3>
+        <div class="concept-line">Wider context shot — the seal binding a rolled scroll on dark oak, candle-lit. Mood-board hero.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#5C1414"></span>
+          <span class="swatch" style="background:#3A2A1F"></span>
+          <span class="label">Oxblood on oak</span>
+        </div>
+        <div class="feel">Feels like: a maester's chamber, an order pending delivery.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/d11-wax-broken.jpg" alt="D11 Broken crimson wax seal"></div>
+      <div class="body">
+        <span class="id">D11 · Crimson · Broken</span>
+        <h3 class="title">Broken Seal</h3>
+        <div class="concept-line">The seal cracked open — the moment of opening. Editorial / lifestyle imagery, not a logo lockup.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#7A1E1E"></span>
+          <span class="swatch" style="background:#EFE6D2"></span>
+          <span class="label">Crimson, fractured</span>
+        </div>
+        <div class="feel">Feels like: the letter opened — narrative pivot, not identity.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/d12-wax-charcoal-stark.jpg" alt="D12 Charcoal grey wax seal, House Stark"></div>
+      <div class="body">
+        <span class="id">D12 · Charcoal · Stark</span>
+        <h3 class="title">Charcoal Wax, Silver Dust</h3>
+        <div class="concept-line">Charcoal with a faint silver dusting — austere, northern, restrained.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#2A2A2C"></span>
+          <span class="swatch" style="background:#EFE6D2"></span>
+          <span class="label">Charcoal on parchment</span>
+        </div>
+        <div class="feel">Feels like: a Stark missive, winter is coming.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/d13-wax-desk-cinematic.jpg" alt="D13 Sealed letter on writing desk with quill and inkwell"></div>
+      <div class="body">
+        <span class="id">D13 · Desk · Cinematic</span>
+        <h3 class="title">Writing Desk, Candlelit</h3>
+        <div class="concept-line">Full-context cinematic still — quill, inkwell, sealed letter, single candle. Site hero / packaging insert image.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#7A1E1E"></span>
+          <span class="swatch" style="background:#3A2A1F"></span>
+          <span class="label">Crimson, oak, candlelight</span>
+        </div>
+        <div class="feel">Feels like: the moment before sealing — writer's intent made physical.</div>
+      </div>
+    </article>
+  </div>
+
+  <!-- ROUND 2 — FRONT-FACING -->
+  <div class="family-header">
+    <span class="tag">Round 2 · NEW</span>
+    <h2>Front-Facing Warriors + Fresh Directions</h2>
+    <span class="desc">Wordmark dropped to just "HONORABLE". Mostly head-on / symmetrical poses per your feedback, plus several new aesthetic directions (wax seal, sepia sketch, cutout emboss, gladius-only icon).</span>
+  </div>
+
+  <div class="grid">
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/c1-engraving-front-navy.jpg" alt="C1 Engraving front-facing knight, navy"></div>
+      <div class="body">
+        <span class="id">C1 · Engraving (front)</span>
+        <h3 class="title">Front-Facing Engraved Knight</h3>
+        <div class="concept-line">Symmetrical front-on pose, classical 19th-century steel engraving with crosshatching and oval cartouche.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#0B1F3A"></span>
+          <span class="swatch" style="background:#F5EFE0"></span>
+          <span class="label">Navy on ivory</span>
+        </div>
+        <div class="feel">Feels like: an heirloom signet, an estate-spirit label.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/c2-monoline-front-gold-charcoal.jpg" alt="C2 Monoline front-facing knight, gold on charcoal"></div>
+      <div class="body">
+        <span class="id">C2 · Monoline (front)</span>
+        <h3 class="title">Front-Facing Vector Knight</h3>
+        <div class="concept-line">Patek-style minimal monoline, but symmetrical. Generous negative space, oval frame.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#B89058"></span>
+          <span class="swatch" style="background:#1A1A1A"></span>
+          <span class="label">Gold on charcoal</span>
+        </div>
+        <div class="feel">Feels like: a Savile Row signage, a private-club emblem.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/c3-spartan-shield-marble.jpg" alt="C3 Spartan with shield, marble"></div>
+      <div class="body">
+        <span class="id">C3 · Marble Shield</span>
+        <h3 class="title">Spartan with Shield (front)</h3>
+        <div class="concept-line">Front-facing Spartan kneeling, aspis shield held vertically toward viewer. Marble bas-relief.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#E9E0CB"></span>
+          <span class="swatch" style="background:#2A2A2A"></span>
+          <span class="label">Cream marble on slate</span>
+        </div>
+        <div class="feel">Feels like: a war memorial plaque.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/c4-spartan-shield-marble-v2.jpg" alt="C4 Spartan with shield, marble v2"></div>
+      <div class="body">
+        <span class="id">C4 · Marble Shield (alt)</span>
+        <h3 class="title">Spartan with Shield (alt take)</h3>
+        <div class="concept-line">Same concept as C3, different generation — alt composition / pose for comparison.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#E9E0CB"></span>
+          <span class="swatch" style="background:#2A2A2A"></span>
+          <span class="label">Cream marble on slate</span>
+        </div>
+        <div class="feel">Compare side-by-side with C3 to pick the stronger generation.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/c5-crusader-cross-front-forest.jpg" alt="C5 Crusader praying, sword as cross"></div>
+      <div class="body">
+        <span class="id">C5 · Crusader-Cross</span>
+        <h3 class="title">Sword-as-Cross Crusader</h3>
+        <div class="concept-line">Front-facing Crusader, hands clasped on cross-shaped hilt — sword visually doubles as a Christian cross. Heraldic woodcut.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#1F4A34"></span>
+          <span class="swatch" style="background:#A06A2C"></span>
+          <span class="swatch" style="background:#F0E9D2"></span>
+          <span class="label">Forest + brass on parchment</span>
+        </div>
+        <div class="feel">Feels like: a Filson tag with religious gravitas.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/c6-samurai-front-sumie.jpg" alt="C6 Samurai front-facing sumi-e"></div>
+      <div class="body">
+        <span class="id">C6 · Samurai (front)</span>
+        <h3 class="title">Front-Facing Bushido</h3>
+        <div class="concept-line">Symmetrical samurai, sumi-e ink-brush style. Zen austerity meets head-on dignity.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#1A1A1A"></span>
+          <span class="swatch" style="background:#EDE6D3"></span>
+          <span class="label">Charcoal on washi</span>
+        </div>
+        <div class="feel">Feels like: a tea-house wall scroll.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/c7-spartan-geometric-emerald.jpg" alt="C7 Geometric Spartan, emerald"></div>
+      <div class="body">
+        <span class="id">C7 · Geometric (emerald)</span>
+        <h3 class="title">Modern Spartan Coat-of-Arms</h3>
+        <div class="concept-line">Front-facing kneeling Spartan in clean geometric vector facets. New colorway.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#0E4A3A"></span>
+          <span class="swatch" style="background:#F0E5D0"></span>
+          <span class="swatch" style="background:#B89058"></span>
+          <span class="label">Emerald + brass on bone</span>
+        </div>
+        <div class="feel">Feels like: heritage British military meets 2030 luxury.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/c8-spartan-geometric-emerald-v2.jpg" alt="C8 Geometric Spartan v2"></div>
+      <div class="body">
+        <span class="id">C8 · Geometric (alt)</span>
+        <h3 class="title">Modern Spartan (alt take)</h3>
+        <div class="concept-line">Same concept as C7, alternate generation. Compare to choose stronger composition.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#0E4A3A"></span>
+          <span class="swatch" style="background:#F0E5D0"></span>
+          <span class="label">Emerald on bone</span>
+        </div>
+        <div class="feel">Side-by-side with C7 — pick whichever you prefer.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/c9-gladius-laurel-gold-oxblood.jpg" alt="C9 Gladius + laurels icon"></div>
+      <div class="body">
+        <span class="id">C9 · Gladius + Laurels</span>
+        <h3 class="title">Sword & Laurel (no figure)</h3>
+        <div class="concept-line">No warrior — pure iconography of a Roman gladius pointed down with laurels arching below.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#C9A961"></span>
+          <span class="swatch" style="background:#5C1818"></span>
+          <span class="label">Gold on oxblood</span>
+        </div>
+        <div class="feel">Feels like: a USMC insignia, an heirloom signet ring.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/c10-wax-seal-knight-vermillion.jpg" alt="C10 Wax seal, vermillion"></div>
+      <div class="body">
+        <span class="id">C10 · Wax Seal</span>
+        <h3 class="title">Royal Wax Seal</h3>
+        <div class="concept-line">Knight embossed within a hand-pressed crimson wax disk on parchment. 17th-century royal aesthetic.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#A02A2A"></span>
+          <span class="swatch" style="background:#F1E8D0"></span>
+          <span class="label">Vermillion wax on cream</span>
+        </div>
+        <div class="feel">Feels like: a sealed royal letter, a notarized document.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/c11-wax-seal-v2.jpg" alt="C11 Wax seal alt"></div>
+      <div class="body">
+        <span class="id">C11 · Wax Seal (alt)</span>
+        <h3 class="title">Royal Wax Seal (alt)</h3>
+        <div class="concept-line">Same concept as C10, alternate generation.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#A02A2A"></span>
+          <span class="swatch" style="background:#F1E8D0"></span>
+          <span class="label">Vermillion wax on cream</span>
+        </div>
+        <div class="feel">Compare to C10 — pick whichever wax-impression reads more authentic.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/c12-standing-knight-greatsword.jpg" alt="C12 Standing knight, greatsword"></div>
+      <div class="body">
+        <span class="id">C12 · Standing Knight</span>
+        <h3 class="title">Standing Knight, Head Down</h3>
+        <div class="concept-line">Variant: knight stands tall (not kneeling), head-down chin-to-chest, hands on greatsword pommel. More monumental.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#0B1F3A"></span>
+          <span class="swatch" style="background:#F5EFE0"></span>
+          <span class="label">Navy on ivory</span>
+        </div>
+        <div class="feel">Feels like: an estate-spirit label with quiet menace.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/c13-roman-silhouette-cream.jpg" alt="C13 Roman legionary silhouette"></div>
+      <div class="body">
+        <span class="id">C13 · Filled Silhouette</span>
+        <h3 class="title">Black-Figure Legionary</h3>
+        <div class="concept-line">Pure-black filled silhouette — no interior detail. Greek-pottery / Saul Bass aesthetic. Most graphic / iconic option.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#1A1A1A"></span>
+          <span class="swatch" style="background:#F1E8D0"></span>
+          <span class="label">Black on parchment</span>
+        </div>
+        <div class="feel">Feels like: a museum exhibit poster, a poster-shop print.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/c14-spartan-sepia-sketch.jpg" alt="C14 Sepia chalk sketch"></div>
+      <div class="body">
+        <span class="id">C14 · Sepia Sketch</span>
+        <h3 class="title">Hand-Drawn Sepia</h3>
+        <div class="concept-line">Soft chalk-pastel hand-drawn aesthetic. Burnt sienna on warm sand cream. The "artisanal sketchbook" alternative.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#8B4513"></span>
+          <span class="swatch" style="background:#EFE3CB"></span>
+          <span class="label">Burnt sienna on sand</span>
+        </div>
+        <div class="feel">Feels like: a personal sketchbook, an artisan's signature.</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/c15-knight-cutout-oxblood.jpg" alt="C15 Negative-space cutout"></div>
+      <div class="body">
+        <span class="id">C15 · Cutout Emboss</span>
+        <h3 class="title">Negative-Space Cigar-Band</h3>
+        <div class="concept-line">Knight figure cut OUT of an oxblood field — negative-space emboss, like a die-cut wax-paper or vintage cigar band.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#5C1818"></span>
+          <span class="swatch" style="background:#F1E8D0"></span>
+          <span class="label">Cream cutout on oxblood</span>
+        </div>
+        <div class="feel">Feels like: a Cuban cigar band, a letterpress emboss.</div>
+      </div>
+    </article>
+  </div>
+
+  <!-- FAMILY A: WARRIOR -->
+  <div class="family-header">
+    <span class="tag">Round 1 · Family A</span>
+    <h2>The Warrior (side-profile, original 12)</h2>
+    <span class="desc">Original side-profile explorations from Round 1.</span>
+  </div>
+
+  <div class="grid">
+    <!-- A1 -->
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/a1-warrior-monoline-navy.jpg" alt="A1 — Monoline warrior, navy on ivory"></div>
+      <div class="body">
+        <span class="id">A1 · Monoline</span>
+        <h3 class="title">Vector Line Knight</h3>
+        <div class="concept-line">Minimalist single-stroke line art of a kneeling knight resting on his sword. Oval frame. Patek Philippe / Hermès crest aesthetic.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#0B1F3A"></span>
+          <span class="swatch" style="background:#F5EFE0"></span>
+          <span class="label">Navy on ivory</span>
+        </div>
+        <div class="feel">Feels like: an heirloom wax seal, a single-malt whisky label.</div>
+      </div>
+    </article>
+
+    <!-- A2 -->
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/a2-warrior-engraving-oxblood.jpg" alt="A2 — Engraved warrior, oxblood on bone"></div>
+      <div class="body">
+        <span class="id">A2 · Engraving</span>
+        <h3 class="title">Classical Etching</h3>
+        <div class="concept-line">Detailed 19th-century steel-engraving style. Crosshatched knight framed by an ornate cartouche with laurel branches.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#6B1E1E"></span>
+          <span class="swatch" style="background:#EDE4CE"></span>
+          <span class="label">Oxblood on parchment</span>
+        </div>
+        <div class="feel">Feels like: an estate-bottled Bordeaux label.</div>
+      </div>
+    </article>
+
+    <!-- A3 -->
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/a3-samurai-sumie-charcoal.jpg" alt="A3 — Samurai sumi-e ink, charcoal on rice paper"></div>
+      <div class="body">
+        <span class="id">A3 · Sumi-e ink</span>
+        <h3 class="title">Bushido Brushstroke</h3>
+        <div class="concept-line">Japanese ink-brush painting of a kneeling samurai resting on his katana. Zen economy. Controlled negative space.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#1A1A1A"></span>
+          <span class="swatch" style="background:#EDE6D3"></span>
+          <span class="label">Charcoal on washi</span>
+        </div>
+        <div class="feel">Feels like: a tea-house wall scroll.</div>
+      </div>
+    </article>
+
+    <!-- A4 -->
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/a4-warrior-geometric-gold.jpg" alt="A4 — Geometric warrior, gold on black"></div>
+      <div class="body">
+        <span class="id">A4 · Geometric</span>
+        <h3 class="title">Modern Architect</h3>
+        <div class="concept-line">Angular geometric facets. Clean straight lines. The knight reimagined as a 2030 coat-of-arms.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#C9A961"></span>
+          <span class="swatch" style="background:#0D0D0D"></span>
+          <span class="label">Gold foil on matte black</span>
+        </div>
+        <div class="feel">Feels like: an LV trunk monogram, a top-shelf cognac.</div>
+      </div>
+    </article>
+
+    <!-- A5 -->
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/a5-crusader-woodcut-forest.jpg" alt="A5 — Crusader woodcut, forest green on cream"></div>
+      <div class="body">
+        <span class="id">A5 · Woodcut</span>
+        <h3 class="title">Mead-Hall Crusader</h3>
+        <div class="concept-line">Bold heraldic woodblock print of a full-plate Crusader with shield at his thigh. Holbein-era illustration vibe.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#1F4A34"></span>
+          <span class="swatch" style="background:#F0E9D2"></span>
+          <span class="swatch" style="background:#A06A2C"></span>
+          <span class="label">Forest + brass on parchment</span>
+        </div>
+        <div class="feel">Feels like: a Barbour jacket tag, a Filson label.</div>
+      </div>
+    </article>
+
+    <!-- A6 -->
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/a6-hoplite-marble-slate.jpg" alt="A6 — Hoplite marble silhouette, slate and cream"></div>
+      <div class="body">
+        <span class="id">A6 · Marble</span>
+        <h3 class="title">Monumental Frieze</h3>
+        <div class="concept-line">Classical marble-sculpture silhouette of a kneeling hoplite with spear planted as a rest. Parthenon-frieze stillness.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#E9E0CB"></span>
+          <span class="swatch" style="background:#2A2A2A"></span>
+          <span class="label">Cream marble on slate</span>
+        </div>
+        <div class="feel">Feels like: a war-memorial plaque, a Met Museum wing.</div>
+      </div>
+    </article>
+  </div>
+
+  <!-- FAMILY B: ICONOGRAPHY -->
+  <div class="family-header">
+    <span class="tag">Family B</span>
+    <h2>The Iconography</h2>
+    <span class="desc">Alternative symbolic directions — helmet, oak, shield, crossed swords, standing warrior, pure typography.</span>
+  </div>
+
+  <div class="grid">
+    <!-- B1 -->
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/b1-spartan-helmet-brass.jpg" alt="B1 — Spartan helmet, brass on black"></div>
+      <div class="body">
+        <span class="id">B1 · Helmet</span>
+        <h3 class="title">Corinthian Crest</h3>
+        <div class="concept-line">Spartan plumed war helmet in profile. Monoline icon in a thin circular border. Symbol: warrior archetype.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#A68A3D"></span>
+          <span class="swatch" style="background:#0A0A0A"></span>
+          <span class="label">Brass on jet black</span>
+        </div>
+        <div class="feel">Feels like: a single-malt Scotch label, a regimental crest.</div>
+      </div>
+    </article>
+
+    <!-- B2 -->
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/b2-oak-roots-forest.jpg" alt="B2 — Oak with roots, forest green on ivory"></div>
+      <div class="body">
+        <span class="id">B2 · Oak</span>
+        <h3 class="title">Rooted Endurance</h3>
+        <div class="concept-line">Mature oak tree with exposed root system — equal visual weight above and below ground. Symbol: depth, endurance, strength.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#1F4A34"></span>
+          <span class="swatch" style="background:#F5EEDC"></span>
+          <span class="label">Forest green on ivory</span>
+        </div>
+        <div class="feel">Feels like: an estate-whisky distillery, a land-trust seal.</div>
+      </div>
+    </article>
+
+    <!-- B3 -->
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/b3-shield-peptide-navy-gold.jpg" alt="B3 — Heraldic shield with peptide glyph"></div>
+      <div class="body">
+        <span class="id">B3 · Shield</span>
+        <h3 class="title">Peptide Crest</h3>
+        <div class="concept-line">Classical heater shield with an abstracted peptide-bond glyph (H-N-C=O) at center, laurel branches framing. Symbol: science + honor.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#0B1F3A"></span>
+          <span class="swatch" style="background:#C9A961"></span>
+          <span class="swatch" style="background:#F0E5D0"></span>
+          <span class="label">Navy + gold on bone</span>
+        </div>
+        <div class="feel">Feels like: a West Point crest, a compounding lab's coat of arms.</div>
+      </div>
+    </article>
+
+    <!-- B4 -->
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/b4-crossed-swords-oxblood.jpg" alt="B4 — Crossed swords with laurel, oxblood on cream"></div>
+      <div class="body">
+        <span class="id">B4 · Crossed Swords</span>
+        <h3 class="title">Regimental Seal</h3>
+        <div class="concept-line">Two longswords in an X with a laurel wreath curving around the crux. Classical heraldic composition.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#6B1E1E"></span>
+          <span class="swatch" style="background:#EDE4CE"></span>
+          <span class="swatch" style="background:#B8923D"></span>
+          <span class="label">Oxblood + gold on parchment</span>
+        </div>
+        <div class="feel">Feels like: a gentlemen's club seal, a signet ring.</div>
+      </div>
+    </article>
+
+    <!-- B5 -->
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/b5-hoplite-standing-burgundy.jpg" alt="B5 — Standing hoplite silhouette, burgundy on cream"></div>
+      <div class="body">
+        <span class="id">B5 · Standing Hoplite</span>
+        <h3 class="title">Greek Pottery</h3>
+        <div class="concept-line">Standing hoplite in filled silhouette — spear up, aspis shield, plumed helm. Black-figure-pottery tradition.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#5C1818"></span>
+          <span class="swatch" style="background:#F0E6D0"></span>
+          <span class="label">Burgundy on cream</span>
+        </div>
+        <div class="feel">Feels like: a Met exhibit poster, a boutique shop seal.</div>
+      </div>
+    </article>
+
+    <!-- B6 -->
+    <article class="card">
+      <div class="image-wrap"><img src="honorable-logos/b6-typography-gold-charcoal.jpg" alt="B6 — Typography-forward, gold on charcoal"></div>
+      <div class="body">
+        <span class="id">B6 · Typography</span>
+        <h3 class="title">Letterpress Wordmark</h3>
+        <div class="concept-line">Stately Trajan caps as the hero. A tiny heraldic sword glyph between "HONORABLE" and "PEPTIDES". No imagery dominates.</div>
+        <div class="swatches">
+          <span class="swatch" style="background:#B89058"></span>
+          <span class="swatch" style="background:#1D1D1D"></span>
+          <span class="label">Gold foil on charcoal</span>
+        </div>
+        <div class="feel">Feels like: a Savile Row tailor's sign, a rare-book dealer's card.</div>
+      </div>
+    </article>
+  </div>
+
+  <!-- DECISION PANEL -->
+  <div class="decision-panel">
+    <h2>How to give me feedback</h2>
+    <p>Tell me which numbers you want to keep, kill, or refine. Refine requests can be anything:</p>
+    <ol>
+      <li><strong>Style swap on the same concept</strong> — e.g., <code>A1 but in the A5 forest-green/parchment colorway</code></li>
+      <li><strong>Colorway variant</strong> — e.g., <code>A3 in oxblood + cream instead of charcoal</code></li>
+      <li><strong>Composition edit</strong> — e.g., <code>B3 but replace the peptide glyph with a small sword</code></li>
+      <li><strong>Combine two</strong> — e.g., <code>A4's geometric warrior on B6's typography layout</code></li>
+      <li><strong>New concept entirely</strong> — describe the feel and I'll generate more</li>
+    </ol>
+    <p>Once you pick the direction, next step is: apply the winning logo to the actual <strong>vial labels</strong>, <strong>box packaging</strong>, and the <strong>website header</strong> so you can see how it sits in context. Right now these are just logos-in-a-square — the branded-system expression comes next.</p>
+  </div>
+
+  <footer>Generated 2026-04-24 · source <code>research/honorable-logos/*.jpg</code></footer>
+</div>
+
+</body>
+</html>

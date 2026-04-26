@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="200mm" height="130mm" viewBox="0 0 200 130">
+  <!-- Bench Grade Peptides · LARGE box lid face · 200mm × 130mm (7.87" × 5.12") -->
+  <!-- For 10-vial pack. F6 mark top-right. No tier text. -->
+  <rect width="200" height="130" fill="#5C1A1A"/>
+
+  <!-- F6 mark, foil-stamped top-right. Size: 36mm tall = 46mm wide. -->
+  <image x="138" y="18" width="46" height="36"
+         xlink:href="../vial-templates/F6-gold-vector.svg?v=14"
+         preserveAspectRatio="xMidYMid meet"/>
+</svg>

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BGP — Vial Photos (66 of 65 done)</title>
+<style>
+  :root { --paper: #F2EAD9; --maroon: #5C1A1A; --gold: #B8923A; }
+  body { margin: 0; background: #0E1314; color: #E8E2D2; font-family: -apple-system, "Inter", sans-serif; }
+  header { padding: 32px; text-align: center; border-bottom: 1px solid rgba(232,226,210,0.1); }
+  header h1 { margin: 0 0 6px; font-family: "Cormorant Garamond", "Times New Roman", serif; font-weight: 500; font-size: 2.2rem; }
+  header p { opacity: 0.7; margin: 0; font-size: 14px; }
+  header .progress { display: inline-block; margin-top: 10px; padding: 6px 14px; background: rgba(184,146,58,0.15); color: var(--gold); font-family: "JetBrains Mono", monospace; font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; border-radius: 4px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; padding: 24px; max-width: 1640px; margin: 0 auto; }
+  .card { background: #14191B; border: 1px solid rgba(232,226,210,0.08); border-radius: 8px; overflow: hidden; }
+  .card .img { background: var(--paper); aspect-ratio: 1; }
+  .card img { display: block; width: 100%; height: 100%; object-fit: contain; }
+  .card .meta { padding: 10px 12px; border-top: 1px solid rgba(232,226,210,0.06); }
+  .card .name { font-family: "Cormorant Garamond", serif; font-size: 16px; font-weight: 600; color: #fff; margin: 0; }
+  .card .dose { font-family: "JetBrains Mono", monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin-top: 2px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Bench Grade Peptides — Vial Photo Batch</h1>
+  <p>All catalog products. Square 1:1, cream backdrop, label artwork from per-SKU SVGs, F6 wreath logo, split-panel composition.</p>
+  <div class="progress" id="progress">Loading…</div>
+</header>
+<div class="grid" id="grid"></div>
+<script>
+  const items = [
+    { slug: "bpc-157-5mg",                name: "BPC-157",              dose: "5 mg" },
+    { slug: "tb-500-5mg",                 name: "TB-500",               dose: "5 mg" },
+    { slug: "cjc-1295-5mg",               name: "CJC-1295",             dose: "5 mg" },
+    { slug: "cjc-1295-w-dac-5mg",         name: "CJC-1295 w/ DAC",      dose: "5 mg" },
+    { slug: "ipamorelin-5mg",             name: "Ipamorelin",           dose: "5 mg" },
+    { slug: "ghk-cu-50mg",                name: "GHK-Cu",               dose: "50 mg" },
+    { slug: "ahk-cu-20mg",                name: "AHK-Cu",               dose: "20 mg" },
+    { slug: "nad-100mg",                  name: "NAD+",                 dose: "100 mg" },
+    { slug: "ghrp-2-5mg",                 name: "GHRP-2",               dose: "5 mg" },
+    { slug: "ghrp-6-5mg",                 name: "GHRP-6",               dose: "5 mg" },
+    { slug: "hexarelin-5mg",              name: "Hexarelin",            dose: "5 mg" },
+    { slug: "hexarelin-acetate-5mg",      name: "Hexarelin Acetate",    dose: "5 mg" },
+    { slug: "sermorelin-5mg",             name: "Sermorelin",           dose: "5 mg" },
+    { slug: "tesamorelin-5mg",            name: "Tesamorelin",          dose: "5 mg" },
+    { slug: "bpc-157-tb-500-5mg",         name: "BPC-157 / TB-500",     dose: "5/5 mg" },
+    { slug: "cjc-1295-ipamorelin-5mg",    name: "CJC-1295 + Ipamorelin",dose: "5/5 mg" },
+    { slug: "epitalon-10mg",              name: "Epitalon",             dose: "10 mg" },
+    { slug: "selank-5mg",                 name: "Selank",               dose: "5 mg" },
+    { slug: "semax-5mg",                  name: "Semax",                dose: "5 mg" },
+    { slug: "thymosin-alpha-1-5mg",       name: "Thymosin Alpha-1",     dose: "5 mg" },
+    { slug: "ll-37-5mg",                  name: "LL-37",                dose: "5 mg" },
+    { slug: "kpv-5mg",                    name: "KPV",                  dose: "5 mg" },
+    { slug: "pt-141-10mg",                name: "PT-141",               dose: "10 mg" },
+    { slug: "melanotan-1-10mg",           name: "Melanotan-1",          dose: "10 mg" },
+    { slug: "melanotan-2-10mg",           name: "Melanotan-2",          dose: "10 mg" },
+    { slug: "5-amino-1mq-5mg",            name: "5-Amino-1MQ",          dose: "5 mg" },
+    { slug: "mots-c-10mg",                name: "MOTS-c",               dose: "10 mg" },
+    { slug: "aicar-50mg",                 name: "AICAR",                dose: "50 mg" },
+    { slug: "aod-9604-5mg",               name: "AOD-9604",             dose: "5 mg" },
+    { slug: "ara-290-5mg",                name: "ARA-290",              dose: "5 mg" },
+    { slug: "adipotide-5mg",              name: "Adipotide",            dose: "5 mg" },
+    { slug: "amya-5mg",                name: "AMY-A",                dose: "5 mg" },
+    { slug: "cartalax-20mg",              name: "Cartalax",             dose: "20 mg" },
+    { slug: "cerebrolysin-60mg",          name: "Cerebrolysin",         dose: "60 mg" },
+    { slug: "dsip-5mg",                   name: "DSIP",                 dose: "5 mg" },
+    { slug: "dihexa-5mg",                 name: "Dihexa",               dose: "5 mg" },
+    { slug: "foxo4-dri-10mg",             name: "FOXO4-DRI",            dose: "10 mg" },
+    { slug: "follistatin-344-1mg",        name: "Follistatin-344",      dose: "1 mg" },
+    { slug: "glow-blend-70mg",            name: "GLOW Blend",           dose: "70 mg" },
+    { slug: "klow-blend-80mg",            name: "KLOW Blend",           dose: "80 mg" },
+    { slug: "glp-1-s-5mg",                name: "GLP-1 S",              dose: "5 mg" },
+    { slug: "glp-2-m-10mg",               name: "GLP-2 M",              dose: "10 mg" },
+    { slug: "glp-2-sv-10mg",              name: "GLP-2 SV",             dose: "10 mg" },
+    { slug: "glp-2-t-5mg",                name: "GLP-2 T",              dose: "5 mg" },
+    { slug: "glp-3-r-5mg",                name: "GLP-3 R",              dose: "5 mg" },
+    { slug: "hgh-fragment-176-191-5mg",   name: "HGH Fragment 176-191", dose: "5 mg" },
+    { slug: "humanin-5mg",                name: "Humanin",              dose: "5 mg" },
+    { slug: "igf-1-lr3-1mg",              name: "IGF-1 LR3",            dose: "1 mg" },
+    { slug: "kisspeptin-5mg",             name: "Kisspeptin",           dose: "5 mg" },
+    { slug: "larazatide-5mg",             name: "Larazatide",           dose: "5 mg" },
+    { slug: "mgf-2mg",                    name: "MGF",                  dose: "2 mg" },
+    { slug: "oxytocin-acetate-2mg",       name: "Oxytocin Acetate",     dose: "2 mg" },
+    { slug: "pe-22-28-5mg",               name: "PE-22-28",             dose: "5 mg" },
+    { slug: "pinealon-10mg",              name: "Pinealon",             dose: "10 mg" },
+    { slug: "slu-pp-332-5mg",             name: "SLU-PP-332",           dose: "5 mg" },
+    { slug: "snap-8-10mg",                name: "SNAP-8",               dose: "10 mg" },
+    { slug: "ss-31-10mg",                 name: "SS-31",                dose: "10 mg" },
+    { slug: "thymalin-10mg",              name: "Thymalin",             dose: "10 mg" },
+    { slug: "vip-5mg",                    name: "VIP",                  dose: "5 mg" },
+    { slug: "glutathione-1500mg",         name: "Glutathione",          dose: "1500 mg" },
+    { slug: "l-carnitine-10mg",           name: "L-Carnitine",          dose: "10 ml" },
+    { slug: "lc120-10mg",                 name: "LC120",                dose: "10 ml" },
+    { slug: "lc216-10mg",                 name: "LC216",                dose: "10 ml" },
+    { slug: "super-human-blend-10mg",     name: "Super Human Blend",    dose: "10 ml" },
+    { slug: "acetic-acid-water-10ml",     name: "Acetic Acid Water",    dose: "10 ml" },
+  ];
+  const grid = document.getElementById("grid");
+  for (const it of items) {
+    const c = document.createElement("div");
+    c.className = "card";
+    c.innerHTML = `
+      <div class="img"><img src="_vials/${it.slug}.jpg" alt="${it.name} ${it.dose}"></div>
+      <div class="meta"><p class="name">${it.name}</p><p class="dose">${it.dose}</p></div>
+    `;
+    grid.appendChild(c);
+  }
+  document.getElementById("progress").textContent = `${items.length} catalog products · all done`;
+</script>
+</body>
+</html>

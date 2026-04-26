@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="150mm" height="100mm" viewBox="0 0 150 100">
+  <!-- Bench Grade Peptides · MEDIUM box lid face · 150mm × 100mm (5.91" × 3.94") -->
+  <!-- For 5-vial 3ml pack. Scale 1:1 in mm. F6 logo foil-stamped top-right corner. -->
+  <rect width="150" height="100" fill="#5C1A1A"/>
+
+  <!-- F6 mark, foil-stamped top-right.
+       Size: 28mm tall = 36mm wide (aspect 1.29 from trace).
+       Margin: 14mm from top edge, 14mm from right edge. -->
+  <image x="100" y="14" width="36" height="28"
+         xlink:href="../vial-templates/F6-gold-vector.svg?v=14"
+         preserveAspectRatio="xMidYMid meet"/>
+</svg>

@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BGP — Vial Refinement Review (52 of 65)</title>
+<style>
+  body { margin: 0; background: #0E1314; color: #E8E2D2; font-family: -apple-system, "Inter", sans-serif; }
+  header { padding: 28px; text-align: center; border-bottom: 1px solid rgba(232,226,210,0.1); position: sticky; top: 0; background: #0E1314; z-index: 10; }
+  header h1 { margin: 0 0 6px; font-family: "Cormorant Garamond", "Times New Roman", serif; font-weight: 500; font-size: 1.8rem; }
+  header p { opacity: 0.7; margin: 0; font-size: 13px; }
+  header .progress { display: inline-block; margin-top: 8px; padding: 4px 12px; background: rgba(184,146,58,0.15); color: #C8A046; font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; border-radius: 4px; }
+  .ref { padding: 20px; text-align: center; border-bottom: 1px solid rgba(232,226,210,0.06); }
+  .ref h2 { margin: 0 0 6px; font-family: "Cormorant Garamond", serif; font-weight: 500; font-size: 1.1rem; color: #C8A046; }
+  .ref img { max-width: 280px; border-radius: 8px; }
+  .section { padding: 18px 24px 8px; max-width: 1640px; margin: 0 auto; }
+  .section h3 { margin: 0; font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: #C8A046; opacity: 0.85; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; padding: 8px 24px 24px; max-width: 1640px; margin: 0 auto; }
+  .card { background: #14191B; border: 1px solid rgba(232,226,210,0.08); border-radius: 8px; overflow: hidden; }
+  .card .img { background: #F2EAD9; aspect-ratio: 1; }
+  .card img { display: block; width: 100%; height: 100%; object-fit: contain; }
+  .card .meta { padding: 8px 10px; border-top: 1px solid rgba(232,226,210,0.06); }
+  .card .name { font-family: "Cormorant Garamond", serif; font-size: 14px; font-weight: 600; color: #fff; margin: 0; line-height: 1.2; }
+  .card .dose { font-family: "JetBrains Mono", monospace; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: #C8A046; margin: 2px 0 0; }
+  .card .note { font-size: 10px; color: #c97a7a; margin: 4px 0 0; line-height: 1.3; }
+  .card .ok { color: #7ac9a6; }
+  .card .untouched { color: #8a8a8a; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Bench Grade Peptides — Vial Review</h1>
+  <p>52 revised · 13 untouched (acceptable as-is) · 65 total</p>
+  <div class="progress">v=52</div>
+</header>
+
+<div class="ref">
+  <h2>Reference baseline — NAD+</h2>
+  <img src="_vials/nad-100mg.jpg?v=52" alt="NAD+ reference">
+</div>
+
+<div class="section"><h3>Revised · 52 vials</h3></div>
+<div class="grid" id="done"></div>
+
+<div class="section"><h3>Untouched · 13 vials (already acceptable)</h3></div>
+<div class="grid" id="untouched"></div>
+
+<script>
+  const v = "52";
+  const done = [
+    ["bpc-157-5mg","BPC-157","5 mg","✓ wreath text fixed, SKU corrected"],
+    ["cjc-1295-5mg","CJC-1295","5 mg","✓ oval filled, formula readable, SKU correct"],
+    ["cjc-1295-w-dac-5mg","CJC-1295 w/ DAC","5 mg","✓ SKU cleaned"],
+    ["cjc-1295-ipamorelin-5mg","CJC-1295 + Ipamorelin","5/5 mg","✓ floating logo removed"],
+    ["bpc-157-tb-500-5mg","BPC-157 / TB-500","5/5 mg","✓ HPLC removed, arrow shrunk, QR moved"],
+    ["ipamorelin-5mg","Ipamorelin","5 mg","✓ name fixed, dose pill repaired"],
+    ["ghk-cu-50mg","GHK-Cu","50 mg","✓ barcode removed, cap visible"],
+    ["ahk-cu-20mg","AHK-Cu","20 mg","✓ QR placeholder, LOT/EXP filled"],
+    ["nad-100mg","NAD+","100 mg","reference"],
+    ["ghrp-2-5mg","GHRP-2","5 mg","✓ SKU BGP-GHRP2-5"],
+    ["ghrp-6-5mg","GHRP-6","5 mg","✓ SKU BGP-GHRP6-5"],
+    ["hexarelin-5mg","Hexarelin","5 mg","✓ SKU BGP-HEX-5"],
+    ["hexarelin-acetate-5mg","Hexarelin Acetate","5 mg","✓ SKU BGP-HEXA-5"],
+    ["sermorelin-5mg","Sermorelin","5 mg","✓ NAD SKU replaced"],
+    ["tesamorelin-5mg","Tesamorelin","5 mg","✓ SKU BGP-TES-5"],
+    ["epitalon-10mg","Epitalon","10 mg","✓ floating crest removed, QR filled"],
+    ["semax-5mg","Semax","5 mg","✓ HPLC removed, oval pill"],
+    ["thymosin-alpha-1-5mg","Thymosin Alpha-1","5 mg","✓ HPLC removed, oval pill"],
+    ["ll-37-5mg","LL-37","5 mg","✓ real QR removed"],
+    ["kpv-5mg","KPV","5 mg","✓ SKU BGP-KPV-5"],
+    ["pt-141-10mg","PT-141","10 mg","✓ HPLC removed, dose corrected"],
+    ["melanotan-1-10mg","Melanotan-1","10 mg","✓ floating logo removed, real QR removed"],
+    ["melanotan-2-10mg","Melanotan-2","10 mg","✓ HPLC removed, dose corrected"],
+    ["mots-c-10mg","MOTS-c","10 mg","✓ vial centered, no floating logos"],
+    ["aod-9604-5mg","AOD-9604","5 mg","✓ landscape composition fixed"],
+    ["ara-290-5mg","ARA-290","5 mg","✓ placeholder text replaced"],
+    ["adipotide-5mg","Adipotide","5 mg","✓ placeholder + QR filled"],
+    ["cagrilintide-5mg","Cagrilintide","5 mg","✓ double SKU cleaned"],
+    ["cartalax-20mg","Cartalax","20 mg","✓ EST. 2926 → 2026"],
+    ["cerebrolysin-60mg","Cerebrolysin","60 mg","✓ SKU prefix corrected"],
+    ["dsip-5mg","DSIP","5 mg","✓ HPLC removed, oval pill"],
+    ["dihexa-5mg","Dihexa","5 mg","✓ cap visible (note: dose pill shows 5 NG)"],
+    ["follistatin-344-1mg","Follistatin-344","1 mg","✓ name extended, SKU updated"],
+    ["glow-blend-70mg","GLOW Blend","70 mg","✓ SKU bleed removed"],
+    ["klow-blend-80mg","KLOW Blend","80 mg","✓ QR filled, arrow added"],
+    ["glp-1-s-5mg","GLP-1 S","5 mg","✓ em-dash → Identity disclosed per LOT"],
+    ["glp-2-sv-10mg","GLP-2 SV","10 mg","✓ em-dash cleaned"],
+    ["glp-2-t-5mg","GLP-2 T","5 mg","✓ em-dash + NAD SKU fixed"],
+    ["glp-3-r-5mg","GLP-3 R","5 mg","✓ em-dash cleaned"],
+    ["humanin-5mg","Humanin","5 mg","✓ HPLC removed, oval pill"],
+    ["igf-1-lr3-1mg","IGF-1 LR3","1 mg","✓ SKU BGP-IGF-1"],
+    ["kisspeptin-5mg","Kisspeptin","5 mg","✓ wreath added, HPLC removed"],
+    ["larazatide-5mg","Larazatide","5 mg","✓ landscape composition fixed"],
+    ["oxytocin-acetate-2mg","Oxytocin Acetate","2 mg","✓ broken QR repainted"],
+    ["pe-22-28-5mg","PE-22-28","5 mg","✓ HPLC rectangle removed"],
+    ["pinealon-10mg","Pinealon","10 mg","✓ placeholder text replaced"],
+    ["snap-8-10mg","SNAP-8","10 mg","✓ HPLC removed, oval pill"],
+    ["vip-5mg","VIP","5 mg","✓ HPLC rectangle removed"],
+    ["bac-water-10ml","BAC Water","10 ml","✓ EST. 2926 → 2026"],
+    ["acetic-acid-water-10ml","Acetic Acid Water","10 ml","✓ truncated text fixed"],
+    ["lc120-10mg","LC120","10 ml","✓ real QR removed, HPLC removed"],
+    ["lc216-10mg","LC216","10 ml","✓ placeholder text replaced, HPLC removed"],
+    ["super-human-blend-10mg","Super Human Blend","10 ml","✓ name extended, QR filled"],
+  ];
+  const untouched = [
+    ["tb-500-5mg","TB-500","5 mg","minor tail garble, acceptable"],
+    ["5-amino-1mq-5mg","5-Amino-1MQ","5 mg","clean as-is"],
+    ["aicar-50mg","AICAR","50 mg","clean as-is"],
+    ["hgh-fragment-176-191-5mg","HGH Fragment 176-191","5 mg","clean as-is"],
+    ["selank-5mg","Selank","5 mg","mostly clean"],
+    ["slu-pp-332-5mg","SLU-PP-332","5 mg","clean as-is"],
+    ["ss-31-10mg","SS-31","10 mg","clean as-is"],
+    ["thymalin-10mg","Thymalin","10 mg","clean as-is"],
+    ["mgf-2mg","MGF","2 mg","mostly clean"],
+    ["glp-2-m-10mg","GLP-2 M","10 mg","mostly clean"],
+    ["foxo4-dri-10mg","FOXO4-DRI","10 mg","clean as-is"],
+    ["l-carnitine-10mg","L-Carnitine","10 ml","custom layout, OK"],
+    ["glutathione-1500mg","Glutathione","1500 mg","custom layout, OK"],
+  ];
+  function render(list, gridId, klass) {
+    const grid = document.getElementById(gridId);
+    for (const [slug, name, dose, note] of list) {
+      const c = document.createElement("div");
+      c.className = "card";
+      c.innerHTML = `
+        <div class="img"><img src="_vials/${slug}.jpg?v=${v}" alt="${name} ${dose}" loading="lazy"></div>
+        <div class="meta">
+          <p class="name">${name}</p>
+          <p class="dose">${dose}</p>
+          <p class="note ${klass}">${note}</p>
+        </div>
+      `;
+      grid.appendChild(c);
+    }
+  }
+  render(done, "done", "ok");
+  render(untouched, "untouched", "untouched");
+</script>
+</body>
+</html>

@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Bench Grade Peptides — Official Box Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Cormorant+Garamond:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F2EAD9;
+    --paper-soft: #E8DEC6;
+    --rule: #C9BFA8;
+    --ink: #1A1410;
+    --maroon: #5C1A1A;
+    --gold: #B8923A;
+    --display: "Cormorant Garamond", "Times New Roman", serif;
+    --sans: "Inter", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.65; }
+  .top-bar { background: var(--ink); color: var(--paper); font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; text-align: center; padding: 10px 16px; }
+  .page { max-width: 1320px; margin: 0 auto; padding: 56px 32px 96px; }
+
+  header.doc-head { text-align: center; padding-bottom: 40px; border-bottom: 1px solid var(--rule); margin-bottom: 56px; }
+  header.doc-head .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
+  header.doc-head h1 { font-family: var(--display); font-size: clamp(2.4rem, 5vw, 3.6rem); font-weight: 500; line-height: 1.05; margin: 14px 0 12px; }
+  header.doc-head p { max-width: 720px; margin: 0 auto; opacity: 0.78; font-size: 17px; }
+
+  .section { margin-top: 80px; }
+  .section-head { display: flex; align-items: baseline; gap: 16px; padding-bottom: 12px; border-bottom: 2px solid var(--ink); margin-bottom: 28px; }
+  .section-head .tag { font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.6; padding: 4px 10px; border: 1px solid var(--rule); }
+  .section-head h2 { font-family: var(--display); font-size: 2rem; font-weight: 500; margin: 0; }
+  .section-head .desc { margin-left: auto; max-width: 380px; font-size: 13px; opacity: 0.7; text-align: right; }
+
+  /* Box card */
+  .box-card { background: var(--paper-soft); border: 1px solid var(--rule); padding: 28px; margin-bottom: 24px; }
+  .box-card h3 { font-family: var(--display); font-size: 1.5rem; font-weight: 500; margin: 0 0 6px; }
+  .box-card .sub { font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.6; margin-bottom: 20px; }
+
+  .lid-display { background: #2a2422; padding: 36px; display: flex; flex-direction: column; align-items: center; gap: 24px; margin-bottom: 18px; }
+  .lid-display .scale-tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(247,244,238,0.6); }
+  .lid-display object, .lid-display img { display: block; box-shadow: 0 24px 48px -24px rgba(0,0,0,0.6); }
+
+  /* Spec table */
+  .spec dl { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 0; font-size: 14px; }
+  .spec dt { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.65; padding-top: 2px; }
+  .spec dd { margin: 0; }
+  .spec code { background: var(--paper); padding: 2px 6px; font-family: var(--mono); font-size: 13px; border: 1px solid var(--rule); }
+
+  .download-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .download-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
+    border: 1px solid var(--ink); padding: 8px 14px; text-decoration: none; color: var(--ink);
+    transition: all 0.15s ease;
+  }
+  .download-btn:hover { background: var(--ink); color: var(--paper); }
+
+  /* Foil placement diagram */
+  .placement-fig {
+    background: var(--paper-soft); border: 1px solid var(--rule);
+    padding: 28px; margin-top: 16px;
+  }
+  .placement-fig h4 { font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.7; margin: 0 0 16px; }
+  .placement-fig .diagram {
+    background: var(--maroon); position: relative;
+    aspect-ratio: 3/2; max-width: 600px; margin: 0 auto;
+  }
+  .placement-fig .mark-area {
+    position: absolute; top: 14%; right: 9%; width: 24%; aspect-ratio: 1.29/1;
+    border: 1px dashed var(--gold); display: flex; align-items: center; justify-content: center;
+  }
+  .placement-fig .mark-area object { width: 100%; height: 100%; }
+  .placement-fig .annot {
+    position: absolute; font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
+    color: rgba(184,146,58,0.85); text-transform: uppercase;
+  }
+  .placement-fig .annot.top { top: 6%; right: 6%; }
+  .placement-fig .annot.left { top: 50%; left: 4%; transform: translateY(-50%); writing-mode: vertical-lr; }
+  .placement-fig .annot.bottom { bottom: 6%; left: 6%; }
+
+  /* Pack-size grid */
+  .pack-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 8px; }
+  .pack-cell {
+    background: var(--paper); border: 1px solid var(--rule); padding: 18px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .pack-cell .pack-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.6; }
+  .pack-cell .pack-name { font-family: var(--display); font-size: 1.15rem; font-weight: 500; }
+  .pack-cell .pack-dims { font-family: var(--mono); font-size: 12px; opacity: 0.78; }
+  .pack-cell .pack-use { font-size: 13px; opacity: 0.78; line-height: 1.5; }
+
+  @media (max-width: 880px) {
+    .pack-grid { grid-template-columns: 1fr; }
+    .section-head { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .section-head .desc { text-align: left; margin-left: 0; }
+    .spec dl { grid-template-columns: 1fr; gap: 4px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">BENCH GRADE PEPTIDES LLC · OFFICIAL BOX DESIGN · 2026-04-25</div>
+
+<div class="page">
+  <header class="doc-head">
+    <div class="eyebrow">F6 mark · gold foil · cartier maroon paperboard</div>
+    <h1>Official Box Design</h1>
+    <p>Three lid sizes (small, medium, large) — all maroon paperboard with the F6 mark foiled in antique gold. Cartier discipline: no other text on the lid. Production-ready SVG artwork at native dimensions, ready to send to the labeler.</p>
+  </header>
+
+  <!-- BOX SPEC -->
+  <section class="section">
+    <div class="section-head">
+      <span class="tag">Spec</span>
+      <h2>Box construction</h2>
+    </div>
+    <div class="box-card spec">
+      <h3>Hardcover Gift Box</h3>
+      <dl>
+        <dt>Construction</dt><dd>Rigid paperboard hardcover, lift-off lid (telescope style — lid sits on top of base, no hinge)</dd>
+        <dt>Wall thickness</dt><dd>2mm rigid board, paper-wrapped on both interior and exterior</dd>
+        <dt>Exterior color</dt><dd><code>#5C1A1A</code> (cartier maroon) · matte uncoated wrap, no laminate</dd>
+        <dt>Interior color</dt><dd><code>#5C1A1A</code> (matching maroon) on lid interior · cream foam tray inside the base</dd>
+        <dt>Tray</dt><dd>Cream EVA foam (<code>#F2EAD9</code>), die-cut cavities sized per pack count</dd>
+        <dt>Lid art</dt><dd>F6 mark foil-stamped in antique gold (<code>#B8923A</code>). Single-pass hot foil, raised slightly above the paperboard surface.</dd>
+        <dt>No printed text</dt><dd>The lid carries the mark only. No wordmark, no website, no copy. Discipline.</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- FOIL PLACEMENT -->
+  <section class="section">
+    <div class="section-head">
+      <span class="tag">Foil placement</span>
+      <h2>Where the F6 mark sits</h2>
+      <span class="desc">Top-right corner on rectangular lids · centered on the square (small) lid.</span>
+    </div>
+    <div class="placement-fig">
+      <h4>Top-right placement (medium &amp; large lids)</h4>
+      <div class="diagram">
+        <div class="annot top">14 mm top margin</div>
+        <div class="annot left">14 mm right margin</div>
+        <div class="mark-area"><object data="vial-templates/F6-gold-vector.svg?v=14" type="image/svg+xml"></object></div>
+        <div class="annot bottom">F6 mark · 28–36 mm tall · gold foil</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LID ARTWORK FILES -->
+  <section class="section">
+    <div class="section-head">
+      <span class="tag">Artwork</span>
+      <h2>Three lid sizes — production SVG</h2>
+      <span class="desc">All at 1:1 scale in mm. Send these to the labeler.</span>
+    </div>
+
+    <!-- SMALL -->
+    <div class="box-card">
+      <h3>Small · Single-Vial Box</h3>
+      <div class="sub">85 mm × 85 mm · 3.35″ × 3.35″ · square format · centered mark</div>
+      <div class="lid-display">
+        <div class="scale-tag">2× scale</div>
+        <object data="box-templates/bgp-box-lid-small.svg?v=14" type="image/svg+xml" width="642" height="642"></object>
+        <div class="scale-tag">1:1 (native — 85 mm × 85 mm)</div>
+        <object data="box-templates/bgp-box-lid-small.svg?v=14" type="image/svg+xml" width="321" height="321"></object>
+      </div>
+      <div class="download-row">
+        <a class="download-btn" href="box-templates/bgp-box-lid-small.svg?v=14" download>Download SVG</a>
+        <a class="download-btn" href="box-templates/bgp-box-lid-small.svg?v=14" target="_blank">Open</a>
+      </div>
+    </div>
+
+    <!-- MEDIUM -->
+    <div class="box-card">
+      <h3>Medium · 5-Vial Box</h3>
+      <div class="sub">150 mm × 100 mm · 5.91″ × 3.94″ · landscape · top-right mark</div>
+      <div class="lid-display">
+        <div class="scale-tag">2× scale</div>
+        <object data="box-templates/bgp-box-lid-medium.svg?v=14" type="image/svg+xml" width="850" height="567"></object>
+        <div class="scale-tag">1:1 (native — 150 mm × 100 mm)</div>
+        <object data="box-templates/bgp-box-lid-medium.svg?v=14" type="image/svg+xml" width="567" height="378"></object>
+      </div>
+      <div class="download-row">
+        <a class="download-btn" href="box-templates/bgp-box-lid-medium.svg?v=14" download>Download SVG</a>
+        <a class="download-btn" href="box-templates/bgp-box-lid-medium.svg?v=14" target="_blank">Open</a>
+      </div>
+    </div>
+
+    <!-- LARGE -->
+    <div class="box-card">
+      <h3>Large · 10-Vial Box</h3>
+      <div class="sub">200 mm × 130 mm · 7.87″ × 5.12″ · landscape · top-right mark</div>
+      <div class="lid-display">
+        <div class="scale-tag">2× scale</div>
+        <object data="box-templates/bgp-box-lid-large.svg?v=14" type="image/svg+xml" width="1000" height="650"></object>
+        <div class="scale-tag">1:1 (native — 200 mm × 130 mm)</div>
+        <object data="box-templates/bgp-box-lid-large.svg?v=14" type="image/svg+xml" width="755" height="491"></object>
+      </div>
+      <div class="download-row">
+        <a class="download-btn" href="box-templates/bgp-box-lid-large.svg?v=14" download>Download SVG</a>
+        <a class="download-btn" href="box-templates/bgp-box-lid-large.svg?v=14" target="_blank">Open</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- PACK SIZE TABLE -->
+  <section class="section">
+    <div class="section-head">
+      <span class="tag">Pack mapping</span>
+      <h2>Which box ships when</h2>
+    </div>
+    <div class="pack-grid">
+      <div class="pack-cell">
+        <div class="pack-label">Small</div>
+        <div class="pack-name">Single-Vial</div>
+        <div class="pack-dims">85 × 85 × 45 mm</div>
+        <div class="pack-use">First-time researcher orders. Trial single. Lowest pack tier.</div>
+      </div>
+      <div class="pack-cell">
+        <div class="pack-label">Medium</div>
+        <div class="pack-name">5-Vial</div>
+        <div class="pack-dims">150 × 100 × 50 mm</div>
+        <div class="pack-use">Standard researcher pack. Most common SKU. The "core" tier.</div>
+      </div>
+      <div class="pack-cell">
+        <div class="pack-label">Large</div>
+        <div class="pack-name">10-Vial</div>
+        <div class="pack-dims">200 × 130 × 60 mm</div>
+        <div class="pack-use">Premium pack tier. Bigger box, same restrained F6 mark. Highest margin.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHAT TO SEND -->
+  <section class="section">
+    <div class="section-head">
+      <span class="tag">Send to labeler</span>
+      <h2>Box handoff packet</h2>
+    </div>
+    <div class="box-card">
+      <ul style="font-family:var(--mono); font-size:13px; line-height:1.85; list-style:none; padding-left:0;">
+        <li>📄 box-templates/bgp-box-lid-small.svg?v=14 <span style="opacity:0.6;">— small lid</span></li>
+        <li>📄 box-templates/bgp-box-lid-medium.svg?v=14 <span style="opacity:0.6;">— medium lid</span></li>
+        <li>📄 box-templates/bgp-box-lid-large.svg?v=14 <span style="opacity:0.6;">— large lid</span></li>
+        <li>📄 vial-templates/F6-gold-vector.svg?v=14 <span style="opacity:0.6;">— logo source (referenced by all lid SVGs)</span></li>
+        <li>📄 bgp-box-design.html <span style="opacity:0.6;">— this spec page (open in browser for reference)</span></li>
+      </ul>
+      <p style="font-size:14px; line-height:1.6; opacity:0.85; margin-top:18px;">
+        Each lid SVG references the F6 logo via relative path. Keep the folder structure intact when sending —
+        labeler should receive both <code>box-templates/</code> and <code>vial-templates/F6-gold-vector.svg?v=14</code>.
+      </p>
+    </div>
+  </section>
+
+  <p style="text-align:center; margin-top:64px;">
+    <a href="bgp-manufacturer-handoff.html" style="font-family:var(--mono); font-size:12px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gold);">← Back to manufacturer handoff</a>
+  </p>
+</div>
+</body>
+</html>

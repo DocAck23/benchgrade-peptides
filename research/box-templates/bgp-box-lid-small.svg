@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="85mm" height="85mm" viewBox="0 0 85 85">
+  <!-- Bench Grade Peptides · SMALL box lid face · 85mm × 85mm (3.35" × 3.35") -->
+  <!-- For single-vial pack. Square format, F6 mark centered. -->
+  <rect width="85" height="85" fill="#5C1A1A"/>
+
+  <!-- F6 mark, foil-stamped centered (square box reads better with centered mark).
+       Size: 32mm tall = 41mm wide. -->
+  <image x="22" y="26" width="41" height="32"
+         xlink:href="../vial-templates/F6-gold-vector.svg?v=14"
+         preserveAspectRatio="xMidYMid meet"/>
+</svg>

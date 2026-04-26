@@ -1,0 +1,751 @@
+[
+  {
+    "sku": "BGP-AAW-10ML",
+    "name": "Acetic Acid Water",
+    "dose": 0,
+    "container": "supply-10ml",
+    "filename": "BGP-AAW-10ML.svg"
+  },
+  {
+    "sku": "BGP-BACW-10ML",
+    "name": "BAC Water",
+    "dose": 0,
+    "container": "supply-10ml",
+    "filename": "BGP-BACW-10ML.svg"
+  },
+  {
+    "sku": "BGP-GLUT-1500",
+    "name": "Glutathione",
+    "dose": 1500.0,
+    "container": "vial-10ml",
+    "filename": "BGP-GLUT-1500.svg"
+  },
+  {
+    "sku": "BGP-LCAR-10ML",
+    "name": "L-Carnitine",
+    "dose": 10.0,
+    "container": "vial-10ml",
+    "filename": "BGP-LCAR-10ML.svg"
+  },
+  {
+    "sku": "BGP-LC120-10ML",
+    "name": "LC120",
+    "dose": 10.0,
+    "container": "vial-10ml",
+    "filename": "BGP-LC120-10ML.svg"
+  },
+  {
+    "sku": "BGP-LC216-10ML",
+    "name": "LC216",
+    "dose": 10.0,
+    "container": "vial-10ml",
+    "filename": "BGP-LC216-10ML.svg"
+  },
+  {
+    "sku": "BGP-SHB-10ML",
+    "name": "Super Human Blend",
+    "dose": 10.0,
+    "container": "vial-10ml",
+    "filename": "BGP-SHB-10ML.svg"
+  },
+  {
+    "sku": "BGP-5A1MQ-5",
+    "name": "5-Amino-1MQ",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-5A1MQ-5.svg"
+  },
+  {
+    "sku": "BGP-5A1MQ-10",
+    "name": "5-Amino-1MQ",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-5A1MQ-10.svg"
+  },
+  {
+    "sku": "BGP-AHK-20",
+    "name": "AHK-Cu",
+    "dose": 20.0,
+    "container": "vial-3ml",
+    "filename": "BGP-AHK-20.svg"
+  },
+  {
+    "sku": "BGP-AHK-50",
+    "name": "AHK-Cu",
+    "dose": 50.0,
+    "container": "vial-3ml",
+    "filename": "BGP-AHK-50.svg"
+  },
+  {
+    "sku": "BGP-AICAR-50",
+    "name": "AICAR",
+    "dose": 50.0,
+    "container": "vial-3ml",
+    "filename": "BGP-AICAR-50.svg"
+  },
+  {
+    "sku": "BGP-AICAR-100",
+    "name": "AICAR",
+    "dose": 100.0,
+    "container": "vial-3ml",
+    "filename": "BGP-AICAR-100.svg"
+  },
+  {
+    "sku": "BGP-AOD-5",
+    "name": "AOD-9604",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-AOD-5.svg"
+  },
+  {
+    "sku": "BGP-AOD-10",
+    "name": "AOD-9604",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-AOD-10.svg"
+  },
+  {
+    "sku": "BGP-ARA-5",
+    "name": "ARA-290",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-ARA-5.svg"
+  },
+  {
+    "sku": "BGP-ARA-10",
+    "name": "ARA-290",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-ARA-10.svg"
+  },
+  {
+    "sku": "BGP-ADP-5",
+    "name": "Adipotide",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-ADP-5.svg"
+  },
+  {
+    "sku": "BGP-ADP-10",
+    "name": "Adipotide",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-ADP-10.svg"
+  },
+  {
+    "sku": "BGP-BPC-5",
+    "name": "BPC-157",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-BPC-5.svg"
+  },
+  {
+    "sku": "BGP-BPC-10",
+    "name": "BPC-157",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-BPC-10.svg"
+  },
+  {
+    "sku": "BGP-BPCTB-55",
+    "name": "BPC-157 / TB-500",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-BPCTB-55.svg"
+  },
+  {
+    "sku": "BGP-BPCTB-1010",
+    "name": "BPC-157 / TB-500",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-BPCTB-1010.svg"
+  },
+  {
+    "sku": "BGP-CJC-5",
+    "name": "CJC-1295",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-CJC-5.svg"
+  },
+  {
+    "sku": "BGP-CJC-10",
+    "name": "CJC-1295",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-CJC-10.svg"
+  },
+  {
+    "sku": "BGP-CJCIPA-55",
+    "name": "CJC-1295 + Ipamorelin",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-CJCIPA-55.svg"
+  },
+  {
+    "sku": "BGP-CJCDAC-5",
+    "name": "CJC-1295 w/ DAC",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-CJCDAC-5.svg"
+  },
+  {
+    "sku": "BGP-CAGRI-5",
+    "name": "Cagrilintide",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-CAGRI-5.svg"
+  },
+  {
+    "sku": "BGP-CAGRI-10",
+    "name": "Cagrilintide",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-CAGRI-10.svg"
+  },
+  {
+    "sku": "BGP-CAR-20",
+    "name": "Cartalax",
+    "dose": 20.0,
+    "container": "vial-3ml",
+    "filename": "BGP-CAR-20.svg"
+  },
+  {
+    "sku": "BGP-CER-60",
+    "name": "Cerebrolysin",
+    "dose": 60.0,
+    "container": "vial-3ml",
+    "filename": "BGP-CER-60.svg"
+  },
+  {
+    "sku": "BGP-DSIP-5",
+    "name": "DSIP",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-DSIP-5.svg"
+  },
+  {
+    "sku": "BGP-DSIP-10",
+    "name": "DSIP",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-DSIP-10.svg"
+  },
+  {
+    "sku": "BGP-DIH-5",
+    "name": "Dihexa",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-DIH-5.svg"
+  },
+  {
+    "sku": "BGP-DIH-10",
+    "name": "Dihexa",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-DIH-10.svg"
+  },
+  {
+    "sku": "BGP-EPI-10",
+    "name": "Epitalon",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-EPI-10.svg"
+  },
+  {
+    "sku": "BGP-EPI-50",
+    "name": "Epitalon",
+    "dose": 50.0,
+    "container": "vial-3ml",
+    "filename": "BGP-EPI-50.svg"
+  },
+  {
+    "sku": "BGP-FOXO-10",
+    "name": "FOXO4-DRI",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-FOXO-10.svg"
+  },
+  {
+    "sku": "BGP-FOLL-1",
+    "name": "Follistatin-344",
+    "dose": 1.0,
+    "container": "vial-3ml",
+    "filename": "BGP-FOLL-1.svg"
+  },
+  {
+    "sku": "BGP-GHK-50",
+    "name": "GHK-Cu",
+    "dose": 50.0,
+    "container": "vial-3ml",
+    "filename": "BGP-GHK-50.svg"
+  },
+  {
+    "sku": "BGP-GHK-100",
+    "name": "GHK-Cu",
+    "dose": 100.0,
+    "container": "vial-3ml",
+    "filename": "BGP-GHK-100.svg"
+  },
+  {
+    "sku": "BGP-GHRP2-5",
+    "name": "GHRP-2",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-GHRP2-5.svg"
+  },
+  {
+    "sku": "BGP-GHRP2-10",
+    "name": "GHRP-2",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-GHRP2-10.svg"
+  },
+  {
+    "sku": "BGP-GHRP6-5",
+    "name": "GHRP-6",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-GHRP6-5.svg"
+  },
+  {
+    "sku": "BGP-GHRP6-10",
+    "name": "GHRP-6",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-GHRP6-10.svg"
+  },
+  {
+    "sku": "BGP-GLOW-70",
+    "name": "GLOW Blend",
+    "dose": 70.0,
+    "container": "vial-3ml",
+    "filename": "BGP-GLOW-70.svg"
+  },
+  {
+    "sku": "BGP-GLP1S-5",
+    "name": "GLP-1 S",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-GLP1S-5.svg"
+  },
+  {
+    "sku": "BGP-GLP1S-10",
+    "name": "GLP-1 S",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-GLP1S-10.svg"
+  },
+  {
+    "sku": "BGP-GLP1S-30",
+    "name": "GLP-1 S",
+    "dose": 30.0,
+    "container": "vial-3ml",
+    "filename": "BGP-GLP1S-30.svg"
+  },
+  {
+    "sku": "BGP-GLP2M-10",
+    "name": "GLP-2 M",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-GLP2M-10.svg"
+  },
+  {
+    "sku": "BGP-GLP2SV-10",
+    "name": "GLP-2 SV",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-GLP2SV-10.svg"
+  },
+  {
+    "sku": "BGP-GLP2T-5",
+    "name": "GLP-2 T",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-GLP2T-5.svg"
+  },
+  {
+    "sku": "BGP-GLP2T-10",
+    "name": "GLP-2 T",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-GLP2T-10.svg"
+  },
+  {
+    "sku": "BGP-GLP2T-15",
+    "name": "GLP-2 T",
+    "dose": 15.0,
+    "container": "vial-3ml",
+    "filename": "BGP-GLP2T-15.svg"
+  },
+  {
+    "sku": "BGP-GLP2T-30",
+    "name": "GLP-2 T",
+    "dose": 30.0,
+    "container": "vial-3ml",
+    "filename": "BGP-GLP2T-30.svg"
+  },
+  {
+    "sku": "BGP-GLP2T-60",
+    "name": "GLP-2 T",
+    "dose": 60.0,
+    "container": "vial-3ml",
+    "filename": "BGP-GLP2T-60.svg"
+  },
+  {
+    "sku": "BGP-GLP3R-5",
+    "name": "GLP-3 R",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-GLP3R-5.svg"
+  },
+  {
+    "sku": "BGP-GLP3R-10",
+    "name": "GLP-3 R",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-GLP3R-10.svg"
+  },
+  {
+    "sku": "BGP-GLP3R-30",
+    "name": "GLP-3 R",
+    "dose": 30.0,
+    "container": "vial-3ml",
+    "filename": "BGP-GLP3R-30.svg"
+  },
+  {
+    "sku": "BGP-GLP3R-50",
+    "name": "GLP-3 R",
+    "dose": 50.0,
+    "container": "vial-3ml",
+    "filename": "BGP-GLP3R-50.svg"
+  },
+  {
+    "sku": "BGP-GLP3R-60",
+    "name": "GLP-3 R",
+    "dose": 60.0,
+    "container": "vial-3ml",
+    "filename": "BGP-GLP3R-60.svg"
+  },
+  {
+    "sku": "BGP-HGHF-5",
+    "name": "HGH Fragment 176-191",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-HGHF-5.svg"
+  },
+  {
+    "sku": "BGP-HGHF-10",
+    "name": "HGH Fragment 176-191",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-HGHF-10.svg"
+  },
+  {
+    "sku": "BGP-HEX-5",
+    "name": "Hexarelin Acetate",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-HEX-5.svg"
+  },
+  {
+    "sku": "BGP-HUM-5",
+    "name": "Humanin",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-HUM-5.svg"
+  },
+  {
+    "sku": "BGP-HUM-10",
+    "name": "Humanin",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-HUM-10.svg"
+  },
+  {
+    "sku": "BGP-IGF1-01",
+    "name": "IGF-1 LR3",
+    "dose": 1.0,
+    "container": "vial-3ml",
+    "filename": "BGP-IGF1-01.svg"
+  },
+  {
+    "sku": "BGP-IGF1-1",
+    "name": "IGF-1 LR3",
+    "dose": 1.0,
+    "container": "vial-3ml",
+    "filename": "BGP-IGF1-1.svg"
+  },
+  {
+    "sku": "BGP-IPA-5",
+    "name": "Ipamorelin",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-IPA-5.svg"
+  },
+  {
+    "sku": "BGP-IPA-10",
+    "name": "Ipamorelin",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-IPA-10.svg"
+  },
+  {
+    "sku": "BGP-KLOW-80",
+    "name": "KLOW Blend",
+    "dose": 80.0,
+    "container": "vial-3ml",
+    "filename": "BGP-KLOW-80.svg"
+  },
+  {
+    "sku": "BGP-KPV-5",
+    "name": "KPV",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-KPV-5.svg"
+  },
+  {
+    "sku": "BGP-KPV-10",
+    "name": "KPV",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-KPV-10.svg"
+  },
+  {
+    "sku": "BGP-KIS-5",
+    "name": "Kisspeptin",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-KIS-5.svg"
+  },
+  {
+    "sku": "BGP-KIS-10",
+    "name": "Kisspeptin",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-KIS-10.svg"
+  },
+  {
+    "sku": "BGP-LL37-5",
+    "name": "LL-37",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-LL37-5.svg"
+  },
+  {
+    "sku": "BGP-LAR-5",
+    "name": "Larazatide",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-LAR-5.svg"
+  },
+  {
+    "sku": "BGP-MGF-2",
+    "name": "MGF",
+    "dose": 2.0,
+    "container": "vial-3ml",
+    "filename": "BGP-MGF-2.svg"
+  },
+  {
+    "sku": "BGP-MOTS-10",
+    "name": "MOTS-c",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-MOTS-10.svg"
+  },
+  {
+    "sku": "BGP-MOTS-40",
+    "name": "MOTS-c",
+    "dose": 40.0,
+    "container": "vial-3ml",
+    "filename": "BGP-MOTS-40.svg"
+  },
+  {
+    "sku": "BGP-MT1-10",
+    "name": "Melanotan-1",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-MT1-10.svg"
+  },
+  {
+    "sku": "BGP-MT2-10",
+    "name": "Melanotan-2",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-MT2-10.svg"
+  },
+  {
+    "sku": "BGP-NAD-100",
+    "name": "NAD+",
+    "dose": 100.0,
+    "container": "vial-3ml",
+    "filename": "BGP-NAD-100.svg"
+  },
+  {
+    "sku": "BGP-NAD-500",
+    "name": "NAD+",
+    "dose": 500.0,
+    "container": "vial-3ml",
+    "filename": "BGP-NAD-500.svg"
+  },
+  {
+    "sku": "BGP-NAD-1000",
+    "name": "NAD+",
+    "dose": 1000.0,
+    "container": "vial-3ml",
+    "filename": "BGP-NAD-1000.svg"
+  },
+  {
+    "sku": "BGP-OXY-2",
+    "name": "Oxytocin Acetate",
+    "dose": 2.0,
+    "container": "vial-3ml",
+    "filename": "BGP-OXY-2.svg"
+  },
+  {
+    "sku": "BGP-PE2228-5",
+    "name": "PE-22-28",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-PE2228-5.svg"
+  },
+  {
+    "sku": "BGP-PT141-10",
+    "name": "PT-141",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-PT141-10.svg"
+  },
+  {
+    "sku": "BGP-PIN-10",
+    "name": "Pinealon",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-PIN-10.svg"
+  },
+  {
+    "sku": "BGP-PIN-20",
+    "name": "Pinealon",
+    "dose": 20.0,
+    "container": "vial-3ml",
+    "filename": "BGP-PIN-20.svg"
+  },
+  {
+    "sku": "BGP-SLU-5",
+    "name": "SLU-PP-332",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-SLU-5.svg"
+  },
+  {
+    "sku": "BGP-SNAP8-10",
+    "name": "SNAP-8",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-SNAP8-10.svg"
+  },
+  {
+    "sku": "BGP-SS31-10",
+    "name": "SS-31",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-SS31-10.svg"
+  },
+  {
+    "sku": "BGP-SEL-5",
+    "name": "Selank",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-SEL-5.svg"
+  },
+  {
+    "sku": "BGP-SEL-10",
+    "name": "Selank",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-SEL-10.svg"
+  },
+  {
+    "sku": "BGP-SEMX-5",
+    "name": "Semax",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-SEMX-5.svg"
+  },
+  {
+    "sku": "BGP-SEMX-10",
+    "name": "Semax",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-SEMX-10.svg"
+  },
+  {
+    "sku": "BGP-SER-5",
+    "name": "Sermorelin",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-SER-5.svg"
+  },
+  {
+    "sku": "BGP-SER-10",
+    "name": "Sermorelin",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-SER-10.svg"
+  },
+  {
+    "sku": "BGP-TB-5",
+    "name": "TB-500",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-TB-5.svg"
+  },
+  {
+    "sku": "BGP-TB-10",
+    "name": "TB-500",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-TB-10.svg"
+  },
+  {
+    "sku": "BGP-TES-5",
+    "name": "Tesamorelin",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-TES-5.svg"
+  },
+  {
+    "sku": "BGP-TES-10",
+    "name": "Tesamorelin",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-TES-10.svg"
+  },
+  {
+    "sku": "BGP-THY-10",
+    "name": "Thymalin",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-THY-10.svg"
+  },
+  {
+    "sku": "BGP-TA1-5",
+    "name": "Thymosin Alpha-1",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-TA1-5.svg"
+  },
+  {
+    "sku": "BGP-VIP-5",
+    "name": "VIP",
+    "dose": 5.0,
+    "container": "vial-3ml",
+    "filename": "BGP-VIP-5.svg"
+  },
+  {
+    "sku": "BGP-VIP-10",
+    "name": "VIP",
+    "dose": 10.0,
+    "container": "vial-3ml",
+    "filename": "BGP-VIP-10.svg"
+  }
+]

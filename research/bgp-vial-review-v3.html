@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BGP — Vial Refinement Review v3 (53 of 64)</title>
+<style>
+  body { margin: 0; background: #0E1314; color: #E8E2D2; font-family: -apple-system, "Inter", sans-serif; }
+  header { padding: 24px; text-align: center; border-bottom: 1px solid rgba(232,226,210,0.1); position: sticky; top: 0; background: #0E1314; z-index: 10; }
+  header h1 { margin: 0 0 4px; font-family: "Cormorant Garamond", "Times New Roman", serif; font-weight: 500; font-size: 1.7rem; }
+  header p { opacity: 0.7; margin: 0; font-size: 12px; }
+  header .progress { display: inline-block; margin-top: 6px; padding: 3px 10px; background: rgba(184,146,58,0.15); color: #C8A046; font-family: "JetBrains Mono", monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; border-radius: 4px; }
+  .ref { padding: 18px; text-align: center; border-bottom: 1px solid rgba(232,226,210,0.06); }
+  .ref h2 { margin: 0 0 6px; font-family: "Cormorant Garamond", serif; font-weight: 500; font-size: 1.05rem; color: #C8A046; }
+  .ref img { max-width: 240px; border-radius: 8px; }
+  .section { padding: 16px 24px 6px; max-width: 1640px; margin: 0 auto; }
+  .section h3 { margin: 0; font-family: "JetBrains Mono", monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #C8A046; opacity: 0.85; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; padding: 6px 24px 22px; max-width: 1640px; margin: 0 auto; }
+  .card { background: #14191B; border: 1px solid rgba(232,226,210,0.08); border-radius: 8px; overflow: hidden; }
+  .card .img { background: #F2EAD9; aspect-ratio: 1; }
+  .card img { display: block; width: 100%; height: 100%; object-fit: contain; }
+  .card .meta { padding: 6px 9px; border-top: 1px solid rgba(232,226,210,0.06); }
+  .card .name { font-family: "Cormorant Garamond", serif; font-size: 13px; font-weight: 600; color: #fff; margin: 0; line-height: 1.2; }
+  .card .dose { font-family: "JetBrains Mono", monospace; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: #C8A046; margin: 2px 0 0; }
+  .card .note { font-size: 10px; color: #7ac9a6; margin: 3px 0 0; line-height: 1.3; }
+  .card .untouched { color: #8a8a8a; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Bench Grade Peptides — Vial Review v3</h1>
+  <p>53 revised · 11 untouched · 64 total (BAC Water removed)</p>
+  <div class="progress">v=53</div>
+</header>
+
+<div class="ref">
+  <h2>Reference baseline — NAD+</h2>
+  <img src="_vials/nad-100mg.jpg?v=53" alt="NAD+ reference">
+</div>
+
+<div class="section"><h3>Revised · 53 vials</h3></div>
+<div class="grid" id="done"></div>
+
+<div class="section"><h3>Untouched · 11 vials (acceptable as-is)</h3></div>
+<div class="grid" id="untouched"></div>
+
+<script>
+  const v = "56";
+  const done = [
+    ["bpc-157-5mg","BPC-157","5 mg"],
+    ["cjc-1295-5mg","CJC-1295","5 mg"],
+    ["cjc-1295-w-dac-5mg","CJC-1295 w/ DAC","5 mg"],
+    ["cjc-1295-ipamorelin-5mg","CJC-1295 + Ipamorelin","5/5 mg"],
+    ["bpc-157-tb-500-5mg","BPC-157 / TB-500","5/5 mg"],
+    ["ipamorelin-5mg","Ipamorelin","5 mg"],
+    ["ghk-cu-50mg","GHK-Cu","50 mg"],
+    ["ahk-cu-20mg","AHK-Cu","20 mg"],
+    ["nad-100mg","NAD+","100 mg"],
+    ["ghrp-2-5mg","GHRP-2","5 mg"],
+    ["ghrp-6-5mg","GHRP-6","5 mg"],
+    ["hexarelin-5mg","Hexarelin","5 mg"],
+    ["hexarelin-acetate-5mg","Hexarelin Acetate","5 mg"],
+    ["sermorelin-5mg","Sermorelin","5 mg"],
+    ["tesamorelin-5mg","Tesamorelin","5 mg"],
+    ["epitalon-10mg","Epitalon","10 mg"],
+    ["semax-5mg","Semax","5 mg"],
+    ["thymosin-alpha-1-5mg","Thymosin Alpha-1","5 mg"],
+    ["ll-37-5mg","LL-37","5 mg"],
+    ["kpv-5mg","KPV","5 mg"],
+    ["pt-141-10mg","PT-141","10 mg"],
+    ["melanotan-1-10mg","Melanotan-1","10 mg"],
+    ["melanotan-2-10mg","Melanotan-2","10 mg"],
+    ["mots-c-10mg","MOTS-c","10 mg"],
+    ["aod-9604-5mg","AOD-9604","5 mg"],
+    ["ara-290-5mg","ARA-290","5 mg"],
+    ["adipotide-5mg","Adipotide","5 mg"],
+    ["amya-5mg","AMY-A (Amylin Analogue)","5 mg"],
+    ["cartalax-20mg","Cartalax","20 mg"],
+    ["cerebrolysin-60mg","Cerebrolysin","60 mg"],
+    ["dsip-5mg","DSIP","5 mg"],
+    ["dihexa-5mg","Dihexa","5 mg"],
+    ["follistatin-344-1mg","Follistatin-344","1 mg"],
+    ["glow-blend-70mg","GLOW Blend","70 mg"],
+    ["klow-blend-80mg","KLOW Blend","80 mg"],
+    ["glp-1-s-5mg","GLP-1 S","5 mg"],
+    ["glp-2-sv-10mg","GLP-2 SV","10 mg"],
+    ["glp-2-t-5mg","GLP-2 T","5 mg"],
+    ["glp-3-r-5mg","GLP-3 R","5 mg"],
+    ["humanin-5mg","Humanin","5 mg"],
+    ["igf-1-lr3-1mg","IGF-1 LR3","1 mg"],
+    ["kisspeptin-5mg","Kisspeptin","5 mg"],
+    ["larazatide-5mg","Larazatide","5 mg"],
+    ["oxytocin-acetate-2mg","Oxytocin Acetate","2 mg"],
+    ["pe-22-28-5mg","PE-22-28","5 mg"],
+    ["pinealon-10mg","Pinealon","10 mg"],
+    ["snap-8-10mg","SNAP-8","10 mg"],
+    ["vip-5mg","VIP","5 mg"],
+    ["acetic-acid-water-10ml","Acetic Acid Water","10 ml"],
+    ["lc120-10mg","LC120","10 ml"],
+    ["lc216-10mg","LC216","10 ml"],
+    ["super-human-blend-10mg","Super Human Blend","10 ml"],
+    ["glutathione-1500mg","Glutathione","1500 mg"],
+    ["l-carnitine-10mg","L-Carnitine","10 ml"],
+  ];
+  const untouched = [
+    ["tb-500-5mg","TB-500","5 mg"],
+    ["5-amino-1mq-5mg","5-Amino-1MQ","5 mg"],
+    ["aicar-50mg","AICAR","50 mg"],
+    ["hgh-fragment-176-191-5mg","HGH Fragment 176-191","5 mg"],
+    ["selank-5mg","Selank","5 mg"],
+    ["slu-pp-332-5mg","SLU-PP-332","5 mg"],
+    ["ss-31-10mg","SS-31","10 mg"],
+    ["thymalin-10mg","Thymalin","10 mg"],
+    ["mgf-2mg","MGF","2 mg"],
+    ["glp-2-m-10mg","GLP-2 M","10 mg"],
+    ["foxo4-dri-10mg","FOXO4-DRI","10 mg"],
+  ];
+  function render(list, gridId, klass) {
+    const grid = document.getElementById(gridId);
+    for (const [slug, name, dose] of list) {
+      const c = document.createElement("div");
+      c.className = "card";
+      c.innerHTML = `
+        <div class="img"><img src="_vials/${slug}.jpg?v=${v}" alt="${name} ${dose}" loading="lazy"></div>
+        <div class="meta">
+          <p class="name">${name}</p>
+          <p class="dose">${dose}</p>
+        </div>
+      `;
+      grid.appendChild(c);
+    }
+  }
+  render(done, "done");
+  render(untouched, "untouched", "untouched");
+</script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="450" height="225" viewBox="0 0 450 225"
+     font-family="'Cormorant Garamond', 'Times New Roman', serif">
+  <!-- BGP · BGP-THY-10 · Thymalin 10 MG · 3ml maroon vial label -->
+<defs>
+  <style>
+    .maroon { fill: #5C1A1A; }
+    .gold { fill: #B8923A; }
+    .cream { fill: #F2EAD9; }
+    .gold-stroke { stroke: #B8923A; fill: none; }
+    .gold-stroke-dashed { stroke: #B8923A; fill: none; stroke-dasharray: 3,2; }
+    .display { font-family: 'Cormorant Garamond', 'Times New Roman', serif; }
+    .sans { font-family: 'Inter', -apple-system, sans-serif; }
+    .mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; }
+  </style>
+</defs>
+  <rect width="450" height="225" class="maroon"/>
+  <image x="1" y="28" width="174" height="124"
+         xlink:href="../vial-templates/F6-gold-vector.svg"
+         preserveAspectRatio="xMidYMid meet"/>
+  <line x1="178" y1="20" x2="178" y2="170" class="gold-stroke" stroke-width="1.5" opacity="0.7"/>
+  <text x="190" y="44" class="cream display" font-size="22" font-weight="700" letter-spacing="-0.3">Thymalin</text>
+  <g transform="translate(190,52)">
+    <rect width="56" height="20" class="gold-stroke" stroke-width="1" rx="2"/>
+    <text x="28.0" y="14" text-anchor="middle" class="gold mono" font-size="10" font-weight="600" letter-spacing="1">10 MG</text>
+  </g>
+  <text x="190" y="92" class="cream mono" font-size="6" letter-spacing="0.4" opacity="0.85">Identity disclosed per LOT</text>
+  <g transform="translate(325,22)">
+    <rect width="118" height="42" class="gold-stroke" stroke-width="1"/>
+    <text x="10" y="17" class="gold mono" font-size="8.5" letter-spacing="1.5">LOT</text>
+    <text x="108" y="17" text-anchor="end" class="cream mono" font-size="10" font-weight="600" letter-spacing="0.8">H.012526</text>
+    <line x1="10" y1="23" x2="108" y2="23" class="gold-stroke" stroke-width="0.4" opacity="0.4"/>
+    <text x="10" y="35" class="gold mono" font-size="8.5" letter-spacing="1.5">EXP</text>
+    <text x="108" y="35" text-anchor="end" class="cream mono" font-size="10" font-weight="600" letter-spacing="0.8">01.2028</text>
+  </g>
+  <g transform="translate(325,72)">
+    <rect width="118" height="20" class="gold" rx="2"/>
+    <text x="59" y="14" text-anchor="middle" class="maroon mono" font-size="8.5" font-weight="700" letter-spacing="1.6">RESEARCH PEPTIDE</text>
+  </g>
+<g transform="translate(343,100)">
+  <rect width="50" height="50" class="gold-stroke-dashed" stroke-width="0.7"/>
+  <text x="25.0" y="23.0" text-anchor="middle" class="gold mono"
+        font-size="6" font-weight="600" letter-spacing="1">QR</text>
+  <text x="25.0" y="33.0" text-anchor="middle" class="gold mono"
+        font-size="5" letter-spacing="0.5" opacity="0.85">COA · per LOT</text>
+</g>
+  <g transform="translate(190,158)">
+    <rect width="250" height="20" class="gold"/>
+    <text x="125" y="14" text-anchor="middle" class="maroon mono" font-size="9.5" font-weight="700" letter-spacing="2.4">99% PURITY · HPLC VERIFIED</text>
+  </g>
+  <text x="225" y="190" text-anchor="middle" class="cream mono" font-size="6" letter-spacing="1.2" opacity="0.85">FOR RESEARCH USE ONLY · NOT FOR HUMAN OR VETERINARY USE</text>
+  <text x="225" y="202" text-anchor="middle" class="gold mono" font-size="6.5" letter-spacing="1.4">EST. 2026 · MADE IN USA · BENCH GRADE PEPTIDES LLC</text>
+  <text x="10" y="216" class="cream mono" font-size="6.2" letter-spacing="0.8" opacity="0.8">SKU BGP-THY-10</text>
+  <text x="440" y="216" text-anchor="end" class="cream mono" font-size="6.2" letter-spacing="0.6" opacity="0.85">3mL Multi-Dose · benchgradepeptides.com/coa</text>
+</svg>

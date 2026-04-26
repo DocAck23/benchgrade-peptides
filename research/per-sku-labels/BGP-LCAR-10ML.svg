@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="675" height="375" viewBox="0 0 675 375"
+     font-family="'Cormorant Garamond', 'Times New Roman', serif">
+  <!-- BGP · BGP-LCAR-10ML · L-Carnitine 10 MG · 10ml maroon vial label -->
+<defs>
+  <style>
+    .maroon { fill: #5C1A1A; }
+    .gold { fill: #B8923A; }
+    .cream { fill: #F2EAD9; }
+    .gold-stroke { stroke: #B8923A; fill: none; }
+    .gold-stroke-dashed { stroke: #B8923A; fill: none; stroke-dasharray: 3,2; }
+    .display { font-family: 'Cormorant Garamond', 'Times New Roman', serif; }
+    .sans { font-family: 'Inter', -apple-system, sans-serif; }
+    .mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; }
+  </style>
+</defs>
+  <rect width="675" height="375" class="maroon"/>
+  <image x="2" y="65" width="280" height="200"
+         xlink:href="../vial-templates/F6-gold-vector.svg"
+         preserveAspectRatio="xMidYMid meet"/>
+  <line x1="284" y1="22" x2="284" y2="290" class="gold-stroke" stroke-width="1.5" opacity="0.7"/>
+  <text x="295" y="64" class="cream display" font-size="28" font-weight="700" letter-spacing="-0.4">L-Carnitine</text>
+  <g transform="translate(295,80)">
+    <rect width="105" height="32" class="gold-stroke" stroke-width="1.2" rx="3"/>
+    <text x="52.5" y="22" text-anchor="middle" class="gold mono" font-size="15" font-weight="600" letter-spacing="1.3">10 ML</text>
+  </g>
+  <g transform="translate(295,140)">
+    <text class="cream mono" font-size="9" letter-spacing="0.5">
+      <tspan x="0" y="0"><tspan class="gold">Formula  </tspan>C7H15NO3</tspan>
+      <tspan x="0" y="13"><tspan class="gold">MW  </tspan>161.2 g/mol</tspan>
+      <tspan x="0" y="26"><tspan class="gold">CAS  </tspan>541-15-1</tspan>
+    </text>
+  </g>
+  <g transform="translate(515,28)">
+    <rect width="140" height="58" class="gold-stroke" stroke-width="1.2"/>
+    <text x="12" y="22" class="gold mono" font-size="10" letter-spacing="1.5">LOT</text>
+    <text x="130" y="22" text-anchor="end" class="cream mono" font-size="14" font-weight="600" letter-spacing="1">H.012526</text>
+    <line x1="12" y1="32" x2="130" y2="32" class="gold-stroke" stroke-width="0.4" opacity="0.4"/>
+    <text x="12" y="50" class="gold mono" font-size="10" letter-spacing="1.5">EXP</text>
+    <text x="130" y="50" text-anchor="end" class="cream mono" font-size="14" font-weight="600" letter-spacing="1">01.2028</text>
+  </g>
+  <g transform="translate(515,98)">
+    <rect width="140" height="24" class="gold" rx="2"/>
+    <text x="70" y="17" text-anchor="middle" class="maroon mono" font-size="10" font-weight="700" letter-spacing="2">RESEARCH LIQUID</text>
+  </g>
+<g transform="translate(545,132)">
+  <rect width="80" height="80" class="gold-stroke-dashed" stroke-width="0.7"/>
+  <text x="40.0" y="38.0" text-anchor="middle" class="gold mono"
+        font-size="8" font-weight="600" letter-spacing="1">QR</text>
+  <text x="40.0" y="48.0" text-anchor="middle" class="gold mono"
+        font-size="7" letter-spacing="0.5" opacity="0.85">COA · per LOT</text>
+</g>
+  <text x="585" y="232" text-anchor="middle" class="cream sans" font-size="9" letter-spacing="0.4">10mL Multi-Dose · Liquid blend</text>
+  <g transform="translate(295,250)">
+    <rect width="360" height="32" class="gold"/>
+    <text x="180" y="22" text-anchor="middle" class="maroon mono" font-size="14" font-weight="700" letter-spacing="3.2">99% PURITY · HPLC VERIFIED</text>
+  </g>
+  <g transform="translate(295,300)">
+    <text class="cream mono" font-size="8.5" letter-spacing="1">
+      <tspan x="0" y="0" class="gold">STORAGE</tspan>
+      <tspan x="0" y="13">Store at room temp.</tspan>
+      <tspan x="0" y="24">Refrigerate after opening.</tspan>
+    </text>
+    <text class="cream mono" font-size="8.5" letter-spacing="1" transform="translate(180,0)">
+      <tspan x="0" y="0" class="gold">USE</tspan>
+      <tspan x="0" y="13">Research only. Not for</tspan>
+      <tspan x="0" y="24">human or veterinary use.</tspan>
+    </text>
+  </g>
+  <line x1="20" y1="345" x2="655" y2="345" class="gold-stroke" stroke-width="0.4" opacity="0.4"/>
+  <text x="20" y="358" class="gold mono" font-size="9" letter-spacing="1.5">EST. 2026 · MADE IN USA · BENCH GRADE PEPTIDES LLC</text>
+  <text x="655" y="358" text-anchor="end" class="cream mono" font-size="8" letter-spacing="0.8" opacity="0.85">SKU BGP-LCAR-10ML · benchgradepeptides.com/coa</text>
+</svg>

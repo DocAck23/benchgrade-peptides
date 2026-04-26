@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Bench Grade Peptides — Site Vial Label Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Cormorant+Garamond:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F2EAD9;
+    --rule: #C9BFA8;
+    --ink: #1A1410;
+    --maroon: #5C1A1A;
+    --gold: #B8923A;
+    --display: "Cormorant Garamond", "Times New Roman", serif;
+    --sans: "Inter", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0E1314; color: #E8E2D2; font-family: var(--sans); font-size: 16px; line-height: 1.6; }
+  .top-bar { background: #000; color: var(--paper); font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; text-align: center; padding: 10px 16px; }
+  .page { max-width: 1400px; margin: 0 auto; padding: 56px 32px 96px; }
+
+  header.doc-head { text-align: center; padding-bottom: 40px; border-bottom: 1px solid rgba(232,226,210,0.12); margin-bottom: 56px; }
+  header.doc-head .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
+  header.doc-head h1 { font-family: var(--display); font-size: clamp(2.4rem, 5vw, 3.6rem); font-weight: 500; line-height: 1.05; margin: 14px 0 12px; color: #fff; }
+  header.doc-head p { max-width: 760px; margin: 0 auto; opacity: 0.72; font-size: 17px; }
+
+  /* Reference row */
+  .reference {
+    background: #14191B; border-radius: 16px; padding: 24px; margin-bottom: 56px;
+    display: grid; grid-template-columns: 280px 1fr; gap: 24px; align-items: center;
+  }
+  .reference .ref-label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.6; }
+  .reference .ref-photo { aspect-ratio: 1456/814; border-radius: 8px; overflow: hidden; background: #000; }
+  .reference .ref-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  /* Variants grid */
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+
+  .card {
+    background: #14191B; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 30px 60px -30px rgba(0,0,0,0.6);
+  }
+
+  .photo {
+    position: relative;
+    aspect-ratio: 1456/814;
+    overflow: hidden;
+    background: #000;
+  }
+  .photo .base {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+  }
+
+  /* Label overlay — covers the existing cream label area on the BPC-157 photo.
+     Calibrated to the existing label's exact position in the photo. */
+  .label-wrap {
+    position: absolute;
+    /* Existing label spans roughly: x=39%-56%, y=34%-75% */
+    left: 39%;
+    top: 34%;
+    width: 17%;
+    height: 41%;
+    overflow: hidden;
+    box-shadow:
+      inset 5px 0 10px -4px rgba(0,0,0,0.5),
+      inset -5px 0 10px -4px rgba(0,0,0,0.5),
+      0 4px 8px -4px rgba(0,0,0,0.4);
+  }
+  .label-wrap object {
+    display: block;
+    width: 100%; height: 100%;
+  }
+  /* Cylindrical curve highlight */
+  .label-wrap::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg,
+      rgba(0,0,0,0.32) 0%,
+      rgba(0,0,0,0.06) 12%,
+      rgba(255,255,255,0.10) 50%,
+      rgba(0,0,0,0.06) 88%,
+      rgba(0,0,0,0.32) 100%);
+    pointer-events: none;
+    mix-blend-mode: overlay;
+  }
+
+  /* Card meta */
+  .meta { padding: 28px 28px 32px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--sans); font-size: 11px; letter-spacing: 0.2em;
+    text-transform: uppercase; opacity: 0.72;
+  }
+  .chip::before {
+    content: ""; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--gold);
+  }
+  .name {
+    font-family: var(--sans);
+    font-size: 1.5rem; font-weight: 700;
+    margin: 12px 0 6px; color: #fff; letter-spacing: -0.01em;
+  }
+  .desc { font-size: 14px; opacity: 0.72; line-height: 1.55; }
+
+  .pros-cons {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin-top: 18px; font-size: 12px;
+  }
+  .pros, .cons { padding: 10px 12px; border-radius: 6px; line-height: 1.5; }
+  .pros { background: rgba(184,146,58,0.08); border-left: 2px solid var(--gold); }
+  .cons { background: rgba(255,255,255,0.04); border-left: 2px solid rgba(255,255,255,0.18); }
+  .pros strong, .cons strong { display: block; font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.7; margin-bottom: 4px; }
+
+  @media (max-width: 1080px) {
+    .grid { grid-template-columns: 1fr; }
+    .reference { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">BENCH GRADE PEPTIDES LLC · SITE VIAL REDESIGN · 3 OPTIONS</div>
+
+<div class="page">
+  <header class="doc-head">
+    <div class="eyebrow">Replacing the cream-label vial currently on benchgradepeptides.com</div>
+    <h1>Vial Label Redesign · 3 Options</h1>
+    <p>Same vial photo and lab-data layout you have on the site today — but the label is redrawn in our brand: maroon paperboard, antique gold accents, F6 mark replacing the molecule line-art icon. Pick one and we'll roll it out across the catalog.</p>
+  </header>
+
+  <!-- Current state for reference -->
+  <div class="reference">
+    <div>
+      <div class="ref-label">Currently on site</div>
+      <h3 style="font-family: var(--display); font-size: 1.4rem; margin: 8px 0 8px; color: #fff;">Cream label, black ink</h3>
+      <p style="font-size: 13px; opacity: 0.7; line-height: 1.55;">
+        Apothecary-pharmacy aesthetic. Reads "lab" but doesn't carry our brand —
+        cream + black is generic, the molecule icon doesn't connect to F6,
+        and the wordmark fights the chemistry data block.
+      </p>
+    </div>
+    <div class="ref-photo">
+      <img src="site-vial-labels/bpc-157-base.jpg" alt="Current BPC-157 vial">
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <!-- VARIANT A — Maroon -->
+    <div class="card">
+      <div class="photo">
+        <img class="base" src="site-vial-labels/bpc-157-base.jpg" alt="">
+        <div class="label-wrap">
+          <object data="site-vial-labels/variant-a-maroon.svg" type="image/svg+xml"></object>
+        </div>
+      </div>
+      <div class="meta">
+        <span class="chip">Variant A · Full Maroon</span>
+        <h3 class="name">Branded · Maximum identity</h3>
+        <p class="desc">Maroon paperboard, F6 in gold, cream lab data. Most "branded" of the three — the vial reads as a Bench Grade product first, scientific second.</p>
+        <div class="pros-cons">
+          <div class="pros"><strong>Strength</strong>Strongest brand presence. Box, sleeve, vial all in the same maroon language.</div>
+          <div class="cons"><strong>Watch-out</strong>Lab data sits on a dark ground; mono digits are smaller-feeling than the cream version.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VARIANT B — Cream -->
+    <div class="card">
+      <div class="photo">
+        <img class="base" src="site-vial-labels/bpc-157-base.jpg" alt="">
+        <div class="label-wrap">
+          <object data="site-vial-labels/variant-b-cream.svg" type="image/svg+xml"></object>
+        </div>
+      </div>
+      <div class="meta">
+        <span class="chip">Variant B · Cream Inverted</span>
+        <h3 class="name">Apothecary · Maximum legibility</h3>
+        <p class="desc">Cream label like the current one, but with maroon F6 logo, maroon ink, and a maroon "99% PURITY" banner. Heritage/apothecary feel.</p>
+        <div class="pros-cons">
+          <div class="pros"><strong>Strength</strong>Lab data is most readable. Closest to current site so least disruptive transition.</div>
+          <div class="cons"><strong>Watch-out</strong>Reads more "generic pharmacy" than "BGP" — brand presence is quieter.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VARIANT C — Split -->
+    <div class="card">
+      <div class="photo">
+        <img class="base" src="site-vial-labels/bpc-157-base.jpg" alt="">
+        <div class="label-wrap">
+          <object data="site-vial-labels/variant-c-split.svg" type="image/svg+xml"></object>
+        </div>
+      </div>
+      <div class="meta">
+        <span class="chip">Variant C · Split</span>
+        <h3 class="name">Hybrid · Best of both</h3>
+        <p class="desc">Maroon top half (brand + product name) and cream bottom half (lab data). The 99% PURITY banner sits at the seam. Most editorial of the three.</p>
+        <div class="pros-cons">
+          <div class="pros"><strong>Strength</strong>Brand presence up top, full lab legibility below. Most distinctive.</div>
+          <div class="cons"><strong>Watch-out</strong>More complex to print (two-tone wrap). Slightly busier visually.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p style="text-align:center; margin-top:64px; font-size: 13px; opacity: 0.6;">
+    Pick A, B, or C. Once chosen, I redraw all 110+ catalog vials in that style and update the public/brand/vials/ folder before any commit.
+  </p>
+</div>
+</body>
+</html>

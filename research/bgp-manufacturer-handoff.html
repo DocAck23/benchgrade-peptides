@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Bench Grade Peptides — Manufacturer Handoff Package</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Cormorant+Garamond:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F2EAD9;
+    --paper-soft: #E8DEC6;
+    --rule: #C9BFA8;
+    --ink: #1A1410;
+    --maroon: #5C1A1A;
+    --gold: #B8923A;
+    --display: "Cormorant Garamond", "Times New Roman", serif;
+    --sans: "Inter", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.65; }
+  .top-bar { background: var(--ink); color: var(--paper); font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; text-align: center; padding: 10px 16px; }
+  .page { max-width: 1280px; margin: 0 auto; padding: 56px 32px 96px; }
+
+  header.doc-head { text-align: center; padding-bottom: 40px; border-bottom: 1px solid var(--rule); margin-bottom: 56px; }
+  header.doc-head .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
+  header.doc-head h1 { font-family: var(--display); font-size: clamp(2.4rem, 5vw, 3.6rem); font-weight: 500; line-height: 1.05; margin: 14px 0 12px; }
+  header.doc-head p { max-width: 720px; margin: 0 auto; opacity: 0.78; font-size: 17px; }
+
+  .nav { position: sticky; top: 0; background: var(--paper); border-bottom: 1px solid var(--rule); padding: 14px 32px; z-index: 50; display: flex; gap: 16px; flex-wrap: wrap; margin: -56px -32px 56px; }
+  .nav a { font-family: var(--mono); font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink); opacity: 0.7; text-decoration: none; }
+  .nav a:hover { opacity: 1; color: var(--gold); }
+
+  .section { margin-top: 80px; }
+  .section-head { display: flex; align-items: baseline; gap: 16px; padding-bottom: 12px; border-bottom: 2px solid var(--ink); margin-bottom: 24px; }
+  .section-head .tag { font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.6; padding: 4px 10px; border: 1px solid var(--rule); }
+  .section-head h2 { font-family: var(--display); font-size: 2rem; font-weight: 500; margin: 0; }
+  .section-head .desc { margin-left: auto; max-width: 380px; font-size: 13px; opacity: 0.7; text-align: right; }
+
+  /* Spec block */
+  .spec {
+    background: var(--paper-soft); border: 1px solid var(--rule); padding: 24px 28px;
+    margin-bottom: 16px;
+  }
+  .spec h3 { font-family: var(--display); font-size: 1.3rem; font-weight: 500; margin: 0 0 12px; }
+  .spec dl { display: grid; grid-template-columns: 160px 1fr; gap: 8px 16px; margin: 0; font-size: 14px; }
+  .spec dt { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.65; padding-top: 2px; }
+  .spec dd { margin: 0; }
+
+  /* Vial table */
+  .vial-table { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 24px; }
+  .vial-cell { background: var(--paper-soft); border: 1px solid var(--rule); padding: 24px; }
+  .vial-cell h4 { font-family: var(--display); font-size: 1.2rem; font-weight: 500; margin: 0 0 8px; }
+  .vial-cell .vial-tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.6; margin-bottom: 18px; }
+  .vial-cell .label-display { background: #2a2422; padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 16px; margin-bottom: 16px; }
+  .vial-cell .label-display.white { background: #d6cdb8; }
+  .vial-cell .label-display .scale-tag { font-family: var(--mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(247,244,238,0.6); }
+  .vial-cell .label-display.white .scale-tag { color: rgba(0,0,0,0.55); }
+  .vial-cell .label-display object { display: block; }
+  .download-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
+    border: 1px solid var(--ink); padding: 8px 14px; text-decoration: none; color: var(--ink);
+    transition: all 0.15s ease;
+  }
+  .download-btn:hover { background: var(--ink); color: var(--paper); }
+  .download-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .letter-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+  .letter-cell { background: var(--maroon); aspect-ratio: 4/3; overflow: hidden; }
+  .letter-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .letter-meta { font-family: var(--mono); font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; opacity: 0.7; margin-top: 10px; text-align: center; }
+
+  .checklist { font-size: 16px; line-height: 1.85; }
+  .checklist li { margin-bottom: 6px; }
+  .checklist code { background: var(--paper-soft); padding: 2px 6px; font-family: var(--mono); font-size: 13px; border: 1px solid var(--rule); }
+
+  .printable-list { background: var(--paper-soft); border: 1px solid var(--rule); padding: 24px 28px; }
+  .printable-list h4 { font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; margin: 0 0 12px; opacity: 0.7; }
+
+  @media (max-width: 880px) {
+    .vial-table, .letter-row { grid-template-columns: 1fr; }
+    .section-head { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .section-head .desc { text-align: left; margin-left: 0; }
+    .spec dl { grid-template-columns: 1fr; gap: 4px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">BENCH GRADE PEPTIDES LLC · MANUFACTURER HANDOFF PACKAGE · F6 LOCKED · 2026-04-25</div>
+
+<div class="page">
+  <nav class="nav">
+    <a href="#brand">Brand</a>
+    <a href="#box">Box</a>
+    <a href="#sleeve">Sleeve</a>
+    <a href="#letter">Letter</a>
+    <a href="#vials">Vial Labels</a>
+    <a href="#files">Files</a>
+    <a href="#checklist">Checklist</a>
+    <a href="bgp-box-design.html" style="margin-left:auto; color:var(--gold);">Box Design →</a>
+  </nav>
+
+  <header class="doc-head">
+    <div class="eyebrow">Final spec · F6 mark · ready to send</div>
+    <h1>Manufacturer Handoff</h1>
+    <p>Everything the private labeler needs in one document. Brand spec, box spec, sleeve + embossed letter spec, six vial templates (3 maroon + 3 white), and the file checklist. F6 is locked: laurel-wreath chemist + straight Trajan wordmark, antique gold on cartier maroon.</p>
+  </header>
+
+  <!-- BRAND SPEC -->
+  <section class="section" id="brand">
+    <div class="section-head">
+      <span class="tag">1</span>
+      <h2>Brand Spec</h2>
+    </div>
+
+    <div class="spec">
+      <h3>Color system</h3>
+      <dl>
+        <dt>Maroon (primary)</dt><dd><code>#5C1A1A</code> · the cartier-red ground for box, sleeve, vials</dd>
+        <dt>Antique gold (foil)</dt><dd><code>#B8923A</code> · all foiled marks, embossed seals, type accents</dd>
+        <dt>Cream (paper)</dt><dd><code>#F2EAD9</code> · uncoated cream stock for tray, insert cards, white-variant vials</dd>
+        <dt>Ink (body type)</dt><dd><code>#1A1410</code> · near-black with warm undertone</dd>
+        <dt>Hairline rule</dt><dd><code>#C9BFA8</code> · 0.5pt thin rules</dd>
+      </dl>
+    </div>
+
+    <div class="spec">
+      <h3>Typography</h3>
+      <dl>
+        <dt>Display (wordmark, virtues, headlines)</dt><dd>Cormorant Garamond, weight 500–600 · alternates: GT Sectra, Canela</dd>
+        <dt>Sans (body, labels)</dt><dd>Inter (web) · Söhne or Univers (print)</dd>
+        <dt>Mono (lot codes, COA, batch numbers)</dt><dd>JetBrains Mono · weight 400–600</dd>
+      </dl>
+    </div>
+
+    <div class="spec">
+      <h3>Logo · F6 (locked)</h3>
+      <dl>
+        <dt>Construction</dt><dd>Circular laurel wreath enclosing a chemist seated at a lab bench with microscope and small vials behind him. Below the wreath: BENCH GRADE PEPTIDES in straight horizontal Trajan-style spaced capitals (no curve).</dd>
+        <dt>Foil application</dt><dd>Antique gold (#B8923A), foil stamped on maroon paperboard. On cream/white surfaces: deep maroon (#5C1A1A) ink.</dd>
+        <dt>Minimum size</dt><dd>12mm tall on box corner. Wordmark stays legible at this scale.</dd>
+        <dt>Source file</dt><dd><code>research/bgp-logos/F6-bench-wreath-straight-v3.jpg</code> (gold-on-maroon) and <code>research/vial-templates/F6-maroon-on-cream.jpg</code> (maroon-on-cream)</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- BOX -->
+  <section class="section" id="box">
+    <div class="section-head">
+      <span class="tag">2</span>
+      <h2>Box Spec</h2>
+      <span class="desc">Production lid SVGs (small / medium / large) live on the dedicated box design page →
+        <a href="bgp-box-design.html" style="color:var(--gold);">bgp-box-design.html</a></span>
+    </div>
+    <div class="spec">
+      <h3>Hardcover Gift Box · 3 pack sizes</h3>
+      <dl>
+        <dt>Material</dt><dd>Rigid paperboard hardcover, lift-off lid (telescope style — no hinge). Matte uncoated finish.</dd>
+        <dt>Color</dt><dd>Cartier maroon (<code>#5C1A1A</code>) inside and out · cream foam tray inside the base</dd>
+        <dt>Lid foil</dt><dd>F6 mark in antique gold (<code>#B8923A</code>), single-pass hot foil. Top-right on rectangular lids; centered on the small square lid.</dd>
+        <dt>Pack sizes</dt><dd>Small (single vial · 85×85×45mm) · Medium (5-vial · 150×100×50mm) · Large (10-vial · 200×130×60mm)</dd>
+        <dt>Interior lid</dt><dd>Optional: small blind-embossed F6 seal on inside of lid</dd>
+        <dt>No printed text on lid</dt><dd>Mark only. Cartier discipline. The lid carries the F6 mark and nothing else, on every pack size.</dd>
+        <dt>Production artwork</dt><dd><code>box-templates/bgp-box-lid-small.svg?v=14</code> · <code>bgp-box-lid-medium.svg</code> · <code>bgp-box-lid-large.svg</code> — all at 1:1 mm scale</dd>
+      </dl>
+      <p style="margin-top:14px;">
+        <a href="bgp-box-design.html" class="download-btn" style="display:inline-flex;">View official box design →</a>
+      </p>
+    </div>
+  </section>
+
+  <!-- SLEEVE -->
+  <section class="section" id="sleeve">
+    <div class="section-head">
+      <span class="tag">3</span>
+      <h2>Letter Sleeve Spec</h2>
+    </div>
+    <div class="spec">
+      <h3>Maroon Sleeve · Slide-Out Card</h3>
+      <dl>
+        <dt>Form</dt><dd>Open-top paperboard sleeve sized to hold a 4″×6″ insert card. Card slides out from the top.</dd>
+        <dt>Sleeve material</dt><dd>Cartier maroon paperboard (<code>#5C1A1A</code>), uncoated. Same maroon as the box.</dd>
+        <dt>Sleeve front</dt><dd>F6 mark in antique gold foil, centered on the upper third</dd>
+        <dt>Card stock</dt><dd>Heavy cream uncoated (<code>#F2EAD9</code>), 130–160 gsm</dd>
+        <dt>Card front</dt><dd>Top-right: <strong>antique gold blind-embossed owner's seal</strong> — circular, ~25mm diameter, F6 wreath emblem (no wordmark inside seal)</dd>
+        <dt>Card body</dt><dd>Printed monthly: handwritten calligraphy letter from the founder (sepia ink). Signed at bottom.</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- LETTER MOCKUPS -->
+  <section class="section" id="letter">
+    <div class="section-head">
+      <span class="tag">4</span>
+      <h2>The Founder's Letter · Embossed Seal Aesthetic</h2>
+      <span class="desc">Cartier COA card meets old-world correspondence. Customers should look forward to opening this every month.</span>
+    </div>
+    <div class="letter-row">
+      <div>
+        <div class="letter-cell"><img src="vial-templates/letter-suite.jpg" alt="Letter suite"></div>
+        <div class="letter-meta">Suite · sleeve + card</div>
+      </div>
+      <div>
+        <div class="letter-cell"><img src="vial-templates/letter-open-desk.jpg" alt="Letter on desk"></div>
+        <div class="letter-meta">Letter open · desk context</div>
+      </div>
+      <div>
+        <div class="letter-cell"><img src="vial-templates/letter-emboss-detail.jpg" alt="Embossed seal detail"></div>
+        <div class="letter-meta">Embossed seal · macro detail</div>
+      </div>
+    </div>
+    <div class="spec">
+      <h3>Monthly cadence</h3>
+      <p style="font-size:14px; line-height:1.7; margin: 8px 0;">Each month: a new short calligraphy letter from the founder. Same sleeve, same embossed seal, different note. The card itself is the "newsletter" — tactile, signed, never sent by email. Customers who order frequently start collecting them.</p>
+      <p style="font-size:13px; line-height:1.6; margin: 8px 0; opacity:0.75;">Optional escalation: number each month's card as a numbered edition (e.g. "April 2026 · No. 0042 / 5000") to make the collectible aspect explicit.</p>
+    </div>
+  </section>
+
+  <!-- VIAL LABELS -->
+  <section class="section" id="vials">
+    <div class="section-head">
+      <span class="tag">5</span>
+      <h2>Vial Labels · Six Templates</h2>
+      <span class="desc">Three sizes × two colorways (maroon + white). All built at exact PSD dimensions, all carry F6 logo + 99% PURITY highlight + LOT H.012526 / EXP 01.2028.</span>
+    </div>
+
+    <h3 style="font-family:var(--display); font-weight:500; font-size:1.3rem; margin:24px 0 12px;">3ml Single-Peptide</h3>
+    <p style="font-size:13px; opacity:0.75; margin:0 0 0;">For single-compound SKUs (Sema, Tirz, Reta, BPC-157, TB-500, MOTS-c, Epitalon, etc.) · 450 × 225 px @ 300 DPI · 1.5″ × 0.75″</p>
+    <div class="vial-table">
+      <div class="vial-cell">
+        <h4>Maroon variant</h4>
+        <div class="vial-tag">3ml Single · Color</div>
+        <div class="label-display">
+          <object data="vial-templates/bgp-3ml-single.svg?v=14" type="image/svg+xml" width="450" height="225"></object>
+        </div>
+        <div class="download-row">
+          <a class="download-btn" href="vial-templates/bgp-3ml-single.svg?v=14" download>Download SVG</a>
+          <a class="download-btn" href="vial-templates/bgp-3ml-single.svg?v=14" target="_blank">Open</a>
+        </div>
+      </div>
+      <div class="vial-cell">
+        <h4>White variant</h4>
+        <div class="vial-tag">3ml Single · White</div>
+        <div class="label-display white">
+          <object data="vial-templates/bgp-3ml-single-white.svg?v=14" type="image/svg+xml" width="450" height="225"></object>
+        </div>
+        <div class="download-row">
+          <a class="download-btn" href="vial-templates/bgp-3ml-single-white.svg?v=14" download>Download SVG</a>
+          <a class="download-btn" href="vial-templates/bgp-3ml-single-white.svg?v=14" target="_blank">Open</a>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="font-family:var(--display); font-weight:500; font-size:1.3rem; margin:36px 0 12px;">3ml Research Blend</h3>
+    <p style="font-size:13px; opacity:0.75; margin:0 0 0;">For multi-ingredient blends (KLOW, etc.) · ingredient list area + "RESEARCH BLEND" tag · same 1.5″ × 0.75″ footprint</p>
+    <div class="vial-table">
+      <div class="vial-cell">
+        <h4>Maroon variant</h4>
+        <div class="vial-tag">3ml Blend · Color</div>
+        <div class="label-display">
+          <object data="vial-templates/bgp-3ml-blend.svg?v=14" type="image/svg+xml" width="450" height="225"></object>
+        </div>
+        <div class="download-row">
+          <a class="download-btn" href="vial-templates/bgp-3ml-blend.svg?v=14" download>Download SVG</a>
+          <a class="download-btn" href="vial-templates/bgp-3ml-blend.svg?v=14" target="_blank">Open</a>
+        </div>
+      </div>
+      <div class="vial-cell">
+        <h4>White variant</h4>
+        <div class="vial-tag">3ml Blend · White</div>
+        <div class="label-display white">
+          <object data="vial-templates/bgp-3ml-blend-white.svg?v=14" type="image/svg+xml" width="450" height="225"></object>
+        </div>
+        <div class="download-row">
+          <a class="download-btn" href="vial-templates/bgp-3ml-blend-white.svg?v=14" download>Download SVG</a>
+          <a class="download-btn" href="vial-templates/bgp-3ml-blend-white.svg?v=14" target="_blank">Open</a>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="font-family:var(--display); font-weight:500; font-size:1.3rem; margin:36px 0 12px;">10ml Large-Volume / Liquid</h3>
+    <p style="font-size:13px; opacity:0.75; margin:0 0 0;">Reserved for BAC water, liquid blends (L-Carnitine, LC120, LC216), and large-volume products (Glutathione 1500mg, NAD+ 1000mg) · 675 × 375 px @ 300 DPI · 2.25″ × 1.25″</p>
+    <div class="vial-table">
+      <div class="vial-cell">
+        <h4>Maroon variant</h4>
+        <div class="vial-tag">10ml · Color</div>
+        <div class="label-display">
+          <object data="vial-templates/bgp-10ml-large.svg?v=14" type="image/svg+xml" width="675" height="375"></object>
+        </div>
+        <div class="download-row">
+          <a class="download-btn" href="vial-templates/bgp-10ml-large.svg?v=14" download>Download SVG</a>
+          <a class="download-btn" href="vial-templates/bgp-10ml-large.svg?v=14" target="_blank">Open</a>
+        </div>
+      </div>
+      <div class="vial-cell">
+        <h4>White variant</h4>
+        <div class="vial-tag">10ml · White</div>
+        <div class="label-display white">
+          <object data="vial-templates/bgp-10ml-large-white.svg?v=14" type="image/svg+xml" width="675" height="375"></object>
+        </div>
+        <div class="download-row">
+          <a class="download-btn" href="vial-templates/bgp-10ml-large-white.svg?v=14" download>Download SVG</a>
+          <a class="download-btn" href="vial-templates/bgp-10ml-large-white.svg?v=14" target="_blank">Open</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FILES -->
+  <section class="section" id="files">
+    <div class="section-head">
+      <span class="tag">6</span>
+      <h2>File Manifest</h2>
+      <span class="desc">Send this folder to the manufacturer. Logo file paths are relative to the SVGs.</span>
+    </div>
+    <div class="printable-list">
+      <h4>Files to package</h4>
+      <ul style="font-family:var(--mono); font-size:13px; line-height:1.85; list-style:none; padding-left:0;">
+        <li>📄 bgp-logos/F6-bench-wreath-straight-v3.jpg <span style="opacity:0.6;">— gold-on-maroon logo source</span></li>
+        <li>📄 vial-templates/F6-maroon-on-cream.jpg <span style="opacity:0.6;">— maroon-on-cream logo source (for white labels)</span></li>
+        <li>📄 vial-templates/bgp-3ml-single.svg?v=14 <span style="opacity:0.6;">— 3ml single, maroon</span></li>
+        <li>📄 vial-templates/bgp-3ml-single-white.svg?v=14 <span style="opacity:0.6;">— 3ml single, white</span></li>
+        <li>📄 vial-templates/bgp-3ml-blend.svg?v=14 <span style="opacity:0.6;">— 3ml blend, maroon</span></li>
+        <li>📄 vial-templates/bgp-3ml-blend-white.svg?v=14 <span style="opacity:0.6;">— 3ml blend, white</span></li>
+        <li>📄 vial-templates/bgp-10ml-large.svg?v=14 <span style="opacity:0.6;">— 10ml, maroon</span></li>
+        <li>📄 vial-templates/bgp-10ml-large-white.svg?v=14 <span style="opacity:0.6;">— 10ml, white</span></li>
+        <li>📄 bgp-manufacturer-handoff.html <span style="opacity:0.6;">— this document, for spec reference</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- CHECKLIST -->
+  <section class="section" id="checklist">
+    <div class="section-head">
+      <span class="tag">7</span>
+      <h2>Production Checklist</h2>
+    </div>
+    <ol class="checklist">
+      <li>Hardcover maroon gift boxes — multiple inner-tray configurations (1-vial, 5-vial, 10-vial cutouts)</li>
+      <li>F6 logo foil-stamped top-right of lid, antique gold, ~15mm</li>
+      <li>Maroon paperboard sleeves, F6 wordmark in gold foil, sized for 4″×6″ card</li>
+      <li>Cream uncoated insert cards, blind-embossed gold owner's seal upper-right (F6 wreath emblem only, no wordmark)</li>
+      <li>Vial labels — six templates above, swap product name + strength per SKU at fulfillment</li>
+      <li>Optional foil seal stickers on outer shipping box (gold F6 mark)</li>
+      <li>Tissue paper (cream) inside each box</li>
+      <li>Confirm LOT/EXP printable-on-demand workflow at fulfillment (each batch updates LOT and EXP fields in the SVG before printing)</li>
+    </ol>
+  </section>
+</div>
+</body>
+</html>

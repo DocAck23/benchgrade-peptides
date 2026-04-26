@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Bench Grade Peptides — Logo Explorations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F2EAD9;
+    --paper-soft: #E8DEC6;
+    --rule: #C9BFA8;
+    --ink: #1A1410;
+    --ink-soft: #3A2E26;
+    --oxblood: #7A1E1E;
+    --maroon-box: #5C1A1A;
+    --display: "Cormorant Garamond", "Times New Roman", serif;
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.6; }
+
+  .top-bar { background: var(--ink); color: var(--paper); font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; text-align: center; padding: 10px 16px; }
+  .page { max-width: 1360px; margin: 0 auto; padding: 56px 32px 96px; }
+
+  header.doc-head { text-align: center; padding-bottom: 40px; border-bottom: 1px solid var(--rule); margin-bottom: 64px; }
+  header.doc-head .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--oxblood); }
+  header.doc-head h1 { font-family: var(--display); font-size: clamp(2.4rem, 5vw, 3.6rem); font-weight: 500; line-height: 1.05; margin: 14px 0 12px; }
+  header.doc-head p { max-width: 700px; margin: 0 auto; opacity: 0.78; font-size: 17px; }
+
+  .lane { margin-top: 80px; }
+  .lane-head {
+    display: flex; align-items: baseline; gap: 16px;
+    padding-bottom: 12px; border-bottom: 2px solid var(--ink); margin-bottom: 28px;
+  }
+  .lane-head .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--ink); opacity: 0.6; padding: 4px 10px; border: 1px solid var(--rule);
+  }
+  .lane-head h2 { font-family: var(--display); font-size: 2rem; font-weight: 500; margin: 0; }
+  .lane-head .desc { margin-left: auto; max-width: 380px; font-size: 13px; opacity: 0.7; text-align: right; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .card {
+    border: 1px solid var(--rule); background: var(--paper);
+    display: flex; flex-direction: column;
+  }
+  .image-wrap { aspect-ratio: 1/1; background: var(--paper-soft); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .image-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .body { padding: 18px 20px 22px; border-top: 1px solid var(--rule); }
+  .body .id { font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.55; }
+  .body .title { font-family: var(--display); font-size: 1.3rem; font-weight: 500; margin: 6px 0 8px; }
+  .body .note { font-size: 13px; line-height: 1.55; opacity: 0.78; }
+
+  /* On-box preview */
+  .box-preview {
+    background: var(--maroon-box); padding: 60px 40px;
+    margin: 32px 0 48px;
+    border-radius: 4px;
+    box-shadow: 0 30px 60px -30px rgba(0,0,0,0.4);
+  }
+  .box-preview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .box-preview .slot {
+    aspect-ratio: 1/1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .box-preview .slot img {
+    width: 65%; height: auto;
+    /* Multiply blend so the cream becomes maroon — gives "foiled in cream" feel */
+    mix-blend-mode: screen;
+    opacity: 0.92;
+  }
+  .box-preview-label {
+    color: rgba(247,244,238,0.7);
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em;
+    text-transform: uppercase; margin-bottom: 16px;
+  }
+
+  .nav { position: sticky; top: 0; background: var(--paper); border-bottom: 1px solid var(--rule); padding: 14px 32px; z-index: 50; display: flex; gap: 16px; flex-wrap: wrap; }
+  .nav a { font-family: var(--mono); font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink); opacity: 0.7; text-decoration: none; }
+  .nav a:hover { opacity: 1; color: var(--oxblood); }
+
+  @media (max-width: 880px) {
+    .grid, .box-preview-grid { grid-template-columns: repeat(2, 1fr); }
+    .lane-head { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .lane-head .desc { text-align: left; margin-left: 0; }
+  }
+  @media (max-width: 540px) {
+    .grid, .box-preview-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">BENCH GRADE PEPTIDES LLC · LOGO EXPLORATIONS · 2026-04-25</div>
+<nav class="nav">
+  <a href="#L1">L1 Monogram</a>
+  <a href="#L2">L2 Warrior</a>
+  <a href="#L3">L3 King</a>
+  <a href="#L4">L4 Scientist</a>
+  <a href="#L5">L5 Eagle</a>
+  <a href="#L6">L6 Hand</a>
+  <a href="#L7">L7 Apothecary</a>
+  <a href="#L8">L8 Wordmark</a>
+  <a href="#L9">L9 Compass</a>
+  <a href="#L10">L10 Caduceus</a>
+</nav>
+
+<div class="page">
+  <header class="doc-head">
+    <div class="eyebrow">10 lanes · 33 marks · for the Cartier-red box</div>
+    <h1>Logo Explorations</h1>
+    <p>Each mark is shown in oxblood on cream (the printed direction) and in a maroon-box preview row (how it lives on the actual lid). Tell me which 2-3 lanes to refine — I'll then generate cleaner final variants in true vector and produce the foil mockup on the maroon box.</p>
+  </header>
+
+  <!-- LANE 1 -->
+  <section class="lane" id="L1">
+    <div class="lane-head">
+      <span class="tag">Lane 1</span>
+      <h2>BGP Monogram + Laurel</h2>
+      <span class="desc">Old American banking — Tiffany, Brooks Brothers register. Most "trustworthy institution" of the set.</span>
+    </div>
+    <div class="grid">
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L1a-monogram-laurel.jpg" alt="L1a"></div><div class="body"><span class="id">L1a · Oval + Laurel</span><div class="title">Oval Frame, Laurel Sides</div><div class="note">Classic banking seal feel. Most legible of the three.</div></div></article>
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L1b-monogram-wreath.jpg" alt="L1b"></div><div class="body"><span class="id">L1b · Wreath</span><div class="title">Full Laurel Wreath</div><div class="note">Federal/diploma energy. Heavier, more ceremonial.</div></div></article>
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L1c-monogram-cartouche.jpg" alt="L1c"></div><div class="body"><span class="id">L1c · Cartouche</span><div class="title">Tall Cartouche, Flourishes</div><div class="note">Most editorial. Hermès-shop-window feel.</div></div></article>
+    </div>
+    <div class="box-preview">
+      <div class="box-preview-label">As foil on the maroon box</div>
+      <div class="box-preview-grid">
+        <div class="slot"><img src="bgp-logos/L1a-monogram-laurel.jpg" alt=""></div>
+        <div class="slot"><img src="bgp-logos/L1b-monogram-wreath.jpg" alt=""></div>
+        <div class="slot"><img src="bgp-logos/L1c-monogram-cartouche.jpg" alt=""></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LANE 2 -->
+  <section class="lane" id="L2">
+    <div class="lane-head">
+      <span class="tag">Lane 2 · Warrior</span>
+      <h2>Kneeling Warrior — front and side</h2>
+      <span class="desc">Front-facing (top row) and side-profile (bottom row) for direct comparison.</span>
+    </div>
+    <h3 style="font-family:var(--display); font-weight:500; font-size:1.2rem; margin:0 0 12px; opacity:0.7;">2a · Front-facing</h3>
+    <div class="grid">
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L2a-warrior-front-1.jpg" alt="L2a-1"></div><div class="body"><span class="id">L2a · Front 1</span><div class="title">Warrior, Hands on Pommel</div><div class="note">Symmetric, head bowed, sword vertical centered.</div></div></article>
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L2a-warrior-front-2.jpg" alt="L2a-2"></div><div class="body"><span class="id">L2a · Front 2</span><div class="title">Knight in Plate, Oval</div><div class="note">Heavier armor read — more medieval.</div></div></article>
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L2a-warrior-front-3.jpg" alt="L2a-3"></div><div class="body"><span class="id">L2a · Front 3</span><div class="title">Centurion, Circle Crest</div><div class="note">Roman register — older, more classical.</div></div></article>
+    </div>
+    <h3 style="font-family:var(--display); font-weight:500; font-size:1.2rem; margin:36px 0 12px; opacity:0.7;">2b · Side-profile</h3>
+    <div class="grid">
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L2b-warrior-side-1.jpg" alt="L2b-1"></div><div class="body"><span class="id">L2b · Side 1</span><div class="title">Warrior Resting on Sword</div><div class="note">Sword stuck in ground, hands on pommel.</div></div></article>
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L2b-warrior-side-2.jpg" alt="L2b-2"></div><div class="body"><span class="id">L2b · Side 2</span><div class="title">Knight Side, Oval Frame</div><div class="note">Vertical sword, head bowed, oval cartouche.</div></div></article>
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L2b-warrior-side-3.jpg" alt="L2b-3"></div><div class="body"><span class="id">L2b · Side 3</span><div class="title">Spartan, Circular Crest</div><div class="note">Hoplite read — leaner, more classical.</div></div></article>
+    </div>
+    <div class="box-preview">
+      <div class="box-preview-label">As foil on the maroon box · 2a (front) top row, 2b (side) bottom</div>
+      <div class="box-preview-grid">
+        <div class="slot"><img src="bgp-logos/L2a-warrior-front-1.jpg" alt=""></div>
+        <div class="slot"><img src="bgp-logos/L2a-warrior-front-2.jpg" alt=""></div>
+        <div class="slot"><img src="bgp-logos/L2a-warrior-front-3.jpg" alt=""></div>
+      </div>
+      <div class="box-preview-grid" style="margin-top:24px;">
+        <div class="slot"><img src="bgp-logos/L2b-warrior-side-1.jpg" alt=""></div>
+        <div class="slot"><img src="bgp-logos/L2b-warrior-side-2.jpg" alt=""></div>
+        <div class="slot"><img src="bgp-logos/L2b-warrior-side-3.jpg" alt=""></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LANE 3 -->
+  <section class="lane" id="L3">
+    <div class="lane-head">
+      <span class="tag">Lane 3</span>
+      <h2>King on Throne</h2>
+      <span class="desc">Authority, lineage. Risk: costume / fantasy if it misses.</span>
+    </div>
+    <div class="grid">
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L3a-king-throne-side.jpg" alt="L3a"></div><div class="body"><span class="id">L3a · Side</span><div class="title">Crowned King, Side Profile</div><div class="note">Scepter, throne — heraldic side view.</div></div></article>
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L3b-king-throne-front.jpg" alt="L3b"></div><div class="body"><span class="id">L3b · Front</span><div class="title">King Front-Facing</div><div class="note">Symmetric throne, more imposing.</div></div></article>
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L3c-king-shield.jpg" alt="L3c"></div><div class="body"><span class="id">L3c · Crest</span><div class="title">Crown + Throne in Shield</div><div class="note">Reduced to crest — less narrative, more emblem.</div></div></article>
+    </div>
+    <div class="box-preview">
+      <div class="box-preview-label">As foil on the maroon box</div>
+      <div class="box-preview-grid">
+        <div class="slot"><img src="bgp-logos/L3a-king-throne-side.jpg" alt=""></div>
+        <div class="slot"><img src="bgp-logos/L3b-king-throne-front.jpg" alt=""></div>
+        <div class="slot"><img src="bgp-logos/L3c-king-shield.jpg" alt=""></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LANE 4 -->
+  <section class="lane" id="L4">
+    <div class="lane-head">
+      <span class="tag">Lane 4</span>
+      <h2>Scientist / Chemist</h2>
+      <span class="desc">Most direct read — the actual work behind the brand.</span>
+    </div>
+    <div class="grid">
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L4a-scientist-side.jpg" alt="L4a"></div><div class="body"><span class="id">L4a · Bench</span><div class="title">Scientist at Bench, Side</div><div class="note">Microscope and flask — workshop read.</div></div></article>
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L4b-chemist-flask.jpg" alt="L4b"></div><div class="body"><span class="id">L4b · Flask</span><div class="title">Chemist Inspecting Flask</div><div class="note">The act of judging the work — reverent.</div></div></article>
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L4c-chemist-bench.jpg" alt="L4c"></div><div class="body"><span class="id">L4c · Front Bench</span><div class="title">Chemist, Vials Behind</div><div class="note">Front-facing, oval frame — full atelier scene.</div></div></article>
+    </div>
+    <div class="box-preview">
+      <div class="box-preview-label">As foil on the maroon box</div>
+      <div class="box-preview-grid">
+        <div class="slot"><img src="bgp-logos/L4a-scientist-side.jpg" alt=""></div>
+        <div class="slot"><img src="bgp-logos/L4b-chemist-flask.jpg" alt=""></div>
+        <div class="slot"><img src="bgp-logos/L4c-chemist-bench.jpg" alt=""></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LANE 5 -->
+  <section class="lane" id="L5">
+    <div class="lane-head">
+      <span class="tag">Lane 5</span>
+      <h2>American Eagle</h2>
+      <span class="desc">US-made, sovereign, federal-mint energy. Restrained, not aggressive.</span>
+    </div>
+    <div class="grid">
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L5a-eagle-wings.jpg" alt="L5a"></div><div class="body"><span class="id">L5a · Wings Spread</span><div class="title">Eagle, Wings Spread</div><div class="note">Federal/great-seal energy.</div></div></article>
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L5b-eagle-perched.jpg" alt="L5b"></div><div class="body"><span class="id">L5b · Perched</span><div class="title">Side Profile, Olive Branch</div><div class="note">Quieter — perched, not soaring.</div></div></article>
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L5c-eagle-coin.jpg" alt="L5c"></div><div class="body"><span class="id">L5c · Coin</span><div class="title">Eagle Head, Roundel</div><div class="note">US Mint coin engraving register.</div></div></article>
+    </div>
+    <div class="box-preview">
+      <div class="box-preview-label">As foil on the maroon box</div>
+      <div class="box-preview-grid">
+        <div class="slot"><img src="bgp-logos/L5a-eagle-wings.jpg" alt=""></div>
+        <div class="slot"><img src="bgp-logos/L5b-eagle-perched.jpg" alt=""></div>
+        <div class="slot"><img src="bgp-logos/L5c-eagle-coin.jpg" alt=""></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LANE 6 -->
+  <section class="lane" id="L6">
+    <div class="lane-head">
+      <span class="tag">Lane 6</span>
+      <h2>The Human Hand</h2>
+      <span class="desc">Craft, the artisan signature, the gesture of care.</span>
+    </div>
+    <div class="grid">
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L6a-hand-signet.jpg" alt="L6a"></div><div class="body"><span class="id">L6a · Signet</span><div class="title">Hand Pressing Signet Ring</div><div class="note">The act of sealing — meta-mark for the brand.</div></div></article>
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L6b-hand-vial.jpg" alt="L6b"></div><div class="body"><span class="id">L6b · Vial</span><div class="title">Hand Holding Vial</div><div class="note">Direct — the product cradled.</div></div></article>
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L6c-hands-cupped.jpg" alt="L6c"></div><div class="body"><span class="id">L6c · Cupped</span><div class="title">Two Hands Cupped, Vial</div><div class="note">Offering / care register.</div></div></article>
+    </div>
+    <div class="box-preview">
+      <div class="box-preview-label">As foil on the maroon box</div>
+      <div class="box-preview-grid">
+        <div class="slot"><img src="bgp-logos/L6a-hand-signet.jpg" alt=""></div>
+        <div class="slot"><img src="bgp-logos/L6b-hand-vial.jpg" alt=""></div>
+        <div class="slot"><img src="bgp-logos/L6c-hands-cupped.jpg" alt=""></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LANE 7 -->
+  <section class="lane" id="L7">
+    <div class="lane-head">
+      <span class="tag">Lane 7</span>
+      <h2>Apothecary Heritage</h2>
+      <span class="desc">Mortar/pestle and scale of justice — old-world chemistry.</span>
+    </div>
+    <div class="grid">
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L7a-mortar-shield.jpg" alt="L7a"></div><div class="body"><span class="id">L7a · Shield</span><div class="title">Mortar &amp; Pestle, Shield</div><div class="note">Heraldic — pharmacy lineage.</div></div></article>
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L7b-mortar-laurels.jpg" alt="L7b"></div><div class="body"><span class="id">L7b · Laurels</span><div class="title">Mortar with Laurels</div><div class="note">Softer, more academic.</div></div></article>
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L7c-scale-justice.jpg" alt="L7c"></div><div class="body"><span class="id">L7c · Scale</span><div class="title">Brass Scale of Justice</div><div class="note">Honor + measure together. Strong virtue read.</div></div></article>
+    </div>
+    <div class="box-preview">
+      <div class="box-preview-label">As foil on the maroon box</div>
+      <div class="box-preview-grid">
+        <div class="slot"><img src="bgp-logos/L7a-mortar-shield.jpg" alt=""></div>
+        <div class="slot"><img src="bgp-logos/L7b-mortar-laurels.jpg" alt=""></div>
+        <div class="slot"><img src="bgp-logos/L7c-scale-justice.jpg" alt=""></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LANE 8 -->
+  <section class="lane" id="L8">
+    <div class="lane-head">
+      <span class="tag">Lane 8 · Pure Type</span>
+      <h2>Typographic Wordmark — no symbol</h2>
+      <span class="desc">Hermès, Goyard, Maison Margiela. The most restrained option. Lets the packaging do the talking.</span>
+    </div>
+    <div class="grid">
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L8a-wordmark-stacked.jpg" alt="L8a"></div><div class="body"><span class="id">L8a · Stacked</span><div class="title">Two-line Didot Stack</div><div class="note">"BENCH GRADE" / "PEPTIDES" with hairline rule.</div></div></article>
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L8b-wordmark-trajan.jpg" alt="L8b"></div><div class="body"><span class="id">L8b · Single Line</span><div class="title">Trajan, Spaced Caps</div><div class="note">"EST. 2026 · USA" subline. Most monumental.</div></div></article>
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L8c-wordmark-monogram.jpg" alt="L8c"></div><div class="body"><span class="id">L8c · Mono + Words</span><div class="title">BGP Mono Above Wordmark</div><div class="note">Hybrid — small monogram, no frame.</div></div></article>
+    </div>
+    <div class="box-preview">
+      <div class="box-preview-label">As foil on the maroon box</div>
+      <div class="box-preview-grid">
+        <div class="slot"><img src="bgp-logos/L8a-wordmark-stacked.jpg" alt=""></div>
+        <div class="slot"><img src="bgp-logos/L8b-wordmark-trajan.jpg" alt=""></div>
+        <div class="slot"><img src="bgp-logos/L8c-wordmark-monogram.jpg" alt=""></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LANE 9 -->
+  <section class="lane" id="L9">
+    <div class="lane-head">
+      <span class="tag">Lane 9</span>
+      <h2>Compass / North Star</h2>
+      <span class="desc">"True north" without saying it. Direction, integrity, navigation by principle.</span>
+    </div>
+    <div class="grid">
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L9a-compass-circle.jpg" alt="L9a"></div><div class="body"><span class="id">L9a · Compass</span><div class="title">Compass Rose, Circle</div><div class="note">Eight-point rose, classic navigation.</div></div></article>
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L9b-northstar.jpg" alt="L9b"></div><div class="body"><span class="id">L9b · North Star</span><div class="title">North Star with Rays</div><div class="note">Single bright star — virtue as guidance.</div></div></article>
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L9c-compass-diamond.jpg" alt="L9c"></div><div class="body"><span class="id">L9c · Diamond</span><div class="title">Compass in Diamond Cartouche</div><div class="note">More ornate framing — jewelry-store register.</div></div></article>
+    </div>
+    <div class="box-preview">
+      <div class="box-preview-label">As foil on the maroon box</div>
+      <div class="box-preview-grid">
+        <div class="slot"><img src="bgp-logos/L9a-compass-circle.jpg" alt=""></div>
+        <div class="slot"><img src="bgp-logos/L9b-northstar.jpg" alt=""></div>
+        <div class="slot"><img src="bgp-logos/L9c-compass-diamond.jpg" alt=""></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LANE 10 -->
+  <section class="lane" id="L10">
+    <div class="lane-head">
+      <span class="tag">Lane 10</span>
+      <h2>Caduceus / Asclepius — reframed</h2>
+      <span class="desc">Hippocratic lineage dialed up to luxury heraldry. Risk: medical-clinical read if it slips.</span>
+    </div>
+    <div class="grid">
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L10a-snake-staff-crown.jpg" alt="L10a"></div><div class="body"><span class="id">L10a · Crowned</span><div class="title">Snake on Staff, Crown Above</div><div class="note">Asclepius + monarchy.</div></div></article>
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L10b-snake-coin.jpg" alt="L10b"></div><div class="body"><span class="id">L10b · Coin</span><div class="title">Snake on Staff, Roundel</div><div class="note">Coin-engraving border — most luxe of three.</div></div></article>
+      <article class="card"><div class="image-wrap"><img src="bgp-logos/L10c-twin-snakes-shield.jpg" alt="L10c"></div><div class="body"><span class="id">L10c · Twin Snakes</span><div class="title">Twin Snakes, Shield</div><div class="note">Symmetric heraldic.</div></div></article>
+    </div>
+    <div class="box-preview">
+      <div class="box-preview-label">As foil on the maroon box</div>
+      <div class="box-preview-grid">
+        <div class="slot"><img src="bgp-logos/L10a-snake-staff-crown.jpg" alt=""></div>
+        <div class="slot"><img src="bgp-logos/L10b-snake-coin.jpg" alt=""></div>
+        <div class="slot"><img src="bgp-logos/L10c-twin-snakes-shield.jpg" alt=""></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="lane">
+    <div class="lane-head">
+      <span class="tag">Next</span>
+      <h2>What I do once you pick</h2>
+    </div>
+    <ol style="font-size:17px; line-height:1.75; max-width:680px;">
+      <li>Tell me which <strong>2-3 lanes</strong> are worth refining (and which specific marks within them).</li>
+      <li>I'll generate <strong>cleaner final variants</strong> at higher polish — true vector feel, exact proportions for the 12-15mm foil application, with a separate web-sized treatment for the site header.</li>
+      <li>Then I produce the full <strong>maroon box mockup</strong> using the winning mark — lid (front + corner detail), open-tray view with vials, the foldover card with paper band, and a header treatment for the site.</li>
+    </ol>
+  </section>
+</div>
+</body>
+</html>
