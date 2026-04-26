@@ -77,14 +77,13 @@ export function PopularStacks() {
                 {r.stack.name}
               </h3>
               <p
-                className="text-sm sm:text-[15px] italic text-ink-soft leading-snug"
-                style={{ fontFamily: "var(--font-editorial)" }}
+                className="-mx-3 sm:-mx-5 lg:-mx-6 mt-1 px-3 sm:px-5 lg:px-6 py-2.5 bg-gold-light/30 border-y border-gold/40 text-[15px] sm:text-base text-ink leading-snug"
               >
                 {r.stack.tagline}
               </p>
             </header>
 
-            <ul className="border-t border-rule pt-3 space-y-1.5 text-[13px] sm:text-sm">
+            <ul className="border-t border-rule pt-3 space-y-2 text-[13px] sm:text-sm">
               {r.lines.map(({ product, variant, line }) => (
                 <li
                   key={variant.sku}
@@ -92,7 +91,7 @@ export function PopularStacks() {
                 >
                   <Link
                     href={`/catalogue/${product.category_slug}/${product.slug}`}
-                    className="text-ink hover:text-wine transition-colors duration-200 underline-offset-2 hover:underline"
+                    className="font-medium text-ink hover:text-wine transition-colors duration-200 underline-offset-2 hover:underline"
                   >
                     {product.name} · {variant.size_mg}mg{line.quantity > 1 ? ` × ${line.quantity}` : ""}
                   </Link>
@@ -103,12 +102,12 @@ export function PopularStacks() {
               ))}
             </ul>
 
-            <p className="text-xs sm:text-[13px] text-ink-soft leading-relaxed">
+            <p className="text-[12.5px] sm:text-[13px] italic text-ink-soft leading-relaxed pt-1 border-t border-rule/60" style={{ fontFamily: "var(--font-editorial)" }}>
               {r.stack.why}
             </p>
 
-            <div className="mt-auto pt-3 border-t border-rule flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-              <div>
+            <div className="mt-auto pt-3 border-t border-rule flex flex-col gap-2">
+              <div className="flex items-baseline justify-between">
                 <div className="text-[10px] uppercase tracking-[0.1em] text-ink-muted font-display">
                   Retail total
                 </div>
@@ -116,9 +115,7 @@ export function PopularStacks() {
                   {formatPrice(r.retail_total_cents)}
                 </div>
               </div>
-              <div className="w-full sm:w-auto sm:flex-1 sm:max-w-[200px]">
-                <AddStackToCartButton resolved={r} />
-              </div>
+              <AddStackToCartButton resolved={r} />
             </div>
           </article>
         ))}
