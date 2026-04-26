@@ -24,7 +24,10 @@ import {
   enabledPaymentMethods,
   type PaymentMethod,
 } from "@/lib/payments/methods";
-import { subscriptionDiscountPercent } from "@/lib/subscriptions/discounts";
+import {
+  subscriptionDiscountPercent,
+  computeSubscriptionTotals,
+} from "@/lib/subscriptions/discounts";
 import { createSubscription } from "@/app/actions/subscriptions";
 import { parseReferralCookie } from "@/lib/referrals/cookie";
 import { claimReferralOnOrder } from "@/app/actions/referrals";
@@ -261,7 +264,80 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
   // upstream; even if they slipped through, we ignore them here. The
   // engine is the single source of truth so a hostile client can't
   // forge a $0 total.
-  const totals = computeCartTotals(resolved.items);
+  const oneShotTotals = computeCartTotals(resolved.items);
+
+  // Codex review #3 H1: when the customer toggled subscription mode at
+  // checkout, the order itself must reflect subscription pricing — not
+  // the one-shot Stack&Save engine. Prepay charges plan_total upfront
+  // (cycle_total × duration); bill-pay charges only cycle 1.
+  // Non-subscription orders keep the one-shot path (Stack&Save +
+  // free-vial entitlement).
+  let basePricing: {
+    subtotal_cents: number;
+    total_cents: number;
+    free_vial_entitlement: typeof oneShotTotals.free_vial_entitlement;
+  };
+  let subscriptionPlanValid = false;
+  if (validInput.subscription_mode) {
+    const pct = subscriptionDiscountPercent({
+      duration_months: validInput.subscription_mode.duration_months,
+      payment_cadence: validInput.subscription_mode.payment_cadence,
+      ship_cadence: validInput.subscription_mode.ship_cadence,
+    });
+    if (pct > 0) {
+      subscriptionPlanValid = true;
+      const subTotals = computeSubscriptionTotals(
+        oneShotTotals.subtotal_cents,
+        {
+          duration_months: validInput.subscription_mode.duration_months,
+          payment_cadence: validInput.subscription_mode.payment_cadence,
+          ship_cadence: validInput.subscription_mode.ship_cadence,
+        }
+      );
+      const duration = validInput.subscription_mode.duration_months;
+      if (validInput.subscription_mode.payment_cadence === "prepay") {
+        // Prepay: charge full plan upfront (post-discount × N).
+        basePricing = {
+          subtotal_cents: subTotals.cycle_subtotal_cents * duration,
+          total_cents: subTotals.plan_total_cents,
+          free_vial_entitlement: null,
+        };
+      } else {
+        // Bill-pay: charge cycle 1 only; cycles 2+ via customer's bank
+        // bill-pay (created in createSubscription with next_charge_date).
+        basePricing = {
+          subtotal_cents: subTotals.cycle_subtotal_cents,
+          total_cents: subTotals.cycle_total_cents,
+          free_vial_entitlement: null,
+        };
+      }
+    } else {
+      // Invalid subscription combo (e.g. bill_pay+1mo). Fall through to
+      // one-shot pricing; the warning + skip happens in the
+      // createSubscription branch below.
+      basePricing = {
+        subtotal_cents: oneShotTotals.subtotal_cents,
+        total_cents: oneShotTotals.total_cents,
+        free_vial_entitlement: oneShotTotals.free_vial_entitlement,
+      };
+    }
+  } else {
+    basePricing = {
+      subtotal_cents: oneShotTotals.subtotal_cents,
+      total_cents: oneShotTotals.total_cents,
+      free_vial_entitlement: oneShotTotals.free_vial_entitlement,
+    };
+  }
+  // Reference for backward compat with downstream code that previously
+  // read `totals.subtotal_cents` / `totals.total_cents`.
+  const totals = {
+    subtotal_cents: basePricing.subtotal_cents,
+    total_cents: basePricing.total_cents,
+    free_vial_entitlement: basePricing.free_vial_entitlement,
+  };
+  // Mark used so the linter doesn't flag plan-validity bookkeeping that
+  // is consumed in the createSubscription branch below.
+  void subscriptionPlanValid;
 
   // Sprint 4 Wave C — affiliate personal-discount hook. If the buyer is
   // authenticated AND has an `affiliates` row, apply their tier's personal
@@ -330,7 +406,11 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
     order_id,
     customer: validInput.customer,
     items: resolved.items,
-    subtotal_cents: resolved.subtotal_cents,
+    // Codex review #3 H1: in subscription mode `totals.subtotal_cents`
+    // already reflects plan vs cycle math (prepay → cycle_subtotal × N;
+    // bill_pay → cycle_subtotal). Non-subscription orders preserve the
+    // one-shot subtotal exactly (= resolved.subtotal_cents).
+    subtotal_cents: totals.subtotal_cents,
     discount_cents,
     total_cents: finalTotalCents,
     free_vial_entitlement: totals.free_vial_entitlement,

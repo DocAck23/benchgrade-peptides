@@ -7,7 +7,10 @@ import {
 import type { OrderStatus } from "@/lib/orders/status";
 import type { OrderRow } from "@/lib/supabase/types";
 import { sendPaymentConfirmed } from "@/lib/email/notifications/send-order-emails";
-import { awardCommissionForOrder } from "@/app/actions/affiliate";
+import {
+  awardCommissionForOrder,
+  clawbackCommissionForOrder,
+} from "@/app/actions/affiliate";
 
 /**
  * NOWPayments IPN (webhook) endpoint.
@@ -163,6 +166,19 @@ export async function POST(req: Request) {
       await awardCommissionForOrder(orderId);
     } catch (err) {
       console.error("[nowpayments webhook] awardCommissionForOrder failed:", err);
+    }
+  }
+  // Codex review #3 H6: refund clawback. If the IPN flipped the order to
+  // `refunded`, reverse any commission already earned and cancel
+  // unredeemed referral entitlements pinned to this order. Best-effort.
+  if (applied && target === "refunded") {
+    try {
+      await clawbackCommissionForOrder(orderId);
+    } catch (err) {
+      console.error(
+        "[nowpayments webhook] clawbackCommissionForOrder failed:",
+        err
+      );
     }
   }
   return NextResponse.json({

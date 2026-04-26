@@ -21,7 +21,11 @@ import {
 } from "@/lib/email/notifications/send-affiliate-emails";
 import { commissionPercent } from "@/lib/affiliate/tiers";
 import { generateReferralCode } from "@/lib/referrals/codes";
-import { awardCommissionForOrder } from "@/app/actions/affiliate";
+import {
+  awardCommissionForOrder,
+  clawbackCommissionForOrder,
+} from "@/app/actions/affiliate";
+import { transitionReferralOnShipped } from "@/app/actions/referrals";
 import { SITE_URL } from "@/lib/site";
 import type { CartItem } from "@/lib/cart/types";
 import type { SubscriptionRow } from "@/lib/supabase/types";
@@ -153,6 +157,55 @@ export async function markOrderShipped(
   }
   const row = data[0] as OrderRow;
   await sendOrderShipped(row, lookupCoaUrls(row.items));
+  // Codex review #3 H5: best-effort referral lifecycle hook. A pending
+  // referral pinned to this order flips to `shipped` and (for non-affiliate
+  // referrers) mints a free-vial entitlement. Failures must NOT roll back
+  // the shipped transition that already landed in Postgres.
+  try {
+    await transitionReferralOnShipped(orderId);
+  } catch (err) {
+    console.error(
+      "[markOrderShipped] transitionReferralOnShipped failed:",
+      err
+    );
+  }
+  return { ok: true };
+}
+
+/**
+ * Admin marks an order as `refunded`. Atomic transition `funded → refunded`.
+ * Fires the affiliate clawback hook so any commission earned at funded
+ * time is reversed and unredeemed referral entitlements tied to this
+ * order are cancelled.
+ */
+export async function markOrderRefunded(
+  orderId: string
+): Promise<{ ok: boolean; error?: string }> {
+  if (!(await isAdmin())) return { ok: false, error: "Unauthorized." };
+  if (!isValidUuid(orderId)) return { ok: false, error: "Invalid order id." };
+  const supa = getSupabaseServer();
+  if (!supa) return { ok: false, error: "Database unavailable." };
+  const { data, error } = await supa
+    .from("orders")
+    .update({ status: "refunded" })
+    .eq("order_id", orderId)
+    .in("status", ["funded"])
+    .select("*");
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) {
+    return {
+      ok: false,
+      error: "Order must be in `funded` state before it can be refunded.",
+    };
+  }
+  // Best-effort affiliate clawback. Failures here MUST NOT roll back the
+  // refunded transition that already landed in Postgres — admin can rerun
+  // the clawback from the dashboard if needed.
+  try {
+    await clawbackCommissionForOrder(orderId);
+  } catch (err) {
+    console.error("[markOrderRefunded] clawback failed:", err);
+  }
   return { ok: true };
 }
 

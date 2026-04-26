@@ -3,10 +3,13 @@
 /**
  * Customer-facing messaging server actions (Sprint 3 Wave B1).
  *
- * Cookie-scoped Supabase client throughout — RLS is the authoritative
- * ownership boundary. A hostile caller passing someone else's
- * customer_user_id or message id gets rowcount = 0 from the UPDATE / an
- * empty array from the SELECT, the same as if the row didn't exist.
+ * Codex review #3 H3+M7: we previously routed every write through the
+ * cookie-scoped client and trusted the broad messages RLS policies for
+ * ownership. Migration 0011 dropped those policies (INSERT could forge the
+ * sender column; UPDATE could mutate any column on an owned row). We now
+ * use the cookie-scoped client only to resolve auth.uid() (the security
+ * boundary), then route the actual INSERT/UPDATE through the service-role
+ * client with the customer_user_id and sender hardcoded server-side.
  *
  * Body length cap (2000 chars) is enforced via Zod here AND at the DB
  * via a CHECK constraint — server-side defense in depth.
@@ -14,6 +17,7 @@
 
 import { z } from "zod";
 import { createServerSupabase } from "@/lib/supabase/client";
+import { getSupabaseServer } from "@/lib/supabase/server";
 import type { MessageRow } from "@/lib/supabase/types";
 
 const BodySchema = z.string().trim().min(1, "Message cannot be empty.").max(2000, "Message too long.");
@@ -38,15 +42,22 @@ export async function sendCustomerMessage(
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid body." };
   }
 
-  const supa = await createServerSupabase();
+  const cookie = await createServerSupabase();
   const {
     data: { user },
-  } = await supa.auth.getUser();
+  } = await cookie.auth.getUser();
   if (!user) {
     return { ok: false, error: "Please sign in to send a message." };
   }
 
-  const { data, error } = await supa
+  // Service-role INSERT — sender hardcoded server-side. The cookie client
+  // is only used to read auth.uid(); RLS no longer permits the customer
+  // to insert directly (migration 0011), so a forged sender field on the
+  // wire would have failed the policy anyway. Belt + suspenders.
+  const service = getSupabaseServer();
+  if (!service) return { ok: false, error: "Database unavailable." };
+
+  const { data, error } = await service
     .from("messages")
     .insert({
       customer_user_id: user.id,
@@ -107,17 +118,24 @@ export async function markMessagesRead(
     };
   }
 
-  const supa = await createServerSupabase();
+  const cookie = await createServerSupabase();
   const {
     data: { user },
-  } = await supa.auth.getUser();
+  } = await cookie.auth.getUser();
   if (!user) return { ok: false, updated: 0, error: "Not authenticated." };
 
+  // Service-role UPDATE filtered explicitly on customer_user_id so the
+  // owner gate is enforced server-side now that the broad UPDATE RLS
+  // policy is gone (migration 0011). read_at is the only mutated field.
+  const service = getSupabaseServer();
+  if (!service) return { ok: false, updated: 0, error: "Database unavailable." };
+
   const readAt = new Date().toISOString();
-  const { data, error } = await supa
+  const { data, error } = await service
     .from("messages")
     .update({ read_at: readAt })
     .in("id", parsed.data)
+    .eq("customer_user_id", user.id)
     .eq("sender", "admin")
     .is("read_at", null)
     .select("id");

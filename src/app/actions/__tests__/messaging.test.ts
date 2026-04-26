@@ -60,10 +60,10 @@ beforeEach(() => {
 });
 
 describe("sendCustomerMessage (I-MSG-1)", () => {
-  it("inserts a customer-sender row and returns message_id", async () => {
+  it("inserts a customer-sender row via service-role and returns message_id", async () => {
     cookieGetUser.mockResolvedValue({ data: { user: { id: USER_ID } }, error: null });
     let insertPayload: Record<string, unknown> | null = null;
-    cookieFrom.mockImplementation((table: string) => {
+    serviceFrom.mockImplementation((table: string) => {
       expect(table).toBe("messages");
       return {
         insert: vi.fn((payload: Record<string, unknown>) => {
@@ -92,14 +92,14 @@ describe("sendCustomerMessage (I-MSG-1)", () => {
     cookieGetUser.mockResolvedValue({ data: { user: { id: USER_ID } }, error: null });
     const res = await sendCustomerMessage("");
     expect(res.ok).toBe(false);
-    expect(cookieFrom).not.toHaveBeenCalled();
+    expect(serviceFrom).not.toHaveBeenCalled();
   });
 
   it("rejects body > 2000 chars", async () => {
     cookieGetUser.mockResolvedValue({ data: { user: { id: USER_ID } }, error: null });
     const res = await sendCustomerMessage("x".repeat(2001));
     expect(res.ok).toBe(false);
-    expect(cookieFrom).not.toHaveBeenCalled();
+    expect(serviceFrom).not.toHaveBeenCalled();
   });
 
   it("returns 401-style error when not authenticated", async () => {
@@ -152,7 +152,7 @@ describe("listMyMessages (I-MSG-3 RLS-trust)", () => {
 });
 
 describe("markMessagesRead (I-MSG-4, I-MSG-5)", () => {
-  it("atomic UPDATE with sender='admin' AND read_at IS NULL filter, sets read_at only", async () => {
+  it("atomic service-role UPDATE with owner + sender='admin' + read_at IS NULL filter, sets read_at only", async () => {
     cookieGetUser.mockResolvedValue({ data: { user: { id: USER_ID } }, error: null });
     let updatePayload: Record<string, unknown> | null = null;
     const select = vi.fn(async () => ({
@@ -160,9 +160,10 @@ describe("markMessagesRead (I-MSG-4, I-MSG-5)", () => {
       error: null,
     }));
     const isFn = vi.fn(() => ({ select }));
-    const eqFn = vi.fn(() => ({ is: isFn }));
-    const inFn = vi.fn(() => ({ eq: eqFn }));
-    cookieFrom.mockImplementation((table: string) => {
+    const eqSenderFn = vi.fn(() => ({ is: isFn }));
+    const eqOwnerFn = vi.fn(() => ({ eq: eqSenderFn }));
+    const inFn = vi.fn(() => ({ eq: eqOwnerFn }));
+    serviceFrom.mockImplementation((table: string) => {
       expect(table).toBe("messages");
       return {
         update: vi.fn((payload: Record<string, unknown>) => {
@@ -178,9 +179,11 @@ describe("markMessagesRead (I-MSG-4, I-MSG-5)", () => {
     // Only read_at set — no other field smuggled.
     expect(Object.keys(updatePayload!)).toEqual(["read_at"]);
     expect(typeof updatePayload!.read_at).toBe("string");
-    // Atomic filters: id IN (...) AND sender='admin' AND read_at IS NULL.
+    // Atomic filters: id IN (...) AND customer_user_id=owner AND
+    // sender='admin' AND read_at IS NULL.
     expect(inFn).toHaveBeenCalledWith("id", [MSG_ID]);
-    expect(eqFn).toHaveBeenCalledWith("sender", "admin");
+    expect(eqOwnerFn).toHaveBeenCalledWith("customer_user_id", USER_ID);
+    expect(eqSenderFn).toHaveBeenCalledWith("sender", "admin");
     expect(isFn).toHaveBeenCalledWith("read_at", null);
   });
 

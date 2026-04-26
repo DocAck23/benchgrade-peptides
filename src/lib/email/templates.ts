@@ -1178,7 +1178,7 @@ export function referralEarnedEmail(ctx: ReferralEarnedContext): {
 
 // ---------- Sprint 4 Wave A3: affiliate transactional emails ----------
 
-export type AffiliateTier = "bronze" | "silver" | "gold";
+export type AffiliateTier = "bronze" | "silver" | "gold" | "eminent";
 export type AffiliatePayoutMethod = "zelle" | "crypto" | "wire";
 
 export interface AffiliateApplicationApprovedContext {
@@ -1214,6 +1214,8 @@ function tierLabel(t: AffiliateTier): string {
       return "Silver";
     case "gold":
       return "Gold";
+    case "eminent":
+      return "Eminent";
   }
 }
 

@@ -49,6 +49,7 @@ import {
   getMyAffiliateState,
   redeemCommissionForVialCredit,
   awardCommissionForOrder,
+  clawbackCommissionForOrder,
 } from "../affiliate";
 import {
   adminApproveAffiliate,
@@ -315,16 +316,27 @@ describe("awardCommissionForOrder (I-AFFCOMM-1, I-AFFCOMM-3)", () => {
       }
       if (table === "referrals") {
         return {
-          select: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              data: [
-                { id: "ref-1", referrer_user_id: REFERRER_ID, referee_email: "buyer@example.com" },
-              ],
-              error: null,
-              // Some implementations may chain — provide passthrough:
-              then: undefined,
-            })),
-          })),
+          select: vi.fn((_cols: string, opts?: { count?: string }) => {
+            if (opts?.count === "exact") {
+              // Tier-promotion count path (codex M9: filter on shipped|redeemed).
+              return {
+                eq: vi.fn(() => ({
+                  in: vi.fn(() =>
+                    Promise.resolve({ data: [], count: 1, error: null })
+                  ),
+                })),
+              };
+            }
+            return {
+              eq: vi.fn(() => ({
+                data: [
+                  { id: "ref-1", referrer_user_id: REFERRER_ID, referee_email: "buyer@example.com" },
+                ],
+                error: null,
+                then: undefined,
+              })),
+            };
+          }),
         };
       }
       if (table === "affiliates") {
@@ -511,10 +523,15 @@ describe("awardCommissionForOrder (I-AFFCOMM-1, I-AFFCOMM-3)", () => {
       if (table === "referrals") {
         return {
           select: vi.fn((cols: string, opts?: { count?: string }) => {
+            void cols;
             if (opts?.count === "exact") {
               countCall++;
               return {
-                eq: vi.fn(() => Promise.resolve({ data: [], count: 5, error: null })),
+                eq: vi.fn(() => ({
+                  in: vi.fn(() =>
+                    Promise.resolve({ data: [], count: 5, error: null })
+                  ),
+                })),
               };
             }
             return {
@@ -868,9 +885,11 @@ describe("getMyAffiliateState", () => {
       if (table === "referrals") {
         return {
           select: vi.fn(() => ({
-            eq: vi.fn(() =>
-              Promise.resolve({ data: [], count: 3, error: null })
-            ),
+            eq: vi.fn(() => ({
+              in: vi.fn(() =>
+                Promise.resolve({ data: [], count: 3, error: null })
+              ),
+            })),
           })),
         };
       }
@@ -903,5 +922,174 @@ describe("getMyAffiliateState", () => {
     expect(res.is_affiliate).toBe(true);
     expect(res.affiliate?.id).toBe(AFF_ID);
     expect(res.successful_referrals_count).toBe(3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// clawbackCommissionForOrder — codex review #3 H6
+// ---------------------------------------------------------------------------
+describe("clawbackCommissionForOrder (codex H6)", () => {
+  it("inserts clawback ledger entry and rolls back affiliate aggregates", async () => {
+    let clawbackInsert: Record<string, unknown> | null = null;
+    let affPatch: Record<string, unknown> | null = null;
+    serviceFrom.mockImplementation((table: string) => {
+      if (table === "commission_ledger") {
+        return {
+          select: vi.fn((_cols: string) => {
+            void _cols;
+            // Two select calls: earned filter, then clawback filter.
+            return {
+              eq: vi.fn((col: string, val: unknown) => {
+                void col;
+                void val;
+                return {
+                  eq: vi.fn((c: string, k: unknown) => {
+                    if (k === "earned") {
+                      return Promise.resolve({
+                        data: [
+                          {
+                            id: "led-1",
+                            affiliate_id: AFF_ID,
+                            amount_cents: 10_000,
+                            source_referral_id: "ref-1",
+                            tier_at_time: "bronze",
+                          },
+                        ],
+                        error: null,
+                      });
+                    }
+                    return Promise.resolve({ data: [], error: null });
+                  }),
+                };
+              }),
+            };
+          }),
+          insert: vi.fn((p: Record<string, unknown>) => {
+            clawbackInsert = p;
+            return Promise.resolve({ data: null, error: null });
+          }),
+        };
+      }
+      if (table === "affiliates") {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              maybeSingle: vi.fn(async () => ({
+                data: {
+                  available_balance_cents: 10_000,
+                  total_earned_cents: 10_000,
+                },
+                error: null,
+              })),
+            })),
+          })),
+          update: vi.fn((p: Record<string, unknown>) => {
+            affPatch = p;
+            return {
+              eq: vi.fn(async () => ({ data: null, error: null })),
+            };
+          }),
+        };
+      }
+      if (table === "referrals") {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              in: vi.fn(() =>
+                Promise.resolve({ data: [], error: null })
+              ),
+            })),
+          })),
+        };
+      }
+      throw new Error(`unexpected ${table}`);
+    });
+
+    const res = await clawbackCommissionForOrder(ORDER_ID);
+    expect(res.ok).toBe(true);
+    expect(res.clawbacks_inserted).toBe(1);
+    expect(clawbackInsert!.kind).toBe("clawback");
+    expect(clawbackInsert!.amount_cents).toBe(-10_000);
+    expect(clawbackInsert!.source_order_id).toBe(ORDER_ID);
+    expect(affPatch!.available_balance_cents).toBe(0);
+    expect(affPatch!.total_earned_cents).toBe(0);
+  });
+
+  it("idempotent: no earned entries → 0 clawbacks", async () => {
+    serviceFrom.mockImplementation((table: string) => {
+      if (table === "commission_ledger") {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              eq: vi.fn(() => Promise.resolve({ data: [], error: null })),
+            })),
+          })),
+        };
+      }
+      throw new Error(`unexpected ${table}`);
+    });
+    const res = await clawbackCommissionForOrder(ORDER_ID);
+    expect(res.ok).toBe(true);
+    expect(res.clawbacks_inserted).toBe(0);
+  });
+
+  it("idempotent: already-clawed earnings are skipped", async () => {
+    let insertCalled = false;
+    serviceFrom.mockImplementation((table: string) => {
+      if (table === "commission_ledger") {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              eq: vi.fn((c: string, k: unknown) => {
+                void c;
+                if (k === "earned") {
+                  return Promise.resolve({
+                    data: [
+                      {
+                        id: "led-1",
+                        affiliate_id: AFF_ID,
+                        amount_cents: 10_000,
+                        source_referral_id: "ref-1",
+                        tier_at_time: "bronze",
+                      },
+                    ],
+                    error: null,
+                  });
+                }
+                // Already-clawed lookup — return a matching clawback.
+                return Promise.resolve({
+                  data: [
+                    {
+                      source_order_id: ORDER_ID,
+                      source_referral_id: "ref-1",
+                      affiliate_id: AFF_ID,
+                    },
+                  ],
+                  error: null,
+                });
+              }),
+            })),
+          })),
+          insert: vi.fn(() => {
+            insertCalled = true;
+            return Promise.resolve({ data: null, error: null });
+          }),
+        };
+      }
+      if (table === "referrals") {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              in: vi.fn(() => Promise.resolve({ data: [], error: null })),
+            })),
+          })),
+        };
+      }
+      throw new Error(`unexpected ${table}`);
+    });
+    const res = await clawbackCommissionForOrder(ORDER_ID);
+    expect(res.ok).toBe(true);
+    expect(res.clawbacks_inserted).toBe(0);
+    expect(insertCalled).toBe(false);
   });
 });

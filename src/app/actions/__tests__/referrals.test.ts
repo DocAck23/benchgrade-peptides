@@ -26,10 +26,18 @@ vi.mock("@/lib/supabase/server", () => ({
   }),
 }));
 
+const sendReferralEarnedMock = vi.fn(async (_a: unknown, _b: unknown) => ({
+  ok: true,
+}));
+vi.mock("@/lib/email/notifications/send-referral-emails", () => ({
+  sendReferralEarned: (a: unknown, b: unknown) => sendReferralEarnedMock(a, b),
+}));
+
 import {
   generateMyReferralCode,
   claimReferralOnOrder,
   redeemFreeVialEntitlement,
+  transitionReferralOnShipped,
 } from "../referrals";
 
 const USER_ID = "11111111-1111-4111-8111-111111111111";
@@ -41,6 +49,7 @@ beforeEach(() => {
   cookieGetUser.mockReset();
   serviceFrom.mockReset();
   adminGetUserById.mockReset();
+  sendReferralEarnedMock.mockReset().mockResolvedValue({ ok: true });
 });
 
 describe("generateMyReferralCode (I-REF-4 RLS pre-check, code minting)", () => {
@@ -118,10 +127,13 @@ describe("claimReferralOnOrder (I-REF-1, I-REF-3, I-CHECKOUT-REF-1)", () => {
         };
       }
       if (table === "orders") {
-        // First-time-buyer guard: count of prior orders for this email.
+        // First-time-buyer guard: count of prior orders for this email,
+        // excluding the current order_id (codex H4 fix).
         return {
           select: vi.fn(() => ({
-            ilike: vi.fn(async () => ({ data: [], count: 0, error: null })),
+            ilike: vi.fn(() => ({
+              neq: vi.fn(async () => ({ data: [], count: 0, error: null })),
+            })),
           })),
         };
       }
@@ -200,10 +212,12 @@ describe("claimReferralOnOrder (I-REF-1, I-REF-3, I-CHECKOUT-REF-1)", () => {
       if (table === "orders") {
         return {
           select: vi.fn(() => ({
-            ilike: vi.fn(async () => ({
-              data: [{ order_id: "x" }],
-              count: 1,
-              error: null,
+            ilike: vi.fn(() => ({
+              neq: vi.fn(async () => ({
+                data: [{ order_id: "x" }],
+                count: 1,
+                error: null,
+              })),
             })),
           })),
         };
@@ -368,5 +382,199 @@ describe("redeemFreeVialEntitlement (I-ENTITLEMENT-1)", () => {
     });
     expect(res.ok).toBe(false);
     expect(res.error).toMatch(/not available/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// transitionReferralOnShipped — codex review #3 H5
+// ---------------------------------------------------------------------------
+describe("transitionReferralOnShipped (codex H5)", () => {
+  it("flips pending → shipped, mints free-vial entitlement for non-affiliate referrer", async () => {
+    let updatedRefStatus: Record<string, unknown> | null = null;
+    let entitlementInsert: Record<string, unknown> | null = null;
+    serviceFrom.mockImplementation((table: string) => {
+      if (table === "referrals") {
+        return {
+          select: vi.fn((_cols: string, opts?: { count?: string }) => {
+            if (opts?.count === "exact") {
+              return {
+                eq: vi.fn(() => ({
+                  in: vi.fn(() =>
+                    Promise.resolve({ data: [], count: 1, error: null })
+                  ),
+                })),
+              };
+            }
+            return {
+              eq: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  maybeSingle: vi.fn(async () => ({
+                    data: {
+                      id: "ref-1",
+                      referrer_user_id: "referrer-uuid",
+                      status: "pending",
+                    },
+                    error: null,
+                  })),
+                })),
+              })),
+            };
+          }),
+          update: vi.fn((p: Record<string, unknown>) => {
+            updatedRefStatus = p;
+            return {
+              eq: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  select: vi.fn(async () => ({
+                    data: [{ id: "ref-1" }],
+                    error: null,
+                  })),
+                })),
+              })),
+            };
+          }),
+        };
+      }
+      if (table === "affiliates") {
+        // Referrer is NOT an affiliate.
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              maybeSingle: vi.fn(async () => ({ data: null, error: null })),
+            })),
+          })),
+        };
+      }
+      if (table === "free_vial_entitlements") {
+        return {
+          insert: vi.fn((p: Record<string, unknown>) => {
+            entitlementInsert = p;
+            return {
+              select: vi.fn(() => ({
+                single: vi.fn(async () => ({
+                  data: { id: "ent-1" },
+                  error: null,
+                })),
+              })),
+            };
+          }),
+        };
+      }
+      throw new Error(`unexpected table ${table}`);
+    });
+    adminGetUserById.mockResolvedValue({
+      data: { user: { id: "referrer-uuid", email: "referrer@example.com" } },
+      error: null,
+    });
+
+    // Inject a referee_email lookup mock by reusing the referrals select
+    // path (the second .maybeSingle on referrals).
+    const res = await transitionReferralOnShipped(ORDER_ID);
+    expect(res.ok).toBe(true);
+    expect(res.entitlement_id).toBe("ent-1");
+    expect(updatedRefStatus!.status).toBe("shipped");
+    expect(entitlementInsert!.customer_user_id).toBe("referrer-uuid");
+    expect(entitlementInsert!.size_mg).toBe(5);
+    expect(entitlementInsert!.source).toBe("referral");
+    expect(entitlementInsert!.source_referral_id).toBe("ref-1");
+    expect(entitlementInsert!.status).toBe("available");
+  });
+
+  it("affiliate referrer → no entitlement, no double-dip", async () => {
+    let entitlementInsertCalled = false;
+    serviceFrom.mockImplementation((table: string) => {
+      if (table === "referrals") {
+        return {
+          select: vi.fn((_cols: string, opts?: { count?: string }) => {
+            if (opts?.count === "exact") {
+              return {
+                eq: vi.fn(() => ({
+                  in: vi.fn(() =>
+                    Promise.resolve({ data: [], count: 1, error: null })
+                  ),
+                })),
+              };
+            }
+            return {
+              eq: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  maybeSingle: vi.fn(async () => ({
+                    data: {
+                      id: "ref-1",
+                      referrer_user_id: "referrer-uuid",
+                      status: "pending",
+                    },
+                    error: null,
+                  })),
+                })),
+              })),
+            };
+          }),
+          update: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                select: vi.fn(async () => ({
+                  data: [{ id: "ref-1" }],
+                  error: null,
+                })),
+              })),
+            })),
+          })),
+        };
+      }
+      if (table === "affiliates") {
+        // Referrer IS an affiliate.
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              maybeSingle: vi.fn(async () => ({
+                data: { id: "aff-1" },
+                error: null,
+              })),
+            })),
+          })),
+        };
+      }
+      if (table === "free_vial_entitlements") {
+        entitlementInsertCalled = true;
+        return {
+          insert: vi.fn(() => ({
+            select: vi.fn(() => ({
+              single: vi.fn(async () => ({ data: null, error: null })),
+            })),
+          })),
+        };
+      }
+      throw new Error(`unexpected table ${table}`);
+    });
+    adminGetUserById.mockResolvedValue({
+      data: { user: { id: "referrer-uuid", email: "referrer@example.com" } },
+      error: null,
+    });
+
+    const res = await transitionReferralOnShipped(ORDER_ID);
+    expect(res.ok).toBe(true);
+    expect(res.entitlement_id).toBeUndefined();
+    expect(entitlementInsertCalled).toBe(false);
+  });
+
+  it("idempotent: no pending referral → ok no-op", async () => {
+    serviceFrom.mockImplementation((table: string) => {
+      if (table === "referrals") {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                maybeSingle: vi.fn(async () => ({ data: null, error: null })),
+              })),
+            })),
+          })),
+        };
+      }
+      throw new Error(`unexpected ${table}`);
+    });
+    const res = await transitionReferralOnShipped(ORDER_ID);
+    expect(res.ok).toBe(true);
+    expect(res.entitlement_id).toBeUndefined();
   });
 });

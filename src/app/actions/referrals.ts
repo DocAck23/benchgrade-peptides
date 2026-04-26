@@ -23,6 +23,7 @@ import { createServerSupabase } from "@/lib/supabase/client";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { generateReferralCode, validateReferralCode } from "@/lib/referrals/codes";
 import { PRODUCTS } from "@/lib/catalog/data";
+import { sendReferralEarned } from "@/lib/email/notifications/send-referral-emails";
 
 // ---------------------------------------------------------------------------
 // generateMyReferralCode
@@ -137,11 +138,18 @@ export async function claimReferralOnOrder(
 
   // First-time-buyer guard: count of prior orders for this email,
   // case-insensitive against `customer->>'email'`.
+  //
+  // Codex review #3 H4: submitOrder calls claimReferralOnOrder AFTER it
+  // has already inserted the current order row. Without the .neq() filter
+  // below, the just-inserted order counted as a prior order for the same
+  // email and every checkout failed the first-time-buyer gate. We exclude
+  // the current order_id from the count.
   const refereeEmailLower = input.customer_email.trim().toLowerCase();
   const { data: priorOrders } = await service
     .from("orders")
     .select("order_id")
-    .ilike("customer->>email", refereeEmailLower);
+    .ilike("customer->>email", refereeEmailLower)
+    .neq("order_id", input.order_id);
   if (Array.isArray(priorOrders) && priorOrders.length > 0) {
     return { ok: true, ten_percent_off_applied: false };
   }
@@ -254,4 +262,142 @@ export async function redeemFreeVialEntitlement(
     return { ok: false, error: "Entitlement not available." };
   }
   return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// transitionReferralOnShipped — codex review #3 H5
+// ---------------------------------------------------------------------------
+
+export interface TransitionReferralOnShippedResult {
+  ok: boolean;
+  entitlement_id?: string;
+  error?: string;
+}
+
+/**
+ * Fire-on-ship referral lifecycle hook. Called best-effort from
+ * `markOrderShipped` once the customer's first order leaves the door:
+ *
+ *   1. Find the (pending) referral attributed to this order.
+ *   2. Atomic flip pending → shipped. Idempotent: a duplicate ship
+ *      hook (rowcount=0) is a clean no-op.
+ *   3. Affiliate referrers earn cash commission via
+ *      `awardCommissionForOrder` and do NOT also receive a free-vial
+ *      entitlement (no double-dip).
+ *   4. Non-affiliate referrers receive a 5mg free-vial entitlement.
+ *   5. Best-effort `sendReferralEarned` email to the referrer.
+ *
+ * Failures here MUST NOT roll back the ship transition that already
+ * landed in Postgres — caller should swallow throws and log.
+ */
+export async function transitionReferralOnShipped(
+  orderId: string
+): Promise<TransitionReferralOnShippedResult> {
+  const service = getSupabaseServer();
+  if (!service) return { ok: true };
+
+  // 1. Find a pending referral pinned to this order. If none, no-op.
+  const { data: refRow } = await service
+    .from("referrals")
+    .select("id, referrer_user_id, status")
+    .eq("first_order_id", orderId)
+    .eq("status", "pending")
+    .maybeSingle();
+  if (!refRow) return { ok: true };
+  const referral = refRow as {
+    id: string;
+    referrer_user_id: string;
+    status: string;
+  };
+
+  // 2. Atomic transition. Filter on status='pending' so concurrent ships
+  //    yield rowcount=0 and only ONE entitlement is granted per referral.
+  const { data: updated, error: updateErr } = await service
+    .from("referrals")
+    .update({ status: "shipped" })
+    .eq("id", referral.id)
+    .eq("status", "pending")
+    .select("id");
+  if (updateErr) {
+    console.error("[transitionReferralOnShipped] update failed:", updateErr);
+    return { ok: true };
+  }
+  if (!updated || updated.length === 0) {
+    // Already shipped — clean idempotent no-op.
+    return { ok: true };
+  }
+
+  // 3. If the referrer is an affiliate, they earn cash commission via
+  //    awardCommissionForOrder; we do NOT mint a free-vial entitlement
+  //    (avoid double-dipping cash + vial for the same referral).
+  let referrerIsAffiliate = false;
+  try {
+    const { data: aff } = await service
+      .from("affiliates")
+      .select("id")
+      .eq("user_id", referral.referrer_user_id)
+      .maybeSingle();
+    referrerIsAffiliate = !!aff;
+  } catch (err) {
+    console.error("[transitionReferralOnShipped] affiliate lookup failed:", err);
+  }
+
+  let entitlementId: string | undefined;
+  if (!referrerIsAffiliate) {
+    // 4. Non-affiliate referrer — mint 5mg free-vial entitlement.
+    const { data: entRow, error: entErr } = await service
+      .from("free_vial_entitlements")
+      .insert({
+        customer_user_id: referral.referrer_user_id,
+        size_mg: 5,
+        source: "referral",
+        source_referral_id: referral.id,
+        status: "available",
+      })
+      .select("id")
+      .single();
+    if (entErr) {
+      console.error(
+        "[transitionReferralOnShipped] entitlement insert failed:",
+        entErr
+      );
+    } else if (entRow) {
+      entitlementId = (entRow as { id: string }).id;
+    }
+  }
+
+  // 5. Best-effort email to the referrer. Resolve their email + count of
+  //    successful referrals (for the running tally shown in the email).
+  try {
+    const { data: ownerResp } = await service.auth.admin.getUserById(
+      referral.referrer_user_id
+    );
+    const referrerEmail = ownerResp?.user?.email;
+    if (referrerEmail) {
+      const { count } = await service
+        .from("referrals")
+        .select("id", { count: "exact", head: true })
+        .eq("referrer_user_id", referral.referrer_user_id)
+        .in("status", ["shipped", "redeemed"]);
+      // refereeEmail captured at claim time; not strictly needed for the
+      // email but the template type requires it.
+      const { data: refereeRow } = await service
+        .from("referrals")
+        .select("referee_email")
+        .eq("id", referral.id)
+        .maybeSingle();
+      const refereeEmail =
+        (refereeRow as { referee_email?: string } | null)?.referee_email ?? "";
+      await sendReferralEarned(referrerEmail, {
+        customer_name: "",
+        referee_email: refereeEmail,
+        referral_count: count ?? 1,
+        free_vial_size_mg: 5,
+      });
+    }
+  } catch (err) {
+    console.error("[transitionReferralOnShipped] email failed:", err);
+  }
+
+  return { ok: true, entitlement_id: entitlementId };
 }

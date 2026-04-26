@@ -39,13 +39,17 @@ interface FakeFromBuilder {
 
 const serviceFrom = vi.fn();
 const cookieFrom = vi.fn();
+const cookieGetUser = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServer: () => ({ from: serviceFrom }),
 }));
 
 vi.mock("@/lib/supabase/client", () => ({
-  createServerSupabase: async () => ({ from: cookieFrom }),
+  createServerSupabase: async () => ({
+    from: cookieFrom,
+    auth: { getUser: cookieGetUser },
+  }),
 }));
 
 const isAdminMock = vi.fn(async () => true);
@@ -91,9 +95,16 @@ const SAMPLE_PLAN: SubscriptionPlanInput = {
 
 const SUB_ID = "11111111-1111-1111-1111-111111111111";
 
+const TEST_AUTH_USER_ID = "99999999-9999-4999-8999-999999999999";
+
 beforeEach(() => {
   serviceFrom.mockReset();
   cookieFrom.mockReset();
+  cookieGetUser.mockReset();
+  cookieGetUser.mockResolvedValue({
+    data: { user: { id: TEST_AUTH_USER_ID } },
+    error: null,
+  });
   sendSubscriptionStartedMock.mockReset();
   sendSubscriptionStartedMock.mockResolvedValue({ ok: true });
   isAdminMock.mockReset();
@@ -161,46 +172,63 @@ describe("createSubscription (I-SUB-1, I-SUB-2)", () => {
 });
 
 describe("pauseSubscription (I-SUB-3)", () => {
-  it("active → paused succeeds via atomic in-status filter", async () => {
+  it("active → paused succeeds via atomic in-status filter (service-role + ownership)", async () => {
     const builder = makeUpdateBuilder({
       data: [{ id: SUB_ID, status: "paused" }],
       error: null,
     });
-    cookieFrom.mockImplementation((table: string) => {
+    serviceFrom.mockImplementation((table: string) => {
       expect(table).toBe("subscriptions");
       return { update: vi.fn(() => builder) };
     });
 
     const res = await pauseSubscription(SUB_ID);
     expect(res.ok).toBe(true);
-    // Atomic filter: .eq('id', subId).in('status', ['active'])
+    // Codex review #3 H3: explicit ownership filter via auth.uid().
     expect(builder.eq).toHaveBeenCalledWith("id", SUB_ID);
+    expect(builder.eq).toHaveBeenCalledWith(
+      "customer_user_id",
+      TEST_AUTH_USER_ID
+    );
     expect(builder.in).toHaveBeenCalledWith("status", ["active"]);
   });
 
   it("paused → paused returns rowcount=0 error", async () => {
     const builder = makeUpdateBuilder({ data: [], error: null });
-    cookieFrom.mockImplementation(() => ({ update: vi.fn(() => builder) }));
+    serviceFrom.mockImplementation(() => ({ update: vi.fn(() => builder) }));
     const res = await pauseSubscription(SUB_ID);
     expect(res.ok).toBe(false);
     expect(res.error).toMatch(/expected state/i);
   });
+
+  it("unauthenticated caller → please-sign-in error, no DB", async () => {
+    cookieGetUser.mockResolvedValueOnce({
+      data: { user: null },
+      error: null,
+    });
+    const res = await pauseSubscription(SUB_ID);
+    expect(res.ok).toBe(false);
+    expect(res.error).toMatch(/sign in/i);
+    expect(serviceFrom).not.toHaveBeenCalled();
+  });
 });
 
 describe("resumeSubscription (I-SUB-4)", () => {
-  it("paused → active recomputes next_ship_date from now", async () => {
+  it("paused → active recomputes next_ship_date from now (service-role + ownership)", async () => {
     let updatePayload: Record<string, unknown> | null = null;
     const builder = makeUpdateBuilder({
       data: [{ id: SUB_ID, status: "active", ship_cadence: "monthly" }],
       error: null,
     });
-    cookieFrom.mockImplementation(() => ({
+    serviceFrom.mockImplementation(() => ({
       // First we must SELECT the row (need ship_cadence to recompute next_ship_date).
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
-          single: vi.fn(async () => ({
-            data: { id: SUB_ID, ship_cadence: "monthly", status: "paused" },
-            error: null,
+          eq: vi.fn(() => ({
+            single: vi.fn(async () => ({
+              data: { id: SUB_ID, ship_cadence: "monthly", status: "paused" },
+              error: null,
+            })),
           })),
         })),
       })),
@@ -221,17 +249,21 @@ describe("resumeSubscription (I-SUB-4)", () => {
     const expected = before + 30 * 86400_000;
     expect(Math.abs(next - expected)).toBeLessThan(60_000);
     expect(builder.in).toHaveBeenCalledWith("status", ["paused"]);
+    expect(builder.eq).toHaveBeenCalledWith(
+      "customer_user_id",
+      TEST_AUTH_USER_ID
+    );
   });
 });
 
 describe("cancelSubscription (I-SUB-5)", () => {
-  it("active|paused → cancelled, cancelled_at set", async () => {
+  it("active|paused → cancelled, cancelled_at set (service-role + ownership)", async () => {
     let updatePayload: Record<string, unknown> | null = null;
     const builder = makeUpdateBuilder({
       data: [{ id: SUB_ID, status: "cancelled" }],
       error: null,
     });
-    cookieFrom.mockImplementation(() => ({
+    serviceFrom.mockImplementation(() => ({
       update: vi.fn((payload: Record<string, unknown>) => {
         updatePayload = payload;
         return builder;
@@ -242,6 +274,10 @@ describe("cancelSubscription (I-SUB-5)", () => {
     expect(updatePayload!.status).toBe("cancelled");
     expect(typeof updatePayload!.cancelled_at).toBe("string");
     expect(builder.in).toHaveBeenCalledWith("status", ["active", "paused"]);
+    expect(builder.eq).toHaveBeenCalledWith(
+      "customer_user_id",
+      TEST_AUTH_USER_ID
+    );
   });
 });
 

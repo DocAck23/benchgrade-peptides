@@ -136,12 +136,16 @@ export async function getMyAffiliateState(): Promise<GetMyAffiliateStateResult> 
   }
   const affiliate = aff as AffiliateRow;
 
-  // Successful referrals = count of `redeemed` referrals attributed to this
-  // affiliate. v1 uses a simple count(*) — small data volume.
+  // Successful referrals = referrals in `shipped` or `redeemed` status —
+  // i.e. shipped to the referee (and optionally already redeemed by them).
+  // Codex review #3 M9: previously this counted EVERY referral row,
+  // including `pending` and `cancelled`, which incorrectly inflated the
+  // tier-promotion progress metric.
   const refsResp = await supa
     .from("referrals")
-    .select("id", { count: "exact" })
-    .eq("referrer_user_id", user.id);
+    .select("id", { count: "exact", head: true })
+    .eq("referrer_user_id", user.id)
+    .in("status", ["shipped", "redeemed"]);
   const successfulRefs = refsResp.count ?? 0;
 
   const { data: ledger } = await supa
@@ -352,10 +356,13 @@ export async function awardCommissionForOrder(
       const newEarned = affiliate.total_earned_cents + earned;
 
       // 2d. Tier auto-promotion: re-fetch successful_referrals_count.
+      // Codex review #3 M9: only `shipped` / `redeemed` referrals
+      // count toward the tier threshold — pending and cancelled don't.
       const refsCountResp = await service
         .from("referrals")
-        .select("id", { count: "exact" })
-        .eq("referrer_user_id", ref.referrer_user_id);
+        .select("id", { count: "exact", head: true })
+        .eq("referrer_user_id", ref.referrer_user_id)
+        .in("status", ["shipped", "redeemed"]);
       const refsCount = refsCountResp.count ?? 0;
       const recomputedTier = affiliateTier({
         successful_referrals_count: refsCount,
@@ -378,6 +385,154 @@ export async function awardCommissionForOrder(
   } catch (err) {
     console.error("[awardCommissionForOrder] failed:", err);
     return { ok: true, commissions_awarded: 0 };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// clawbackCommissionForOrder — codex review #3 H6
+// ---------------------------------------------------------------------------
+
+export interface ClawbackCommissionResult {
+  ok: boolean;
+  clawbacks_inserted: number;
+}
+
+/**
+ * Reverse any commission earned for an order that has just been refunded.
+ *
+ * For every `kind='earned'` ledger entry pinned to `source_order_id`, if
+ * no matching `kind='clawback'` row already exists, insert a clawback
+ * (negative amount), roll back `available_balance_cents` and
+ * `total_earned_cents` on the affiliate, and cancel any unredeemed
+ * referrals + free-vial entitlements that were granted off this order.
+ *
+ * Idempotent: a second call after the first finds no un-clawed earned
+ * entries → returns `clawbacks_inserted: 0`.
+ *
+ * Best-effort: any sub-step error is logged and swallowed; failures
+ * MUST NOT throw to the caller (the refunded transition is durable in
+ * Postgres before this fires).
+ */
+export async function clawbackCommissionForOrder(
+  orderId: string
+): Promise<ClawbackCommissionResult> {
+  try {
+    const service = getSupabaseServer();
+    if (!service) return { ok: true, clawbacks_inserted: 0 };
+
+    // 1. Find earned ledger entries for this order.
+    const { data: earnedRows } = await service
+      .from("commission_ledger")
+      .select(
+        "id, affiliate_id, amount_cents, source_referral_id, tier_at_time"
+      )
+      .eq("source_order_id", orderId)
+      .eq("kind", "earned");
+    const earned = (earnedRows ?? []) as Array<{
+      id: string;
+      affiliate_id: string;
+      amount_cents: number;
+      source_referral_id: string | null;
+      tier_at_time: string;
+    }>;
+    if (earned.length === 0) return { ok: true, clawbacks_inserted: 0 };
+
+    // 2. Filter out earnings already clawed back. Idempotency.
+    const { data: clawedRows } = await service
+      .from("commission_ledger")
+      .select("source_order_id, source_referral_id, affiliate_id")
+      .eq("source_order_id", orderId)
+      .eq("kind", "clawback");
+    const claweds = (clawedRows ?? []) as Array<{
+      source_referral_id: string | null;
+      affiliate_id: string;
+    }>;
+    const clawedKey = (e: { source_referral_id: string | null; affiliate_id: string }) =>
+      `${e.affiliate_id}::${e.source_referral_id ?? ""}`;
+    const alreadyClawed = new Set(claweds.map(clawedKey));
+
+    let inserted = 0;
+    for (const row of earned) {
+      const k = clawedKey(row);
+      if (alreadyClawed.has(k)) continue;
+
+      // 2a. Insert clawback ledger entry (negative amount).
+      const { error: insertErr } = await service
+        .from("commission_ledger")
+        .insert({
+          affiliate_id: row.affiliate_id,
+          source_order_id: orderId,
+          source_referral_id: row.source_referral_id,
+          kind: "clawback",
+          amount_cents: -row.amount_cents,
+          tier_at_time: row.tier_at_time,
+        });
+      if (insertErr) {
+        console.error(
+          "[clawbackCommissionForOrder] ledger insert failed:",
+          insertErr
+        );
+        continue;
+      }
+
+      // 2b. Roll back affiliate aggregates. Read-then-write, non-atomic
+      //     pre-launch; v2 moves into a Postgres RPC.
+      const { data: affRow } = await service
+        .from("affiliates")
+        .select("available_balance_cents, total_earned_cents")
+        .eq("id", row.affiliate_id)
+        .maybeSingle();
+      if (affRow) {
+        const aff = affRow as {
+          available_balance_cents: number;
+          total_earned_cents: number;
+        };
+        const newBalance = aff.available_balance_cents - row.amount_cents;
+        const newEarned = aff.total_earned_cents - row.amount_cents;
+        await service
+          .from("affiliates")
+          .update({
+            available_balance_cents: newBalance,
+            total_earned_cents: newEarned,
+          })
+          .eq("id", row.affiliate_id);
+      }
+
+      inserted++;
+    }
+
+    // 3. Cancel any shipped-but-unredeemed referrals and the matching
+    //    free-vial entitlement granted off this order.
+    try {
+      const { data: refRows } = await service
+        .from("referrals")
+        .select("id, status")
+        .eq("first_order_id", orderId)
+        .in("status", ["pending", "shipped"]);
+      const refs = (refRows ?? []) as Array<{ id: string; status: string }>;
+      for (const r of refs) {
+        await service
+          .from("referrals")
+          .update({ status: "cancelled" })
+          .eq("id", r.id)
+          .in("status", ["pending", "shipped"]);
+        await service
+          .from("free_vial_entitlements")
+          .update({ status: "expired" })
+          .eq("source_referral_id", r.id)
+          .eq("status", "available");
+      }
+    } catch (err) {
+      console.error(
+        "[clawbackCommissionForOrder] referral cancel failed:",
+        err
+      );
+    }
+
+    return { ok: true, clawbacks_inserted: inserted };
+  } catch (err) {
+    console.error("[clawbackCommissionForOrder] failed:", err);
+    return { ok: true, clawbacks_inserted: 0 };
   }
 }
 

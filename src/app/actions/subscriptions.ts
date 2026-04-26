@@ -138,20 +138,35 @@ export async function createSubscription(
 }
 
 // ---------------------------------------------------------------------------
-// Customer-facing lifecycle actions. Cookie-scoped client so RLS is the
-// authoritative ownership boundary — a hostile caller passing someone
-// else's subscription_id gets rowcount = 0, the same as an invalid state.
+// Customer-facing lifecycle actions.
+//
+// Codex review #3 H3+M7: dropped the broad RLS UPDATE policy on
+// public.subscriptions (migration 0011) because it allowed ANY column on
+// owned rows to be mutated. We now use the cookie-scoped client only to
+// resolve auth.uid() (the security boundary), then route the actual UPDATE
+// through the service-role client with explicit ownership + transition
+// filters. The atomic .in('status', ...) pattern is preserved so duplicate
+// clicks no-op via rowcount=0.
 // ---------------------------------------------------------------------------
 
 export async function pauseSubscription(
   subscriptionId: string
 ): Promise<{ ok: boolean; error?: string }> {
-  const supa = await createServerSupabase();
+  const cookie = await createServerSupabase();
+  const {
+    data: { user },
+  } = await cookie.auth.getUser();
+  if (!user) return { ok: false, error: "Please sign in." };
+
+  const service = getSupabaseServer();
+  if (!service) return { ok: false, error: "Database unavailable." };
+
   const pausedAt = new Date().toISOString();
-  const { data, error } = await supa
+  const { data, error } = await service
     .from("subscriptions")
     .update({ status: "paused", paused_at: pausedAt })
     .eq("id", subscriptionId)
+    .eq("customer_user_id", user.id)
     .in("status", ["active"])
     .select();
   if (error) return { ok: false, error: error.message };
@@ -164,14 +179,23 @@ export async function pauseSubscription(
 export async function resumeSubscription(
   subscriptionId: string
 ): Promise<{ ok: boolean; error?: string }> {
-  const supa = await createServerSupabase();
+  const cookie = await createServerSupabase();
+  const {
+    data: { user },
+  } = await cookie.auth.getUser();
+  if (!user) return { ok: false, error: "Please sign in." };
 
-  // Need ship_cadence to recompute next_ship_date from now. RLS gates the
-  // SELECT — non-owner sees null/error, same as the UPDATE path.
-  const { data: row, error: readError } = await supa
+  const service = getSupabaseServer();
+  if (!service) return { ok: false, error: "Database unavailable." };
+
+  // Need ship_cadence to recompute next_ship_date from now. We use the
+  // service-role client + explicit customer_user_id filter — equivalent
+  // ownership gate to the prior RLS-bound SELECT.
+  const { data: row, error: readError } = await service
     .from("subscriptions")
     .select("id, ship_cadence")
     .eq("id", subscriptionId)
+    .eq("customer_user_id", user.id)
     .single();
 
   if (readError || !row) {
@@ -179,7 +203,7 @@ export async function resumeSubscription(
   }
 
   const next = nextCycleDate(new Date(), row.ship_cadence);
-  const { data, error } = await supa
+  const { data, error } = await service
     .from("subscriptions")
     .update({
       status: "active",
@@ -188,6 +212,7 @@ export async function resumeSubscription(
       next_ship_date: next ? next.toISOString() : null,
     })
     .eq("id", subscriptionId)
+    .eq("customer_user_id", user.id)
     .in("status", ["paused"])
     .select();
   if (error) return { ok: false, error: error.message };
@@ -200,12 +225,21 @@ export async function resumeSubscription(
 export async function cancelSubscription(
   subscriptionId: string
 ): Promise<{ ok: boolean; error?: string }> {
-  const supa = await createServerSupabase();
+  const cookie = await createServerSupabase();
+  const {
+    data: { user },
+  } = await cookie.auth.getUser();
+  if (!user) return { ok: false, error: "Please sign in." };
+
+  const service = getSupabaseServer();
+  if (!service) return { ok: false, error: "Database unavailable." };
+
   const cancelledAt = new Date().toISOString();
-  const { data, error } = await supa
+  const { data, error } = await service
     .from("subscriptions")
     .update({ status: "cancelled", cancelled_at: cancelledAt })
     .eq("id", subscriptionId)
+    .eq("customer_user_id", user.id)
     .in("status", ["active", "paused"])
     .select();
   if (error) return { ok: false, error: error.message };

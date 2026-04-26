@@ -55,7 +55,30 @@ vi.mock("@/lib/email/notifications/send-order-emails", () => ({
   lookupCoaUrls: () => [],
 }));
 
-import { markOrderFunded, markOrderShipped } from "../admin";
+// Stub cross-action hooks so admin status tests focus on admin.ts logic.
+const awardCommissionMock = vi.fn(async (_id: string) => ({
+  ok: true,
+  commissions_awarded: 0,
+}));
+const clawbackMock = vi.fn(async (_id: string) => ({
+  ok: true,
+  clawbacks_inserted: 0,
+}));
+vi.mock("@/app/actions/affiliate", () => ({
+  awardCommissionForOrder: (id: string) => awardCommissionMock(id),
+  clawbackCommissionForOrder: (id: string) => clawbackMock(id),
+}));
+
+const transitionReferralOnShippedMock = vi.fn(async (_id: string) => ({ ok: true }));
+vi.mock("@/app/actions/referrals", () => ({
+  transitionReferralOnShipped: (id: string) => transitionReferralOnShippedMock(id),
+}));
+
+import {
+  markOrderFunded,
+  markOrderShipped,
+  markOrderRefunded,
+} from "../admin";
 
 const validOrderId = "abc12345-def6-7890-1234-567890abcdef";
 const validRow = {
@@ -68,6 +91,9 @@ beforeEach(() => {
   isAdminMock.mockReset().mockResolvedValue(true);
   sendPaymentConfirmedMock.mockClear().mockResolvedValue({ ok: true });
   sendOrderShippedMock.mockClear().mockResolvedValue({ ok: true });
+  awardCommissionMock.mockClear();
+  clawbackMock.mockClear();
+  transitionReferralOnShippedMock.mockClear();
   updateSpy.mockClear();
   nextResult = { data: [validRow], error: null };
 });
@@ -153,5 +179,41 @@ describe("markOrderShipped", () => {
     expect(res.ok).toBe(false);
     expect(res.error).toMatch(/funded/);
     expect(sendOrderShippedMock).not.toHaveBeenCalled();
+  });
+
+  it("codex H5: fires referral shipped hook on successful transition", async () => {
+    const res = await markOrderShipped(validOrderId, "1Z999AA10", "UPS");
+    expect(res.ok).toBe(true);
+    expect(transitionReferralOnShippedMock).toHaveBeenCalledWith(validOrderId);
+  });
+});
+
+describe("markOrderRefunded (codex H6)", () => {
+  it("returns Unauthorized when not admin", async () => {
+    isAdminMock.mockResolvedValueOnce(false);
+    const res = await markOrderRefunded(validOrderId);
+    expect(res.ok).toBe(false);
+    expect(res.error).toMatch(/Unauthorized/);
+  });
+
+  it("rejects invalid uuid", async () => {
+    const res = await markOrderRefunded("nope");
+    expect(res.ok).toBe(false);
+    expect(res.error).toMatch(/Invalid order id/);
+  });
+
+  it("flips status to refunded and fires clawback hook", async () => {
+    const res = await markOrderRefunded(validOrderId);
+    expect(res.ok).toBe(true);
+    expect(updateSpy).toHaveBeenCalledWith({ status: "refunded" });
+    expect(clawbackMock).toHaveBeenCalledWith(validOrderId);
+  });
+
+  it("rowcount=0 → not-in-funded-state error, no clawback", async () => {
+    nextResult = { data: [], error: null };
+    const res = await markOrderRefunded(validOrderId);
+    expect(res.ok).toBe(false);
+    expect(res.error).toMatch(/funded/);
+    expect(clawbackMock).not.toHaveBeenCalled();
   });
 });

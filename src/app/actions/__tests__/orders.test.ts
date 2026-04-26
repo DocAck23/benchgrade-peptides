@@ -419,6 +419,55 @@ describe("submitOrder — server-side discount computation", () => {
     expect(link?.eq.value).toBe(result.order_id);
   });
 
+  it("codex H1: prepay subscription order persists plan_total upfront (cycle × duration)", async () => {
+    // BGP-GLP1S-5 retail $110 × 1 vial = $11000 cents subtotal/cycle.
+    // Plan 3-month prepay monthly → 18% discount → cycle_total = 9020;
+    // plan_total = 9020 × 3 = 27060.
+    const result = await submitOrder({
+      customer: VALID_CUSTOMER,
+      items: [{ sku: "BGP-GLP1S-5", quantity: 1 }],
+      acknowledgment: VALID_ACK,
+      payment_method: "wire",
+      subscription_mode: {
+        duration_months: 3,
+        payment_cadence: "prepay",
+        ship_cadence: "monthly",
+      },
+    });
+    expect(result.ok).toBe(true);
+    const orderRow = insertedRows["orders"]?.[0] as Record<string, unknown>;
+    expect(orderRow).toBeDefined();
+    // 3-month prepay monthly: 18% off retail × 3 cycles upfront.
+    // subtotal_cents = cycle_subtotal × 3 = 11000 × 3 = 33000
+    // total_cents = round(11000 × 0.82) × 3 = 9020 × 3 = 27060
+    expect(orderRow.subtotal_cents).toBe(33000);
+    expect(orderRow.total_cents).toBe(27060);
+    // Subscription orders never carry the one-shot free-vial entitlement.
+    expect(orderRow.free_vial_entitlement).toBeNull();
+  });
+
+  it("codex H1: bill_pay subscription order charges only cycle 1 at checkout", async () => {
+    // 6-month bill_pay monthly → 15% off retail; cycle 1 at checkout.
+    const result = await submitOrder({
+      customer: VALID_CUSTOMER,
+      items: [{ sku: "BGP-GLP1S-5", quantity: 1 }],
+      acknowledgment: VALID_ACK,
+      payment_method: "wire",
+      subscription_mode: {
+        duration_months: 6,
+        payment_cadence: "bill_pay",
+        ship_cadence: "monthly",
+      },
+    });
+    expect(result.ok).toBe(true);
+    const orderRow = insertedRows["orders"]?.[0] as Record<string, unknown>;
+    expect(orderRow).toBeDefined();
+    // cycle_subtotal = 11000; cycle_total = round(11000 × 0.85) = 9350.
+    expect(orderRow.subtotal_cents).toBe(11000);
+    expect(orderRow.total_cents).toBe(9350);
+    expect(orderRow.free_vial_entitlement).toBeNull();
+  });
+
   it("I-CHECKOUT-SUB-2: invalid subscription_mode (bill_pay + 1mo) → order still succeeds, no subscription created", async () => {
     const result = await submitOrder({
       customer: VALID_CUSTOMER,
