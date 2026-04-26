@@ -60,8 +60,30 @@ export interface OrderRow {
   tracking_carrier?: 'USPS' | 'UPS' | 'FedEx' | 'DHL' | null;
   shipped_at?: string | null;
   customer_user_id?: string | null;
+  subscription_id?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface SubscriptionRow {
+  id: string;
+  customer_user_id: string;
+  plan_duration_months: 1 | 3 | 6 | 9 | 12;
+  payment_cadence: 'prepay' | 'bill_pay';
+  ship_cadence: 'monthly' | 'quarterly' | 'once';
+  items: OrderRow['items'];
+  cycle_subtotal_cents: number;
+  cycle_total_cents: number;
+  discount_percent: number;
+  status: 'active' | 'paused' | 'cancelled' | 'completed';
+  next_ship_date: string | null;
+  next_charge_date: string | null;
+  cycles_completed: number;
+  cycles_total: number;
+  created_at: string;
+  updated_at: string;
+  paused_at: string | null;
+  cancelled_at: string | null;
 }
 
 export interface RuoAcknowledgmentRow {
