@@ -173,7 +173,7 @@ function vialPath(slug: string, container: "vial-3ml" | "vial-10ml" | "capsule-b
  * @param sku_prefix    SKU stem; pack-size suffix (-1 / -5 / -10) appended.
  * @param wholesale_per_vial AgeREcode wholesale cost per single vial (USD).
  * @param single_price  Retail price for 1 vial (USD).
- * @param size_mg       Dose per vial.
+ * @param size_mg       Size of each vial in mg.
  *
  * 5-pack price = 5 × single × 0.95 (5% bundle discount) — rounded.
  * 10-pack price = 10 × single × 0.85 (15% bundle discount) — rounded.
@@ -290,23 +290,23 @@ export const PRODUCTS: readonly CatalogProduct[] = [
     ],
   },
   {
-    slug: "cagrilintide",
-    name: "Cagrilintide",
+    slug: "amya",
+    name: "AMY-A",
     dose_mg: 5,
     category_slug: "incretin-receptor-agonists",
-    cas_number: "1415456-99-3",
-    molecular_formula: "C170H271N51O50",
-    molecular_weight: 3789.42,
-    sequence: "Long-acting amylin analog (32-residue, lipidated)",
+    cas_number: null,
+    molecular_formula: null,
+    molecular_weight: null,
+    sequence: "Long-acting amylin analog class agonist (full identity on COA)",
     summary:
-      "Long-acting amylin analog studied alongside GLP-1 agonists in metabolic-pathway research.",
+      "Long-acting amylin analog class agonist studied alongside incretin-receptor agonists in metabolic-pathway research.",
     research_context:
-      "Lau et al., J Med Chem (2021). Enebo et al., Lancet (2021).",
-    vial_image: vialPath("cagrilintide", "vial-3ml"),
+      "Class-level amylin pharmacology reviews. Lutz, Physiol Behav (2010). Trevaskis et al., Endocrinology (2010).",
+    vial_image: vialPath("amya", "vial-3ml"),
     container: "vial-3ml",
     variants: [
-      { size_mg: 5, pack_size: 1, sku: "BGP-CAGRI-5", wholesale_cost: 33.75, retail_price: 130.0 },
-      { size_mg: 10, pack_size: 1, sku: "BGP-CAGRI-10", wholesale_cost: 56.25, retail_price: 220.0 },
+      { size_mg: 5, pack_size: 1, sku: "BGP-AMYA-5", wholesale_cost: 33.75, retail_price: 130.0 },
+      { size_mg: 10, pack_size: 1, sku: "BGP-AMYA-10", wholesale_cost: 56.25, retail_price: 220.0 },
     ],
   },
   {

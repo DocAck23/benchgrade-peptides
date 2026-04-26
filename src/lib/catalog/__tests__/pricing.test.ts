@@ -4,7 +4,7 @@ import { PRODUCTS, CATEGORIES, getMinPrice, getMaxPrice, getProductBySlug } from
 /**
  * Catalog invariants — updated 2026-04-25 to match the current multi-size
  * variant catalog (incretin-receptor-agonists / growth-hormone-axis / etc.).
- * The earlier "10 SKUs · 1/5/10 packs · one dose per product · glp-1 slug"
+ * The earlier "10 SKUs · 1/5/10 packs · one size per product · glp-1 slug"
  * regime is gone; assertions reflect what's actually shipping.
  */
 describe("catalog — invariants", () => {
