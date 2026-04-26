@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { resolveAllStacks } from "@/lib/catalog/stacks";
 import { formatPrice } from "@/lib/utils";
+import { AddStackToCartButton } from "./AddStackToCartButton";
 
 /**
  * Hero-side popular-stacks grid. Renders the right column of the homepage
@@ -37,10 +38,13 @@ export function PopularStacksHeroGrid() {
 
       <ul className="space-y-3 sm:space-y-4">
         {resolved.map((r) => (
-          <li key={r.stack.slug}>
+          <li
+            key={r.stack.slug}
+            className="border border-rule bg-paper-soft hover:border-gold-dark transition-colors duration-200"
+          >
             <Link
               href={`/catalog/stacks/${r.stack.slug}`}
-              className="group block border border-rule bg-paper-soft hover:bg-paper-soft hover:border-gold-dark transition-colors duration-200 px-4 sm:px-5 py-3.5 sm:py-4"
+              className="group block px-4 sm:px-5 pt-3.5 sm:pt-4 pb-3 focus-visible:outline-none"
             >
               <div className="flex items-baseline justify-between gap-3 mb-1.5">
                 <h3 className="font-display text-base sm:text-[17px] text-ink leading-tight">
@@ -62,6 +66,10 @@ export function PopularStacksHeroGrid() {
                 </span>
               </div>
             </Link>
+            {/* Add full stack — sibling to Link so click doesn't navigate */}
+            <div className="px-4 sm:px-5 pb-3.5 sm:pb-4">
+              <AddStackToCartButton resolved={r} />
+            </div>
           </li>
         ))}
       </ul>

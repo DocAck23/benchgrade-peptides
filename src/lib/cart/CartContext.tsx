@@ -156,6 +156,43 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const changeItemVariant = useCallback(
+    (currentSku: string, product: CatalogProduct, newVariant: CatalogVariant) => {
+      setItems((prev) => {
+        const idx = prev.findIndex((i) => i.sku === currentSku);
+        if (idx === -1) return prev;
+        const current = prev[idx];
+        // If the target variant is already in the cart as a separate line,
+        // merge quantities and drop the old line.
+        const existingTargetIdx = prev.findIndex(
+          (i) => i.sku === newVariant.sku && i.sku !== currentSku
+        );
+        if (existingTargetIdx !== -1) {
+          const next = [...prev];
+          next[existingTargetIdx] = {
+            ...next[existingTargetIdx],
+            quantity: next[existingTargetIdx].quantity + current.quantity,
+          };
+          next.splice(idx, 1);
+          return next;
+        }
+        // Otherwise rewrite this line's variant fields in place.
+        const next = [...prev];
+        next[idx] = {
+          ...current,
+          sku: newVariant.sku,
+          size_mg: newVariant.size_mg,
+          pack_size: newVariant.pack_size,
+          unit_price: newVariant.retail_price,
+          // name + product_slug + category_slug + vial_image stay the same
+          // (same product, different size).
+        };
+        return next;
+      });
+    },
+    []
+  );
+
   const removeItem = useCallback((sku: string) => {
     setItems((prev) => prev.filter((i) => i.sku !== sku));
   }, []);
@@ -186,6 +223,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       subscriptionMode,
       setSubscriptionMode,
       addItem,
+      changeItemVariant,
       updateQuantity,
       removeItem,
       clear,

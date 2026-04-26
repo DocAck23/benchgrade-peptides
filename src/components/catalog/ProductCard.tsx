@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { CatalogProduct } from "@/lib/catalog/data";
 import { getMinPrice, getMaxPrice } from "@/lib/catalog/data";
 import { formatPrice } from "@/lib/utils";
+import { QuickAddButton } from "./QuickAddButton";
 
 interface ProductCardProps {
   product: CatalogProduct;
@@ -26,10 +27,11 @@ export function ProductCard({ product, categorySlug }: ProductCardProps) {
   const sizes = product.variants.map((v) => `${v.size_mg}mg`).join(" · ");
 
   return (
-    <Link
-      href={`/catalog/${categorySlug}/${product.slug}`}
-      className="group flex flex-col bg-paper border rule p-3 sm:p-5 lg:p-6 hover:bg-paper-soft transition-colors focus-visible:outline-none focus-visible:bg-paper-soft"
-    >
+    <article className="group flex flex-col bg-paper border rule p-3 sm:p-5 lg:p-6 hover:bg-paper-soft transition-colors">
+      <Link
+        href={`/catalog/${categorySlug}/${product.slug}`}
+        className="flex flex-col flex-1 focus-visible:outline-none focus-visible:bg-paper-soft"
+      >
       {/* Vial photograph — fixed aspect ratio for uniform card height */}
       <div className="relative aspect-[4/5] bg-paper-soft border rule mb-3 sm:mb-4 overflow-hidden">
         <Image
@@ -73,6 +75,14 @@ export function ProductCard({ product, categorySlug }: ProductCardProps) {
           <span className="label-eyebrow text-ink-muted truncate text-[9px] sm:text-xs max-w-[60%] text-right">{sizes}</span>
         </div>
       </div>
-    </Link>
+      </Link>
+
+      {/* Quick-add — sibling to the Link so the variant select can be
+          focused and the Add button can be clicked without triggering the
+          parent navigation. */}
+      <div className="mt-3 sm:mt-4">
+        <QuickAddButton product={product} size="sm" />
+      </div>
+    </article>
   );
 }

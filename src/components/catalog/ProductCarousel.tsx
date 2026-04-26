@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { CatalogProduct } from "@/lib/catalog/data";
 import { PRODUCTS, getMinPrice } from "@/lib/catalog/data";
 import { formatPrice } from "@/lib/utils";
+import { QuickAddButton } from "./QuickAddButton";
 
 /**
  * Homepage product carousel.
@@ -74,35 +75,43 @@ function ProductCarouselCard({ product }: { product: CatalogProduct }) {
   const minPrice = getMinPrice(product);
   const sizes = product.variants.map((v) => `${v.size_mg}mg`).join(" · ");
   return (
-    <Link
-      href={`/catalog/${product.category_slug}/${product.slug}`}
-      className="block w-[240px] lg:w-[280px] shrink-0 bg-paper border rule p-5 hover:bg-paper-soft transition-colors"
-    >
-      {/* Vial photograph */}
-      <div className="relative aspect-square bg-paper-soft border rule mb-4 overflow-hidden">
-        <Image
-          src={product.vial_image}
-          alt={`${product.name} research vial`}
-          fill
-          sizes="280px"
-          className="object-cover"
-        />
-      </div>
-
-      {product.molecular_formula && (
-        <div className="font-mono-data text-[10px] text-ink-muted mb-2 truncate">
-          {product.molecular_formula}
+    <article className="w-[240px] lg:w-[280px] shrink-0 bg-paper border rule p-5 hover:bg-paper-soft transition-colors flex flex-col">
+      <Link
+        href={`/catalog/${product.category_slug}/${product.slug}`}
+        className="block focus-visible:outline-none"
+      >
+        {/* Vial photograph */}
+        <div className="relative aspect-square bg-paper-soft border rule mb-4 overflow-hidden">
+          <Image
+            src={product.vial_image}
+            alt={`${product.name} research vial`}
+            fill
+            sizes="280px"
+            className="object-cover"
+          />
         </div>
-      )}
-      <h3 className="font-display text-lg text-ink leading-tight mb-3 truncate">
-        {product.name}
-      </h3>
-      <div className="flex items-baseline justify-between pt-3 border-t rule">
-        <span className="font-mono-data text-sm text-ink">
-          from {formatPrice(minPrice * 100)}
-        </span>
-        <span className="label-eyebrow text-ink-muted">{sizes}</span>
+
+        {product.molecular_formula && (
+          <div className="font-mono-data text-[10px] text-ink-muted mb-2 truncate">
+            {product.molecular_formula}
+          </div>
+        )}
+        <h3 className="font-display text-lg text-ink leading-tight mb-3 truncate">
+          {product.name}
+        </h3>
+        <div className="flex items-baseline justify-between pt-3 border-t rule">
+          <span className="font-mono-data text-sm text-ink">
+            from {formatPrice(minPrice * 100)}
+          </span>
+          <span className="label-eyebrow text-ink-muted">{sizes}</span>
+        </div>
+      </Link>
+
+      {/* Quick-add: sibling so the select/button focus + click don't trigger
+          the parent navigation. */}
+      <div className="mt-3">
+        <QuickAddButton product={product} size="sm" />
       </div>
-    </Link>
+    </article>
   );
 }

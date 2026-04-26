@@ -7,6 +7,7 @@ import { X, Minus, Plus } from "lucide-react";
 import { useCart } from "@/lib/cart/CartContext";
 import { formatPrice, cn } from "@/lib/utils";
 import { StackSaveProgress } from "./StackSaveProgress";
+import { CartItemVariantSelect } from "./CartItemVariantSelect";
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -161,8 +162,11 @@ export function CartDrawer() {
                         Remove
                       </button>
                     </div>
-                    <div className="font-mono-data text-xs text-ink-muted mb-2">
-                      {item.pack_size}-vial pack · {item.size_mg}mg ea. · {item.sku}
+                    <div className="font-mono-data text-[11px] text-ink-muted mb-2">
+                      {item.pack_size}-vial pack · {item.sku}
+                    </div>
+                    <div className="mb-2">
+                      <CartItemVariantSelect item={item} />
                     </div>
                     <div className="flex items-center justify-between gap-2">
                       <div className="inline-flex items-center border rule">

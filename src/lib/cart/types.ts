@@ -51,6 +51,13 @@ export interface CartApi {
   /** Setter for the upsell card; pass null to clear. */
   setSubscriptionMode: (mode: SubscriptionMode | null) => void;
   addItem: (product: CatalogProduct, variant: CatalogVariant, quantity: number) => void;
+  /**
+   * Swap a cart line's variant in place. Used by the cart drawer's vial-size
+   * selector. If the new SKU already exists in the cart as a different line,
+   * the two lines merge (quantities sum); otherwise the existing line's
+   * sku/name/size_mg/pack_size/unit_price/vial_image are rewritten.
+   */
+  changeItemVariant: (currentSku: string, product: CatalogProduct, newVariant: CatalogVariant) => void;
   updateQuantity: (sku: string, quantity: number) => void;
   removeItem: (sku: string) => void;
   clear: () => void;
