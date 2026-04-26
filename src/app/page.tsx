@@ -32,23 +32,23 @@ const TRUST_TRIO = [
   },
 ] as const;
 
-// April 2026 virtue-of-the-month, per spec §16.1 editorial cadence.
-const VIRTUE_OF_THE_MONTH = "HONORABLE";
 
 export default function Home() {
   return (
     <div>
-      {/* ── Hero ───────────────────────────────────────────────────────── */}
-      <section data-surface="wine" className="relative overflow-hidden">
+      {/* ── Hero — paper surface, wine + gold split headline ─────────── */}
+      <section className="relative overflow-hidden bg-paper">
         <div className="max-w-[1280px] mx-auto px-5 sm:px-6 lg:px-10 py-24 sm:py-28 lg:py-32">
           <div className="max-w-4xl">
             <h1 className="font-display font-display-heavy text-[40px] leading-[1.05] sm:text-6xl lg:text-7xl xl:text-[80px] xl:leading-[1.02] tracking-tight">
-              Research peptides,
+              <span className="text-wine">Research peptides,</span>
               <br />
-              made with honor.
+              <span className="text-gold-dark italic" style={{ fontFamily: "var(--font-editorial)" }}>
+                synthesized stateside.
+              </span>
             </h1>
             <p
-              className="mt-6 sm:mt-8 text-xl sm:text-2xl lg:text-3xl italic leading-snug max-w-2xl"
+              className="mt-6 sm:mt-8 text-xl sm:text-2xl lg:text-3xl italic leading-snug max-w-2xl text-ink-soft"
               style={{ fontFamily: "var(--font-editorial)" }}
             >
               Made in USA. Verified per lot. Receipts on every vial.
@@ -62,9 +62,8 @@ export default function Home() {
               </Link>
               <Link
                 href="/why-no-cards"
-                className="inline-flex items-center text-sm tracking-[0.04em] underline underline-offset-[6px] decoration-1 transition-colors duration-200 ease-[var(--ease-default)] hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                className="inline-flex items-center text-sm tracking-[0.04em] underline underline-offset-[6px] decoration-1 transition-colors duration-200 ease-[var(--ease-default)] hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 text-wine"
                 style={{
-                  color: "var(--color-gold-light)",
                   textDecorationColor: "var(--color-gold)",
                 }}
               >
@@ -107,32 +106,7 @@ export default function Home() {
           by Wave 2c's sweep. We render it as-is. */}
       <ProductCarousel />
 
-      {/* ── Editorial story — virtue of the month ──────────────────────── */}
-      <section className="border-b rule">
-        <div className="max-w-[1280px] mx-auto px-5 sm:px-6 lg:px-10 py-24 sm:py-28">
-          <div className="max-w-3xl">
-            <div
-              className="font-display text-xs uppercase tracking-[0.24em] mb-6"
-              style={{ color: "var(--color-gold-dark)" }}
-            >
-              April 2026 — Virtue of the Month
-            </div>
-            <p
-              className="text-3xl sm:text-4xl lg:text-5xl italic leading-tight text-ink"
-              style={{ fontFamily: "var(--font-editorial)" }}
-            >
-              <span
-                className="font-display not-italic uppercase tracking-[0.12em] mr-3"
-                style={{ color: "var(--color-wine)" }}
-              >
-                {VIRTUE_OF_THE_MONTH}.
-              </span>
-              The work is the proof. Receipts beat slogans, every lot.
-            </p>
-          </div>
-        </div>
-      </section>
-
+      
       {/* ── Bottom CTA ─────────────────────────────────────────────────── */}
       <section data-surface="wine">
         <div className="max-w-[1280px] mx-auto px-5 sm:px-6 lg:px-10 py-24 sm:py-32 text-center">

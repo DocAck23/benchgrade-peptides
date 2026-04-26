@@ -29,34 +29,44 @@ export function StackSaveProgress() {
   const activeLabel = currentTierLabel(totals);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3 px-3 py-3 bg-paper-soft border border-rule rounded-sm">
       {activeLabel && (
-        <div className="flex items-center gap-1.5 label-eyebrow text-gold-dark">
-          <Check className="w-3.5 h-3.5" strokeWidth={2} aria-hidden />
+        <div className="flex items-center gap-2 text-[13px] font-display uppercase tracking-[0.1em] font-semibold text-gold-dark">
+          <Check className="w-4 h-4" strokeWidth={2.5} aria-hidden />
           <span>{activeLabel}</span>
         </div>
       )}
 
       {nextTier ? (
         <>
-          <p className="text-xs text-ink-soft leading-snug">{nextTier.message}</p>
-          <div
-            className="h-px w-full bg-paper-soft border rule overflow-hidden"
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={nextTier.progress_pct}
-            aria-label="Stack & Save progress"
-          >
+          <p className="text-sm text-ink leading-snug font-medium">
+            {nextTier.message}
+          </p>
+          <div className="space-y-1">
             <div
-              className={cn("h-full bg-gold transition-all duration-300")}
-              style={{ width: `${nextTier.progress_pct}%` }}
-            />
+              className="h-2 w-full bg-paper border border-rule overflow-hidden rounded-sm"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={nextTier.progress_pct}
+              aria-label="Stack & Save progress"
+            >
+              <div
+                className={cn(
+                  "h-full bg-gradient-to-r from-gold to-gold-dark transition-all duration-300 ease-out"
+                )}
+                style={{ width: `${nextTier.progress_pct}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between text-[11px] font-mono-data text-ink-muted">
+              <span>{totals.vial_count} {totals.vial_count === 1 ? "vial" : "vials"}</span>
+              <span className="text-gold-dark font-semibold">{nextTier.progress_pct}%</span>
+            </div>
           </div>
         </>
       ) : (
-        <p className="text-xs text-ink-soft leading-snug">
-          All tiers unlocked — your free 10mg vial of choice ships with the order.
+        <p className="text-sm text-ink leading-snug font-medium">
+          ✦ All tiers unlocked — your free 10mg vial of choice ships with the order.
         </p>
       )}
     </div>

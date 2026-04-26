@@ -47,12 +47,13 @@ function findImage(node: ReactNode): AnyEl | null {
 }
 
 describe("<Logo>", () => {
-  it("S-LOGO-1: variant=full surface=wine renders the canonical mark image", () => {
-    // Until full multi-color asset lands, `full` falls back to logo-mark.svg.
+  it("S-LOGO-1: variant=full surface=wine renders the gold-on-transparent mark", () => {
+    // Wine surface routes to the gold variant so the mark stands against
+    // the wine background. Cream surface keeps the original wine fill.
     const tree = Logo({ variant: "full", surface: "wine" });
     const img = findImage(tree);
     expect(img).not.toBeNull();
-    expect(String(img!.props.src)).toMatch(/logo-mark\.svg/);
+    expect(String(img!.props.src)).toMatch(/logo-mark-gold\.svg/);
     expect(img!.props.alt).toBe("Bench Grade Peptides");
   });
 
@@ -63,18 +64,13 @@ describe("<Logo>", () => {
     expect(String(img!.props.src)).toMatch(/logo-mark\.svg/);
   });
 
-  it("S-LOGO-3: variant=mark surface=wine still resolves to logo-mark.svg (CSS color override applied)", () => {
+  it("S-LOGO-3: variant=mark surface=wine resolves to logo-mark-gold.svg", () => {
+    // Wine surface gets the gold-on-transparent variant; the wine fill of
+    // logo-mark.svg would disappear against the wine background.
     const tree = Logo({ variant: "mark", surface: "wine" });
     const img = findImage(tree);
     expect(img).not.toBeNull();
-    expect(String(img!.props.src)).toMatch(/logo-mark\.svg/);
-    // The wrapping element should mark itself as wine-surface so CSS can
-    // recolor the wine SVG to cream/gold until a proper asset lands.
-    const wineWrap = findFirst(tree, (el) => {
-      const ds = (el.props as { "data-logo-surface"?: unknown })["data-logo-surface"];
-      return ds === "wine";
-    });
-    expect(wineWrap).not.toBeNull();
+    expect(String(img!.props.src)).toMatch(/logo-mark-gold\.svg/);
   });
 
   it("S-LOGO-4: variant=wordmark renders Cinzel text, not an Image", () => {

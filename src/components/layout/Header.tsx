@@ -37,12 +37,12 @@ export function Header({ accountSlot }: { accountSlot?: ReactNode }) {
   // Cinzel UI nav class — shared across desktop + mobile lists so the
   // typographic system is consistent. 13px, uppercase, tracked.
   const navLinkBase =
-    "font-display uppercase text-[13px] tracking-[0.12em] text-ink-soft transition-colors duration-200 ease-out";
+    "font-display uppercase text-[13px] tracking-[0.12em] text-paper-soft transition-colors duration-200 ease-out";
   const navLinkUnderline =
-    "relative after:absolute after:left-0 after:right-0 after:-bottom-1 after:h-px after:bg-gold-light after:scale-x-0 after:origin-left after:transition-transform after:duration-200 after:ease-out hover:text-ink hover:after:scale-x-100";
+    "relative after:absolute after:left-0 after:right-0 after:-bottom-1 after:h-px after:bg-gold after:scale-x-0 after:origin-left after:transition-transform after:duration-200 after:ease-out hover:text-paper hover:after:scale-x-100";
 
   return (
-    <header className="border-b rule bg-paper relative">
+    <header data-surface="wine" className="border-b border-rule-wine bg-wine text-paper relative">
       {/*
         3-column CSS grid:
           [auto]  logo hugs the true left edge
@@ -50,7 +50,7 @@ export function Header({ accountSlot }: { accountSlot?: ReactNode }) {
           [auto]  Account + Cart hug the true right edge
       */}
       <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4 md:gap-8 pl-3 pr-3 lg:pl-5 lg:pr-5 py-2 md:py-2.5">
-        <Logo variant="mark" surface="cream" size="xl" priority />
+        <Logo variant="mark" surface="wine" size="xl" priority />
 
         <nav
           className="hidden md:flex items-center justify-center gap-10 lg:gap-12"
@@ -69,7 +69,7 @@ export function Header({ accountSlot }: { accountSlot?: ReactNode }) {
 
         <div className="flex items-center gap-4 justify-self-end">
           {accountSlot}
-          <span className="[&_button]:transition-colors [&_button]:duration-200 [&_button]:ease-out [&_button:hover]:text-gold-dark">
+          <span className="[&_button]:transition-colors [&_button]:duration-200 [&_button]:ease-out [&_button]:text-paper-soft [&_button:hover]:text-gold-light">
             <CartButton />
           </span>
           <button

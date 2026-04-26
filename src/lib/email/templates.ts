@@ -46,7 +46,7 @@ export function editorialEmailHtml(opts: EditorialEmailOpts): string {
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FDFAF1;"><tr><td align="center" style="padding:32px 16px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#FDFAF1;">
       <tr><td align="center" style="padding:8px 32px 16px 32px;">
-        <div style="font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#6B5350;">Virtue of the Month · Honorable</div>
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#6B5350;">Made in USA · Verified per lot</div>
         <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;letter-spacing:4px;text-transform:uppercase;color:#4A0E1A;margin-top:10px;">Bench Grade Peptides</div>
         <div style="height:1px;background:#B89254;margin:18px auto 0 auto;width:80px;"></div>
       </td></tr>

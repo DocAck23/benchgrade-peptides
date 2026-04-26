@@ -34,6 +34,9 @@ import { cn } from "@/lib/utils";
  */
 
 const MARK_SRC = "/brand/logo-mark.svg";
+// Gold-on-transparent variant — used on wine surfaces (Header, Footer, RUOBanner,
+// premium tier callouts) where the wine fill of MARK_SRC would disappear.
+const MARK_GOLD_SRC = "/brand/logo-mark-gold.svg";
 // Native bbox of the traced mark — preserved from the F6 vector trace.
 const MARK_WIDTH = 918;
 const MARK_HEIGHT = 654;
@@ -64,16 +67,16 @@ const WIDTH_CLASSES: Record<LogoSize, string> = {
   xl: "w-44 md:w-60 lg:w-[280px]",
 };
 
-function srcFor(variant: LogoVariant): string {
-  // Single-asset reality: every image variant resolves to logo-mark.svg
-  // until the dedicated SVGs land. The mapping is centralized here so
-  // future variants slot in without touching the render path.
+function srcFor(variant: LogoVariant, surface: LogoSurface): string {
+  // Surface-aware routing: wine surfaces get the gold-on-transparent SVG
+  // so the mark stands against the wine background; cream surfaces get
+  // the wine-on-transparent SVG (the original).
   switch (variant) {
     case "full":
     case "mark":
     case "seal":
     default:
-      return MARK_SRC;
+      return surface === "wine" ? MARK_GOLD_SRC : MARK_SRC;
   }
 }
 
@@ -111,7 +114,7 @@ export function Logo({
     );
   }
 
-  const src = srcFor(variant);
+  const src = srcFor(variant, surface);
 
   const imageEl = (
     <Image
