@@ -3,7 +3,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase/client";
 import { OrderStatusPill } from "@/components/account/OrderStatusPill";
+import { SubscriptionCard } from "@/components/account/SubscriptionCard";
 import { isValidStatus, type OrderStatus } from "@/lib/orders/status";
+import type { SubscriptionRow } from "@/lib/supabase/types";
 import { formatPrice } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -66,6 +68,21 @@ export default async function AccountDashboardPage() {
     .select("order_id, created_at, status, total_cents, subtotal_cents, items")
     .order("created_at", { ascending: false })
     .limit(3);
+
+  const { data: subRows } = await supa
+    .from("subscriptions")
+    .select("*")
+    .in("status", ["active", "paused"])
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  const activeSub: SubscriptionRow | null =
+    Array.isArray(subRows) &&
+    subRows.length > 0 &&
+    subRows[0] &&
+    typeof (subRows[0] as { id?: unknown }).id === "string"
+      ? (subRows[0] as SubscriptionRow)
+      : null;
 
   const recent: RecentOrderRow[] = Array.isArray(rows)
     ? rows
@@ -166,12 +183,36 @@ export default async function AccountDashboardPage() {
         )}
       </section>
 
+      {activeSub ? (
+        <section aria-labelledby="subscription-heading" className="space-y-4">
+          <div className="flex items-baseline justify-between">
+            <h2
+              id="subscription-heading"
+              className="font-display uppercase text-[13px] tracking-[0.18em] text-ink"
+            >
+              Active subscription
+            </h2>
+            <Link
+              href="/account/subscription"
+              className="font-display uppercase text-[11px] tracking-[0.12em] text-gold-dark hover:text-ink transition-colors duration-200 ease-out"
+            >
+              Manage →
+            </Link>
+          </div>
+          <SubscriptionCard sub={activeSub} />
+        </section>
+      ) : null}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <PlaceholderCard
-          eyebrow="Subscription"
-          headline="Auto-replenish on its way."
-          body="Lock in your stack at a tier price and ship on cadence. Coming in v1.2."
-        />
+        {!activeSub && (
+          <PlaceholderCard
+            eyebrow="Subscription"
+            headline="Subscribe & save 18–35%."
+            body="Lock in your stack at a tier price. Pause or cancel any time."
+            ctaHref="/account/subscription"
+            ctaLabel="Start a subscription"
+          />
+        )}
         <PlaceholderCard
           eyebrow="Messages"
           headline="Direct line to the bench."

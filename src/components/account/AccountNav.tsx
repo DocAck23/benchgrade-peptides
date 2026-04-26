@@ -7,10 +7,10 @@ import { cn } from "@/lib/utils";
 /**
  * Customer portal nav (spec §5 portal route map).
  *
- * Active tabs: Dashboard, Orders.
- * Coming-soon tabs: Subscription, Messages, Referrals, Profile — rendered
- * non-clickable in `text-ink-muted cursor-not-allowed` with a tooltip per
- * spec §16.4 ("greyed but visible — every empty surface is a sales surface").
+ * Active tabs: Dashboard, Orders, Subscription.
+ * Coming-soon tabs: Messages, Referrals, Profile — rendered non-clickable
+ * in `text-ink-muted cursor-not-allowed` with a tooltip per spec §16.4
+ * ("greyed but visible — every empty surface is a sales surface").
  */
 
 interface Tab {
@@ -33,7 +33,13 @@ const TABS: Tab[] = [
     enabled: true,
     match: (p) => p === "/account/orders" || p.startsWith("/account/orders/"),
   },
-  { href: "#", label: "Subscription", enabled: false },
+  {
+    href: "/account/subscription",
+    label: "Subscription",
+    enabled: true,
+    match: (p) =>
+      p === "/account/subscription" || p.startsWith("/account/subscription/"),
+  },
   { href: "#", label: "Messages", enabled: false },
   { href: "#", label: "Referrals", enabled: false },
   { href: "#", label: "Profile", enabled: false },
