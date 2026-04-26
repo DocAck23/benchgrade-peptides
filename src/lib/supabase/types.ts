@@ -50,6 +50,10 @@ export interface OrderRow {
     user_agent: string;
   };
   status: OrderStatus;
+  tracking_number?: string | null;
+  tracking_carrier?: 'USPS' | 'UPS' | 'FedEx' | 'DHL' | null;
+  shipped_at?: string | null;
+  customer_user_id?: string | null;
   created_at: string;
   updated_at: string;
 }
