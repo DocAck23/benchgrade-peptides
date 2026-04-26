@@ -33,7 +33,7 @@ export function ProductCard({ product, categorySlug }: ProductCardProps) {
         className="flex flex-col flex-1 focus-visible:outline-none focus-visible:bg-paper-soft"
       >
       {/* Vial photograph — fixed aspect ratio for uniform card height */}
-      <div className="relative aspect-[4/5] bg-paper-soft border rule mb-3 sm:mb-4 overflow-hidden">
+      <div className="relative aspect-square bg-paper-soft border rule mb-3 sm:mb-4 overflow-hidden">
         <Image
           src={product.vial_image}
           alt={`${product.name} research vial`}

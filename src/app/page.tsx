@@ -62,13 +62,6 @@ export default function Home() {
                     Browse the catalogue
                   </Button>
                 </Link>
-                <Link
-                  href="/why-no-cards"
-                  className="inline-flex items-center text-sm tracking-[0.04em] underline underline-offset-[6px] decoration-1 transition-colors duration-200 ease-[var(--ease-default)] hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 text-wine"
-                  style={{ textDecorationColor: "var(--color-gold)" }}
-                >
-                  Why no cards? →
-                </Link>
               </div>
             </div>
 

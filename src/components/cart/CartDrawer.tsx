@@ -250,7 +250,14 @@ export function CartDrawer() {
 
               <p className="text-xs text-ink-muted leading-relaxed">
                 Shipping calculated at checkout. Payment by bank transfer only — order confirmation
-                email includes wire instructions.
+                email includes wire instructions.{" "}
+                <Link
+                  href="/why-no-cards"
+                  onClick={closeDrawer}
+                  className="text-gold-dark hover:text-gold underline underline-offset-2"
+                >
+                  Why no cards? →
+                </Link>
               </p>
               <Link
                 href="/checkout"

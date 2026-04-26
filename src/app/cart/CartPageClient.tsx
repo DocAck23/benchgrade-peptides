@@ -117,7 +117,13 @@ export function CartPageClient() {
             <p>Shipping calculated at checkout.</p>
             <p>
               Payment by bank transfer only. Wire instructions are sent by email after order
-              confirmation.
+              confirmation.{" "}
+              <Link
+                href="/why-no-cards"
+                className="text-gold-dark hover:text-gold underline underline-offset-2"
+              >
+                Why no cards? →
+              </Link>
             </p>
           </div>
           <Link
