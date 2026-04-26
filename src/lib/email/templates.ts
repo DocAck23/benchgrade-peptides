@@ -1175,3 +1175,240 @@ export function referralEarnedEmail(ctx: ReferralEarnedContext): {
 
   return { subject, text, html };
 }
+
+// ---------- Sprint 4 Wave A3: affiliate transactional emails ----------
+
+export type AffiliateTier = "bronze" | "silver" | "gold";
+export type AffiliatePayoutMethod = "zelle" | "crypto" | "wire";
+
+export interface AffiliateApplicationApprovedContext {
+  name: string;
+  tier: AffiliateTier;
+  commission_pct: number;
+  referral_link_url: string;
+  dashboard_url: string;
+}
+
+export interface AffiliateCommissionEarnedContext {
+  name: string;
+  affiliate_id: string;
+  monthly_total_cents: number;
+  ledger_count: number;
+  available_balance_cents: number;
+  /** Human label like "April 2026" — caller-supplied. */
+  period_label: string;
+}
+
+export interface AffiliatePayoutSentContext {
+  name: string;
+  amount_cents: number;
+  method: AffiliatePayoutMethod;
+  external_reference?: string;
+}
+
+function tierLabel(t: AffiliateTier): string {
+  switch (t) {
+    case "bronze":
+      return "Bronze";
+    case "silver":
+      return "Silver";
+    case "gold":
+      return "Gold";
+  }
+}
+
+function payoutMethodLabel(m: AffiliatePayoutMethod): string {
+  switch (m) {
+    case "zelle":
+      return "Zelle";
+    case "crypto":
+      return "Crypto";
+    case "wire":
+      return "Wire";
+  }
+}
+
+function payoutMethodInstructionsText(
+  m: AffiliatePayoutMethod,
+  ref?: string
+): string {
+  const refLine = ref ? `Reference: ${ref}\n` : "";
+  switch (m) {
+    case "zelle":
+      return `${refLine}Zelle deposits typically arrive within minutes at most major US banks.`;
+    case "crypto":
+      return `${refLine}On-chain confirmation depends on network — usually 10-60 minutes.`;
+    case "wire":
+      return `${refLine}Domestic wires typically settle within 1 business day.`;
+  }
+}
+
+function payoutMethodInstructionsHtml(
+  m: AffiliatePayoutMethod,
+  ref?: string
+): string {
+  const refRow = ref
+    ? `<tr><td style="width:120px;color:#6B5350;padding:2px 0;">Reference</td><td style="color:#4A0E1A;"><strong>${escapeHtml(ref)}</strong></td></tr>`
+    : "";
+  let footer = "";
+  switch (m) {
+    case "zelle":
+      footer =
+        "Zelle deposits typically arrive within minutes at most major US banks.";
+      break;
+    case "crypto":
+      footer =
+        "On-chain confirmation depends on network — usually 10-60 minutes.";
+      break;
+    case "wire":
+      footer = "Domestic wires typically settle within 1 business day.";
+      break;
+  }
+  return `<div style="background:#F4EBD7;border:1px solid #D4C8A8;padding:18px;margin:0 0 18px 0;">
+    <div style="font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;margin-bottom:8px;">Payout details</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;color:#1A0506;">
+      <tr><td style="width:120px;color:#6B5350;padding:2px 0;">Method</td><td>${escapeHtml(payoutMethodLabel(m))}</td></tr>
+      ${refRow}
+    </table>
+    <p style="margin:12px 0 0 0;font-family:Georgia,'Times New Roman',serif;font-size:13px;line-height:1.6;color:#4A2528;">${escapeHtml(footer)}</p>
+  </div>`;
+}
+
+export function affiliateApplicationApprovedEmail(
+  ctx: AffiliateApplicationApprovedContext
+): { subject: string; text: string; html: string } {
+  const subject = "Welcome to the Bench Grade Affiliate Program";
+  const customerName = escapeHtml(ctx.name);
+  const safeLink = escapeHtml(ctx.referral_link_url);
+  const tier = tierLabel(ctx.tier);
+  const memo = `AFFILIATE · ${tier.toUpperCase()}`;
+
+  const text = [
+    `${ctx.name} —`,
+    ``,
+    `Your application is approved. You're now a ${tier} affiliate, earning ${ctx.commission_pct}% commission on every referred order, for life.`,
+    ``,
+    `Your referral link:`,
+    ctx.referral_link_url,
+    ``,
+    `Open dashboard: ${ctx.dashboard_url}`,
+    ``,
+    RUO_DISCLAIMER,
+    ``,
+    `Bench Grade Peptides · Made in USA`,
+  ].join("\n");
+
+  const bodyHtml = `
+    <p style="margin:0 0 14px 0;">${customerName} —</p>
+    <p style="margin:0 0 14px 0;">Your application is approved. You're now a <strong>${escapeHtml(tier)}</strong> affiliate, earning <strong>${ctx.commission_pct}%</strong> commission on every referred order, for life.</p>
+
+    <div style="background:#F4EBD7;border:1px solid #D4C8A8;padding:18px;margin:0 0 18px 0;">
+      <div style="font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;margin-bottom:8px;">Your referral link</div>
+      <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#4A0E1A;word-break:break-all;">${safeLink}</p>
+    </div>
+
+    <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:13px;color:#6B5350;line-height:1.6;">Share your link, earn commission on every confirmed order. The dashboard tracks clicks, conversions, and balances in real time.</p>`;
+
+  const html = editorialEmailHtml({
+    title: "Welcome to the program.",
+    bodyHtml,
+    memo,
+    cta: { label: "Open dashboard", href: ctx.dashboard_url },
+  });
+
+  return { subject, text, html };
+}
+
+export function affiliateCommissionEarnedEmail(
+  ctx: AffiliateCommissionEarnedContext
+): { subject: string; text: string; html: string } {
+  const first8 = ctx.affiliate_id.slice(0, 8);
+  const memo = `BGP-AFF-${first8}`;
+  const monthlyTotal = formatPrice(ctx.monthly_total_cents);
+  const availableBalance = formatPrice(ctx.available_balance_cents);
+  const subject = `You earned ${monthlyTotal} this month — ${memo}`;
+  const customerName = escapeHtml(ctx.name);
+  const dashboardUrl = `${SITE_URL}/account/affiliate`;
+
+  const text = [
+    `${ctx.name} —`,
+    ``,
+    `Here's your earnings for ${ctx.period_label}: ${monthlyTotal} across ${ctx.ledger_count} referred orders.`,
+    ``,
+    `Available balance: ${availableBalance}`,
+    ``,
+    `View ledger: ${dashboardUrl}`,
+    ``,
+    RUO_DISCLAIMER,
+    ``,
+    `Bench Grade Peptides · Made in USA`,
+  ].join("\n");
+
+  const bodyHtml = `
+    <p style="margin:0 0 14px 0;">${customerName} —</p>
+    <p style="margin:0 0 14px 0;">Here's your earnings for <strong>${escapeHtml(ctx.period_label)}</strong>: <strong>${monthlyTotal}</strong> across <strong>${ctx.ledger_count}</strong> referred orders.</p>
+
+    <div style="background:#F4EBD7;border:1px solid #D4C8A8;padding:18px;margin:0 0 18px 0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;color:#1A0506;">
+        <tr><td style="width:160px;color:#6B5350;padding:2px 0;">Earned this month</td><td><strong>${monthlyTotal}</strong></td></tr>
+        <tr><td style="width:160px;color:#6B5350;padding:2px 0;">Referred orders</td><td>${ctx.ledger_count}</td></tr>
+        <tr><td style="width:160px;color:#6B5350;padding:2px 0;">Available balance</td><td style="color:#4A0E1A;"><strong>${availableBalance}</strong></td></tr>
+      </table>
+    </div>`;
+
+  const html = editorialEmailHtml({
+    title: `You earned ${monthlyTotal}.`,
+    bodyHtml,
+    memo,
+    cta: { label: "View ledger", href: dashboardUrl },
+  });
+
+  return { subject, text, html };
+}
+
+export function affiliatePayoutSentEmail(
+  ctx: AffiliatePayoutSentContext
+): { subject: string; text: string; html: string } {
+  const amount = formatPrice(ctx.amount_cents);
+  const method = payoutMethodLabel(ctx.method);
+  const subject = `Payout sent: ${amount} via ${method}`;
+  const customerName = escapeHtml(ctx.name);
+  const dashboardUrl = `${SITE_URL}/account/affiliate`;
+  const memo = `PAYOUT · ${method.toUpperCase()}`;
+  const refLine = ctx.external_reference
+    ? `Reference: ${ctx.external_reference}\n`
+    : "";
+
+  const text = [
+    `${ctx.name} —`,
+    ``,
+    `We sent ${amount} to your ${method} account.`,
+    refLine ? refLine.trimEnd() : "",
+    `Allow 1–3 business days to clear.`,
+    ``,
+    payoutMethodInstructionsText(ctx.method, ctx.external_reference),
+    ``,
+    `View affiliate dashboard: ${dashboardUrl}`,
+    ``,
+    RUO_DISCLAIMER,
+    ``,
+    `Bench Grade Peptides · Made in USA`,
+  ]
+    .filter((l) => l !== "")
+    .join("\n");
+
+  const bodyHtml = `
+    <p style="margin:0 0 14px 0;">${customerName} —</p>
+    <p style="margin:0 0 14px 0;">We sent <strong>${amount}</strong> to your <strong>${escapeHtml(method)}</strong> account. Allow 1–3 business days to clear.</p>
+
+    ${payoutMethodInstructionsHtml(ctx.method, ctx.external_reference)}`;
+
+  const html = editorialEmailHtml({
+    title: `Payout sent: ${amount}.`,
+    bodyHtml,
+    memo,
+    cta: { label: "View affiliate dashboard", href: dashboardUrl },
+  });
+
+  return { subject, text, html };
+}

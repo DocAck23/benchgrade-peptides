@@ -12,6 +12,9 @@ import {
   subscriptionRenewalEmail,
   messageNotificationEmail,
   referralEarnedEmail,
+  affiliateApplicationApprovedEmail,
+  affiliateCommissionEarnedEmail,
+  affiliatePayoutSentEmail,
 } from "../templates";
 import type { CartItem } from "@/lib/cart/types";
 
@@ -513,6 +516,142 @@ describe("referralEarnedEmail (U-EMAIL-RE-1)", () => {
     expect(email.html).not.toContain("<b>oops</b>");
     expect(email.html).toContain("&lt;script&gt;");
     expect(email.html).toContain("&lt;b&gt;oops&lt;/b&gt;");
+  });
+});
+
+describe("affiliateApplicationApprovedEmail (U-EMAIL-AFFAPP-1)", () => {
+  const ctx = {
+    name: "Dr. Jane Smith",
+    tier: "bronze" as const,
+    commission_pct: 10,
+    referral_link_url: "https://benchgradepeptides.com/?ref=abcd1234",
+    dashboard_url: "https://benchgradepeptides.com/account/affiliate",
+  };
+
+  it("subject is exactly 'Welcome to the Bench Grade Affiliate Program'", () => {
+    const email = affiliateApplicationApprovedEmail(ctx);
+    expect(email.subject).toBe("Welcome to the Bench Grade Affiliate Program");
+  });
+
+  it("body mentions Bronze tier, 10% commission, and the referral link", () => {
+    const email = affiliateApplicationApprovedEmail(ctx);
+    expect(email.text).toContain("Dr. Jane Smith");
+    expect(email.text).toMatch(/Bronze/);
+    expect(email.text).toMatch(/10%/);
+    expect(email.text).toContain("https://benchgradepeptides.com/?ref=abcd1234");
+    expect(email.html).toMatch(/Bronze/);
+    expect(email.html).toMatch(/10%/);
+    expect(email.html).toContain("https://benchgradepeptides.com/?ref=abcd1234");
+  });
+
+  it("CTA links to dashboard URL", () => {
+    const email = affiliateApplicationApprovedEmail(ctx);
+    expect(email.html).toContain("https://benchgradepeptides.com/account/affiliate");
+  });
+
+  it("escapes user-supplied substitutions (name)", () => {
+    const email = affiliateApplicationApprovedEmail({
+      ...ctx,
+      name: "<script>alert(1)</script>",
+    });
+    expect(email.html).not.toContain("<script>alert(1)</script>");
+    expect(email.html).toContain("&lt;script&gt;");
+  });
+});
+
+describe("affiliateCommissionEarnedEmail (U-EMAIL-AFFCOMM-1)", () => {
+  const ctx = {
+    name: "Dr. Jane Smith",
+    affiliate_id: "abcd1234-ef56-7890-1234-567890abcdef",
+    monthly_total_cents: 12550,
+    ledger_count: 3,
+    available_balance_cents: 30000,
+    period_label: "April 2026",
+  };
+
+  it("subject is exactly 'You earned $125.50 this month — BGP-AFF-<first8>'", () => {
+    const email = affiliateCommissionEarnedEmail(ctx);
+    expect(email.subject).toBe(
+      "You earned $125.50 this month — BGP-AFF-abcd1234"
+    );
+  });
+
+  it("body includes monthly total, ledger count, and available balance", () => {
+    const email = affiliateCommissionEarnedEmail(ctx);
+    expect(email.text).toContain("Dr. Jane Smith");
+    expect(email.text).toContain("$125.50");
+    expect(email.text).toMatch(/3 referred orders/);
+    expect(email.text).toContain("$300.00");
+    expect(email.html).toContain("$125.50");
+    expect(email.html).toContain("$300.00");
+  });
+
+  it("CTA links to /account/affiliate", () => {
+    const email = affiliateCommissionEarnedEmail(ctx);
+    expect(email.html).toContain("/account/affiliate");
+  });
+
+  it("escapes user-supplied substitutions (name)", () => {
+    const email = affiliateCommissionEarnedEmail({
+      ...ctx,
+      name: "<script>x</script>",
+    });
+    expect(email.html).not.toContain("<script>x</script>");
+    expect(email.html).toContain("&lt;script&gt;");
+  });
+});
+
+describe("affiliatePayoutSentEmail (U-EMAIL-AFFPAY-1)", () => {
+  const ctx = {
+    name: "Dr. Jane Smith",
+    amount_cents: 25000,
+    method: "zelle" as const,
+    external_reference: "ZL-7788XX",
+  };
+
+  it("subject is exactly 'Payout sent: $250.00 via Zelle'", () => {
+    const email = affiliatePayoutSentEmail(ctx);
+    expect(email.subject).toBe("Payout sent: $250.00 via Zelle");
+  });
+
+  it("body confirms amount, method and reference", () => {
+    const email = affiliatePayoutSentEmail(ctx);
+    expect(email.text).toContain("Dr. Jane Smith");
+    expect(email.text).toContain("$250.00");
+    expect(email.text).toMatch(/Zelle/);
+    expect(email.text).toContain("ZL-7788XX");
+    expect(email.html).toContain("$250.00");
+    expect(email.html).toContain("ZL-7788XX");
+  });
+
+  it("CTA links to /account/affiliate", () => {
+    const email = affiliatePayoutSentEmail(ctx);
+    expect(email.html).toContain("/account/affiliate");
+  });
+
+  it("crypto method shows tx hash reference and crypto label", () => {
+    const email = affiliatePayoutSentEmail({
+      name: "Dr. Jane Smith",
+      amount_cents: 10000,
+      method: "crypto",
+      external_reference: "0xdeadbeef",
+    });
+    expect(email.subject).toBe("Payout sent: $100.00 via Crypto");
+    expect(email.text).toContain("0xdeadbeef");
+    expect(email.html).toContain("0xdeadbeef");
+  });
+
+  it("escapes user-supplied substitutions (name, external_reference)", () => {
+    const email = affiliatePayoutSentEmail({
+      name: "<script>x</script>",
+      amount_cents: 10000,
+      method: "wire",
+      external_reference: "<img src=x>",
+    });
+    expect(email.html).not.toContain("<script>x</script>");
+    expect(email.html).not.toContain("<img src=x>");
+    expect(email.html).toContain("&lt;script&gt;");
+    expect(email.html).toContain("&lt;img src=x&gt;");
   });
 });
 
