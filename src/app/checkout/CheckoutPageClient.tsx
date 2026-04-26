@@ -51,7 +51,7 @@ export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps
         <h1 className="font-display text-4xl text-ink mb-6">Your cart is empty.</h1>
         <Link
           href="/catalog"
-          className="inline-flex items-center h-12 px-8 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-teal transition-colors"
+          className="inline-flex items-center h-12 px-8 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-gold transition-colors"
         >
           Browse the catalog
         </Link>
@@ -197,7 +197,7 @@ export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps
           </Callout>
 
           {error && (
-            <div className="border border-oxblood/40 bg-oxblood/5 text-oxblood px-4 py-3 text-sm">
+            <div className="border border-danger/40 bg-danger/5 text-danger px-4 py-3 text-sm">
               {error}
             </div>
           )}
@@ -207,7 +207,7 @@ export function CheckoutPageClient({ availableMethods }: CheckoutPageClientProps
           <button
             type="submit"
             disabled={submitting || !paymentMethod}
-            className="flex items-center justify-center w-full h-12 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-teal transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex items-center justify-center w-full h-12 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-gold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {submitting ? "Submitting…" : "Review RUO certification & submit"}
           </button>
@@ -261,7 +261,7 @@ function FreeShippingBar({ subtotal }: { subtotal: number }) {
       <div className="flex items-center gap-2 text-xs">
         {unlocked ? (
           <>
-            <Check className="w-3.5 h-3.5 text-teal" strokeWidth={2} aria-hidden />
+            <Check className="w-3.5 h-3.5 text-gold" strokeWidth={2} aria-hidden />
             <span className="text-ink">Free domestic shipping unlocked.</span>
           </>
         ) : (
@@ -280,7 +280,7 @@ function FreeShippingBar({ subtotal }: { subtotal: number }) {
         aria-label="Free shipping progress"
       >
         <div
-          className={cn("h-full transition-all duration-300", unlocked ? "bg-teal" : "bg-ink")}
+          className={cn("h-full transition-all duration-300", unlocked ? "bg-gold" : "bg-ink")}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -380,7 +380,7 @@ function Field({ label, value, onChange, required, type = "text", autoComplete, 
     <label className="block">
       <span className="block text-xs text-ink-muted mb-1">
         {label}
-        {required && <span className="text-oxblood"> *</span>}
+        {required && <span className="text-wine"> *</span>}
       </span>
       {multiline ? (
         <textarea

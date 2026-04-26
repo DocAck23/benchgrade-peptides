@@ -68,7 +68,7 @@ export function VariantPicker({ product }: VariantPickerProps) {
                   onClick={() => setSelectedSku(variant.sku)}
                   className={cn(
                     "flex items-baseline justify-between gap-4 px-4 py-3 border transition-colors",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2",
                     selected
                       ? "border-ink bg-paper-soft"
                       : "rule bg-paper hover:bg-paper-soft"

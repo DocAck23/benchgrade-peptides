@@ -111,7 +111,7 @@ export function CartDrawer() {
               <Link
                 href="/catalog"
                 onClick={closeDrawer}
-                className="inline-flex items-center h-11 px-6 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-teal transition-colors"
+                className="inline-flex items-center h-11 px-6 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-gold transition-colors"
               >
                 Browse the catalog
               </Link>
@@ -136,14 +136,14 @@ export function CartDrawer() {
                       <Link
                         href={`/catalog/${item.category_slug}/${item.product_slug}`}
                         onClick={closeDrawer}
-                        className="font-display text-base text-ink hover:text-teal truncate"
+                        className="font-display text-base text-ink hover:text-gold truncate"
                       >
                         {item.name}
                       </Link>
                       <button
                         type="button"
                         onClick={() => removeItem(item.sku)}
-                        className="text-xs text-ink-muted hover:text-oxblood shrink-0"
+                        className="text-xs text-ink-muted hover:text-wine shrink-0"
                         aria-label={`Remove ${item.name} ${item.pack_size}-vial pack from cart`}
                       >
                         Remove
@@ -197,7 +197,7 @@ export function CartDrawer() {
               <Link
                 href="/checkout"
                 onClick={closeDrawer}
-                className="flex items-center justify-center w-full h-12 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-teal transition-colors"
+                className="flex items-center justify-center w-full h-12 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-gold transition-colors"
               >
                 Proceed to checkout
               </Link>

@@ -15,7 +15,7 @@ export function CartButton() {
       {itemCount > 0 && (
         <span
           aria-hidden="true"
-          className="absolute -top-2 -right-2 min-w-5 h-5 px-1 bg-teal text-paper text-[11px] font-mono-data flex items-center justify-center rounded-full"
+          className="absolute -top-2 -right-2 min-w-5 h-5 px-1 bg-gold text-paper text-[11px] font-mono-data flex items-center justify-center rounded-full"
         >
           {itemCount}
         </span>
