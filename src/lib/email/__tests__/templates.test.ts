@@ -10,6 +10,8 @@ import {
   subscriptionCycleShipNoticeEmail,
   subscriptionPaymentDueEmail,
   subscriptionRenewalEmail,
+  messageNotificationEmail,
+  referralEarnedEmail,
 } from "../templates";
 import type { CartItem } from "@/lib/cart/types";
 
@@ -429,6 +431,88 @@ describe("subscriptionRenewalEmail", () => {
     const email = subscriptionRenewalEmail(renewalCtx);
     expect(email.html).toContain("Renew at 15% off");
     expect(email.html).toContain("/account/subscription/renew?plan=");
+  });
+});
+
+describe("messageNotificationEmail (U-EMAIL-MN-1)", () => {
+  const ctx = {
+    customer_name: "Dr. Jane Smith",
+    message_id: "msgabcde-1234-5678-9012-3456789abcde",
+    message_preview: "Thanks for the question — your COA is attached on the portal.",
+    thread_url: "https://benchgradepeptides.com/account/messages",
+    truncated: false,
+  };
+
+  it("subject is exactly 'New message from Bench Grade · BGP-MSG-<first8>'", () => {
+    const email = messageNotificationEmail(ctx);
+    expect(email.subject).toBe("New message from Bench Grade · BGP-MSG-msgabcde");
+  });
+
+  it("body includes customer name and message preview", () => {
+    const email = messageNotificationEmail(ctx);
+    expect(email.text).toContain("Dr. Jane Smith");
+    expect(email.text).toContain("Thanks for the question");
+    expect(email.html).toContain("Thanks for the question");
+  });
+
+  it("CTA links to thread_url", () => {
+    const email = messageNotificationEmail(ctx);
+    expect(email.html).toContain("https://benchgradepeptides.com/account/messages");
+    expect(email.text).toContain("https://benchgradepeptides.com/account/messages");
+  });
+
+  it("escapes user-supplied substitutions (name, preview)", () => {
+    const email = messageNotificationEmail({
+      ...ctx,
+      customer_name: "<script>alert(1)</script>",
+      message_preview: "<img src=x onerror=alert(1)>",
+    });
+    expect(email.html).not.toContain("<script>alert(1)</script>");
+    expect(email.html).not.toContain("<img src=x");
+    expect(email.html).toContain("&lt;script&gt;");
+    expect(email.html).toContain("&lt;img");
+  });
+});
+
+describe("referralEarnedEmail (U-EMAIL-RE-1)", () => {
+  const ctx = {
+    customer_name: "Dr. Jane Smith",
+    referee_email: "friend@example.edu",
+    referral_count: 1,
+    free_vial_size_mg: 5,
+  };
+
+  it("subject is exactly 'Free vial earned — your friend's first order shipped'", () => {
+    const email = referralEarnedEmail(ctx);
+    expect(email.subject).toBe(
+      "Free vial earned — your friend's first order shipped"
+    );
+  });
+
+  it("body includes referee email, customer name, and 5mg free vial mention", () => {
+    const email = referralEarnedEmail(ctx);
+    expect(email.text).toContain("Dr. Jane Smith");
+    expect(email.text).toContain("friend@example.edu");
+    expect(email.text).toMatch(/5mg/);
+    expect(email.html).toContain("friend@example.edu");
+    expect(email.html).toMatch(/5mg/);
+  });
+
+  it("CTA href points at /catalog?free_vial=true", () => {
+    const email = referralEarnedEmail(ctx);
+    expect(email.html).toContain("/catalog?free_vial=true");
+  });
+
+  it("escapes user-supplied substitutions (name, referee email)", () => {
+    const email = referralEarnedEmail({
+      ...ctx,
+      customer_name: "<script>x</script>",
+      referee_email: "<b>oops</b>@x.com",
+    });
+    expect(email.html).not.toContain("<script>x</script>");
+    expect(email.html).not.toContain("<b>oops</b>");
+    expect(email.html).toContain("&lt;script&gt;");
+    expect(email.html).toContain("&lt;b&gt;oops&lt;/b&gt;");
   });
 });
 

@@ -1060,3 +1060,118 @@ export function subscriptionRenewalEmail(
 
   return { subject, text, html };
 }
+
+// ---------- Sprint 3 Wave A3: messaging + referral lifecycle emails ----------
+
+export interface MessageNotificationContext {
+  customer_name: string;
+  message_id: string;
+  /** Already-truncated preview (caller passes first ~60 chars). */
+  message_preview: string;
+  thread_url: string;
+  /** Hint that the preview was truncated, so we append an ellipsis cue. */
+  truncated?: boolean;
+}
+
+export interface ReferralEarnedContext {
+  customer_name: string;
+  referee_email: string;
+  referral_count: number;
+  free_vial_size_mg: number;
+}
+
+export function messageNotificationEmail(ctx: MessageNotificationContext): {
+  subject: string;
+  text: string;
+  html: string;
+} {
+  const ref = ctx.message_id.slice(0, 8);
+  const memo = `BGP-MSG-${ref}`;
+  const subject = `New message from Bench Grade · ${memo}`;
+  const customerName = escapeHtml(ctx.customer_name);
+  const previewSafe = escapeHtml(ctx.message_preview);
+  const ellipsis = ctx.truncated ? "…" : "";
+  const safeUrl = escapeHtml(ctx.thread_url);
+
+  const text = [
+    `${ctx.customer_name} —`,
+    ``,
+    `You have a new message from our team.`,
+    ``,
+    `Preview: ${ctx.message_preview}${ellipsis}`,
+    ``,
+    `Open the thread to read the full message and reply: ${ctx.thread_url}`,
+    ``,
+    RUO_DISCLAIMER,
+    ``,
+    `Bench Grade Peptides · Made in USA`,
+  ].join("\n");
+
+  const bodyHtml = `
+    <p style="margin:0 0 14px 0;">${customerName} —</p>
+    <p style="margin:0 0 14px 0;">You have a new message from our team. Open the thread to read the full message and reply.</p>
+
+    <div style="background:#F4EBD7;border:1px solid #D4C8A8;padding:18px;margin:0 0 18px 0;">
+      <div style="font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;margin-bottom:8px;">Preview</div>
+      <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:14px;line-height:1.6;color:#1A0506;font-style:italic;">${previewSafe}${ellipsis}</p>
+    </div>`;
+
+  const html = editorialEmailHtml({
+    title: "A new message awaits.",
+    bodyHtml,
+    memo,
+    cta: { label: "Open thread", href: ctx.thread_url },
+  });
+
+  // Reference safeUrl so future maintainers can read it; CTA already escapes.
+  void safeUrl;
+
+  return { subject, text, html };
+}
+
+export function referralEarnedEmail(ctx: ReferralEarnedContext): {
+  subject: string;
+  text: string;
+  html: string;
+} {
+  const subject = `Free vial earned — your friend's first order shipped`;
+  const customerName = escapeHtml(ctx.customer_name);
+  const refereeEmailSafe = escapeHtml(ctx.referee_email);
+  const ctaHref = "/catalog?free_vial=true";
+  const memo = `REFERRAL · ${ctx.referral_count} of yours`;
+
+  const text = [
+    `${ctx.customer_name} —`,
+    ``,
+    `Your referral made it. ${ctx.referee_email}'s order shipped today.`,
+    ``,
+    `A free ${ctx.free_vial_size_mg}mg vial of your choice has been added to your account — pick at next checkout.`,
+    ``,
+    `Successful referrals to date: ${ctx.referral_count}`,
+    ``,
+    `Pick your free vial: ${ctaHref}`,
+    ``,
+    RUO_DISCLAIMER,
+    ``,
+    `Bench Grade Peptides · Made in USA`,
+  ].join("\n");
+
+  const bodyHtml = `
+    <p style="margin:0 0 14px 0;">${customerName} —</p>
+    <p style="margin:0 0 14px 0;">Your referral made it. <strong>${refereeEmailSafe}</strong>'s order shipped today.</p>
+
+    <div style="background:#F4EBD7;border:1px solid #D4C8A8;padding:18px;margin:0 0 18px 0;">
+      <div style="font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;margin-bottom:8px;">Reward</div>
+      <p style="margin:0 0 8px 0;font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.6;color:#1A0506;">A free <strong>${ctx.free_vial_size_mg}mg</strong> vial of your choice has been added to your account — pick at next checkout.</p>
+      <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#6B5350;letter-spacing:1px;">SUCCESSFUL REFERRALS · ${ctx.referral_count}</p>
+    </div>`;
+
+  const html = editorialEmailHtml({
+    title: "Free vial earned.",
+    bodyHtml,
+    memo,
+    cta: { label: "Pick your free vial", href: ctaHref },
+  });
+
+  return { subject, text, html };
+}
