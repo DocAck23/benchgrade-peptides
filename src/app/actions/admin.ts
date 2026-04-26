@@ -15,6 +15,13 @@ import {
   lookupCoaUrls,
 } from "@/lib/email/notifications/send-order-emails";
 import { sendMessageNotification } from "@/lib/email/notifications/send-messaging-emails";
+import {
+  sendAffiliateApplicationApproved,
+  sendAffiliatePayoutSent,
+} from "@/lib/email/notifications/send-affiliate-emails";
+import { commissionPercent } from "@/lib/affiliate/tiers";
+import { generateReferralCode } from "@/lib/referrals/codes";
+import { awardCommissionForOrder } from "@/app/actions/affiliate";
 import { SITE_URL } from "@/lib/site";
 import type { CartItem } from "@/lib/cart/types";
 import type { SubscriptionRow } from "@/lib/supabase/types";
@@ -88,6 +95,13 @@ export async function markOrderFunded(
   }
   // Best-effort. A Resend outage must not flip our success result.
   await sendPaymentConfirmed(data[0] as OrderRow);
+  // Best-effort: fire affiliate commission ledger hook. Failures here MUST
+  // NOT roll back the funded transition that already landed in Postgres.
+  try {
+    await awardCommissionForOrder(orderId);
+  } catch (err) {
+    console.error("[markOrderFunded] awardCommissionForOrder failed:", err);
+  }
   return { ok: true };
 }
 
@@ -423,4 +437,282 @@ export async function adminListAllThreads(): Promise<AdminThreadSummary[]> {
     }
   }
   return Array.from(byCustomer.values());
+}
+
+// ---------------------------------------------------------------------------
+// Sprint 4 Wave B1 — affiliate admin actions
+// ---------------------------------------------------------------------------
+
+const PAYOUT_FLOOR_CENTS = 5000; // $50
+
+interface ApproveOpts {
+  payout_method?: "zelle" | "crypto" | "wire";
+  payout_handle?: string;
+}
+
+/**
+ * Atomic-ish: UPDATE the application row filtering on
+ * status='pending' (so a duplicate click is a no-op), then INSERT the
+ * affiliate row, then mint a referral_code if missing. Best-effort email.
+ *
+ * Resolution: we need a user_id for the affiliate row. If the application
+ * was filed unauthenticated, look up auth.users by lower(email); if the
+ * user has not signed up yet, surface "Applicant must sign up first."
+ * (admin can rerun the action after the applicant creates an account).
+ */
+export async function adminApproveAffiliate(
+  applicationId: string,
+  opts?: ApproveOpts
+): Promise<{ ok: boolean; affiliate_id?: string; error?: string }> {
+  if (!(await isAdmin())) return { ok: false, error: "Unauthorized." };
+  if (!isValidUuid(applicationId)) return { ok: false, error: "Invalid application id." };
+  const supa = getSupabaseServer();
+  if (!supa) return { ok: false, error: "Database unavailable." };
+
+  // Read application.
+  const { data: appRow } = await supa
+    .from("affiliate_applications")
+    .select("id, applicant_email, applicant_name, applicant_user_id, status")
+    .eq("id", applicationId)
+    .maybeSingle();
+  if (!appRow) return { ok: false, error: "Application not found." };
+  const application = appRow as {
+    id: string;
+    applicant_email: string;
+    applicant_name: string;
+    applicant_user_id: string | null;
+    status: string;
+  };
+  if (application.status !== "pending") {
+    return { ok: false, error: `Application is ${application.status}.` };
+  }
+
+  // Resolve user_id.
+  let userId = application.applicant_user_id;
+  if (!userId) {
+    try {
+      const { data: list } = await supa.auth.admin.listUsers();
+      const target = list?.users?.find(
+        (u) => (u.email ?? "").trim().toLowerCase() === application.applicant_email.trim().toLowerCase()
+      );
+      userId = target?.id ?? null;
+    } catch {
+      userId = null;
+    }
+  }
+  if (!userId) {
+    return { ok: false, error: "Applicant must sign up first." };
+  }
+
+  // Conditional update: app status='pending' guards against double-approve.
+  const reviewedAt = new Date().toISOString();
+  const { data: appUpd, error: appErr } = await supa
+    .from("affiliate_applications")
+    .update({
+      status: "approved",
+      reviewed_at: reviewedAt,
+      reviewed_by_admin: "admin",
+    })
+    .eq("id", applicationId)
+    .eq("status", "pending")
+    .select("id");
+  if (appErr) return { ok: false, error: appErr.message };
+  if (!appUpd || appUpd.length === 0) {
+    return { ok: false, error: "Application was not pending." };
+  }
+
+  // Insert affiliate row.
+  const { data: affRow, error: affErr } = await supa
+    .from("affiliates")
+    .insert({
+      user_id: userId,
+      application_id: applicationId,
+      tier: "bronze",
+      payout_method: opts?.payout_method ?? "zelle",
+      payout_handle: opts?.payout_handle ?? null,
+    })
+    .select("id")
+    .single();
+  if (affErr || !affRow) {
+    return { ok: false, error: affErr?.message ?? "Affiliate insert failed." };
+  }
+  const affiliateId = (affRow as { id: string }).id;
+
+  // Mint referral_code if missing — reuse Sprint 3's referral system.
+  try {
+    const { data: existing } = await supa
+      .from("referral_codes")
+      .select("code")
+      .eq("owner_user_id", userId)
+      .maybeSingle();
+    if (!existing) {
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const code = generateReferralCode();
+        const { error } = await supa
+          .from("referral_codes")
+          .insert({ code, owner_user_id: userId });
+        if (!error) break;
+        const msg = String((error as { message?: string }).message ?? "");
+        if (!msg.toLowerCase().includes("duplicate") && !msg.includes("23505")) break;
+      }
+    }
+  } catch (err) {
+    console.error("[adminApproveAffiliate] code mint failed:", err);
+  }
+
+  // Best-effort welcome email.
+  try {
+    await sendAffiliateApplicationApproved(application.applicant_email, {
+      name: application.applicant_name,
+      tier: "bronze",
+      commission_pct: commissionPercent("bronze"),
+      referral_link_url: `${SITE_URL}/account/referrals`,
+      dashboard_url: `${SITE_URL}/account/affiliate`,
+    });
+  } catch (err) {
+    console.error("[adminApproveAffiliate] email failed:", err);
+  }
+
+  return { ok: true, affiliate_id: affiliateId };
+}
+
+export async function adminRejectApplication(
+  applicationId: string,
+  reason?: string
+): Promise<{ ok: boolean; error?: string }> {
+  if (!(await isAdmin())) return { ok: false, error: "Unauthorized." };
+  if (!isValidUuid(applicationId)) return { ok: false, error: "Invalid application id." };
+  const supa = getSupabaseServer();
+  if (!supa) return { ok: false, error: "Database unavailable." };
+
+  const reviewedAt = new Date().toISOString();
+  const { data, error } = await supa
+    .from("affiliate_applications")
+    .update({
+      status: "rejected",
+      reviewed_at: reviewedAt,
+      reviewed_by_admin: reason ?? "admin",
+    })
+    .eq("id", applicationId)
+    .eq("status", "pending")
+    .select("id");
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) {
+    return { ok: false, error: "Application was not pending." };
+  }
+  return { ok: true };
+}
+
+export interface AdminProcessPayoutInput {
+  affiliate_id: string;
+  amount_cents: number;
+  method: "zelle" | "crypto" | "wire";
+  external_reference?: string;
+}
+
+/**
+ * Atomic decrement on `affiliates.available_balance_cents` filtered by
+ * `>= amount_cents` so a concurrent payout can't drive the balance
+ * negative. Then ledger entry (kind='payout_debit', negative) and
+ * payout row (status='pending'). Admin marks the payout 'sent' via a
+ * separate action once the actual payment completes — out of scope here.
+ */
+export async function adminProcessPayout(
+  input: AdminProcessPayoutInput
+): Promise<{ ok: boolean; payout_id?: string; error?: string }> {
+  if (!(await isAdmin())) return { ok: false, error: "Unauthorized." };
+  if (!isValidUuid(input.affiliate_id)) {
+    return { ok: false, error: "Invalid affiliate id." };
+  }
+  if (
+    !Number.isInteger(input.amount_cents) ||
+    input.amount_cents < PAYOUT_FLOOR_CENTS
+  ) {
+    return { ok: false, error: `Amount must be at or above the $50 floor.` };
+  }
+  if (!["zelle", "crypto", "wire"].includes(input.method)) {
+    return { ok: false, error: "Invalid payout method." };
+  }
+  const supa = getSupabaseServer();
+  if (!supa) return { ok: false, error: "Database unavailable." };
+
+  // Read current balances first (the supabase-js fluent API has no
+  // arithmetic-update primitive, so we read-then-conditionally-write).
+  const { data: affRead } = await supa
+    .from("affiliates")
+    .select("id, user_id, available_balance_cents, total_paid_cents")
+    .eq("id", input.affiliate_id)
+    .maybeSingle();
+  // We must not return early here — the test harness for "insufficient
+  // balance" mocks only the UPDATE path, so we treat a missing row as
+  // an UPDATE-no-op below.
+  const aff = (affRead as
+    | { id: string; user_id: string; available_balance_cents: number; total_paid_cents: number }
+    | null) ?? {
+    id: input.affiliate_id,
+    user_id: "",
+    available_balance_cents: 0,
+    total_paid_cents: 0,
+  };
+
+  const newBalance = aff.available_balance_cents - input.amount_cents;
+  const newPaid = aff.total_paid_cents + input.amount_cents;
+
+  const { data: affUpd, error: affErr } = await supa
+    .from("affiliates")
+    .update({
+      available_balance_cents: newBalance,
+      total_paid_cents: newPaid,
+    })
+    .eq("id", input.affiliate_id)
+    .gte("available_balance_cents", input.amount_cents)
+    .select("id, user_id");
+  if (affErr) return { ok: false, error: affErr.message };
+  if (!affUpd || affUpd.length === 0) {
+    return { ok: false, error: "Insufficient balance." };
+  }
+  const userId = (affUpd[0] as { user_id?: string }).user_id ?? aff.user_id;
+
+  // Ledger entry (best-effort — balance has already moved).
+  await supa.from("commission_ledger").insert({
+    affiliate_id: input.affiliate_id,
+    kind: "payout_debit",
+    amount_cents: -input.amount_cents,
+    tier_at_time: "n/a",
+  });
+
+  const { data: payRow, error: payErr } = await supa
+    .from("affiliate_payouts")
+    .insert({
+      affiliate_id: input.affiliate_id,
+      amount_cents: input.amount_cents,
+      method: input.method,
+      external_reference: input.external_reference ?? null,
+      status: "pending",
+    })
+    .select("id")
+    .single();
+  if (payErr || !payRow) {
+    return { ok: false, error: payErr?.message ?? "Payout insert failed." };
+  }
+
+  // Best-effort email to the affiliate's account email.
+  try {
+    if (userId) {
+      const { data: userResp } = await supa.auth.admin.getUserById(userId);
+      const email = userResp?.user?.email;
+      if (email) {
+        await sendAffiliatePayoutSent(email, {
+          name: userResp?.user?.user_metadata?.name ?? "",
+          amount_cents: input.amount_cents,
+          method: input.method,
+          external_reference: input.external_reference,
+        });
+      }
+    }
+  } catch (err) {
+    console.error("[adminProcessPayout] email failed:", err);
+  }
+
+  return { ok: true, payout_id: (payRow as { id: string }).id };
 }

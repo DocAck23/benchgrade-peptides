@@ -7,6 +7,7 @@ import {
 import type { OrderStatus } from "@/lib/orders/status";
 import type { OrderRow } from "@/lib/supabase/types";
 import { sendPaymentConfirmed } from "@/lib/email/notifications/send-order-emails";
+import { awardCommissionForOrder } from "@/app/actions/affiliate";
 
 /**
  * NOWPayments IPN (webhook) endpoint.
@@ -156,6 +157,13 @@ export async function POST(req: Request) {
   // back the funded transition that already landed in Postgres.
   if (applied && target === "funded" && updated && updated[0]) {
     await sendPaymentConfirmed(updated[0] as OrderRow);
+    // Best-effort affiliate commission ledger hook. Like the email above,
+    // a downstream failure here MUST NOT roll back the funded transition.
+    try {
+      await awardCommissionForOrder(orderId);
+    } catch (err) {
+      console.error("[nowpayments webhook] awardCommissionForOrder failed:", err);
+    }
   }
   return NextResponse.json({
     ok: true,
