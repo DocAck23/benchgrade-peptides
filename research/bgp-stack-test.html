@@ -3,43 +3,68 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BGP — Stack Photo Test (2 samples)</title>
+<title>BGP — Catalogue Stack Photos</title>
 <style>
   body { margin: 0; background: #0E1314; color: #E8E2D2; font-family: -apple-system, "Inter", sans-serif; padding: 24px; }
   h1 { font-family: "Cormorant Garamond", serif; font-weight: 500; font-size: 1.7rem; margin: 0 0 6px; }
-  p { opacity: 0.8; margin: 0 0 24px; font-size: 13px; max-width: 720px; line-height: 1.5; }
-  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 1200px; margin-bottom: 24px; }
+  p.lede { opacity: 0.8; margin: 0 0 24px; font-size: 13px; max-width: 720px; line-height: 1.5; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; max-width: 1400px; }
   .card { background: #14191B; border: 1px solid rgba(232,226,210,0.08); border-radius: 8px; overflow: hidden; }
   .card .img { background: #F2EAD9; aspect-ratio: 1; }
   .card img { display: block; width: 100%; height: 100%; object-fit: contain; }
-  .card .meta { padding: 10px 12px; }
-  .card .name { font-family: "Cormorant Garamond", serif; font-size: 16px; font-weight: 600; margin: 0; }
+  .card .meta { padding: 12px 14px; }
+  .card .name { font-family: "Cormorant Garamond", serif; font-size: 17px; font-weight: 600; margin: 0; }
   .card .label { font-family: "JetBrains Mono", monospace; font-size: 10px; color: #C8A046; letter-spacing: 0.14em; text-transform: uppercase; margin: 4px 0 0; }
-  .card .note { font-size: 11px; color: #c97a7a; margin: 4px 0 0; line-height: 1.4; }
-  .ok { color: #7ac9a6 !important; }
+  .card .vials { font-size: 11px; color: #cfc8b6; margin: 6px 0 0; line-height: 1.4; }
+  .card .note { font-size: 11px; color: #7ac9a6; margin: 6px 0 0; line-height: 1.4; }
 </style>
 </head>
 <body>
-<h1>Stack photo test — 2 samples</h1>
-<p>Arrangement: one vial front-center (fully visible), one slightly behind-left, one slightly behind-right. Cream backdrop, 1:1 square. Approve the arrangement and I'll generate the rest of the catalog.</p>
+<h1>Catalogue stack photos — 8 stacks</h1>
+<p class="lede">One group photo per popular stack. Each vial rotated so its peptide name is readable. Cream backdrop, 1:1 square, same studio lighting as the single-vial shots.</p>
 
-<div class="row">
+<div class="grid">
+
   <div class="card">
-    <div class="img"><img src="_stacks/nad-100mg-stack.jpg?v=2" alt="NAD+ stack"></div>
-    <div class="meta">
-      <p class="name">NAD+ — 100 mg</p>
-      <p class="label">stack test</p>
-      <p class="note ok">v2 — all 3 vials show front labels, no side panels</p>
-    </div>
+    <div class="img"><img src="_stacks/wolverine-stack.jpg?v=1" alt="Wolverine Stack"></div>
+    <div class="meta"><p class="name">Wolverine Stack</p><p class="label">2 vials</p><p class="vials">BPC-157 5 mg + TB-500 5 mg</p></div>
   </div>
+
   <div class="card">
-    <div class="img"><img src="_stacks/bpc-157-5mg-stack.jpg?v=2" alt="BPC-157 stack"></div>
-    <div class="meta">
-      <p class="name">BPC-157 — 5 mg</p>
-      <p class="label">stack test</p>
-      <p class="note ok">v2 — wreath crests preserved on all 3 vials, all front-facing</p>
-    </div>
+    <div class="img"><img src="_stacks/metabolic-pair.jpg?v=1" alt="Metabolic Pair"></div>
+    <div class="meta"><p class="name">Metabolic Pair</p><p class="label">2 vials</p><p class="vials">GLP-1 S 5 mg + AMY-A 5 mg</p></div>
   </div>
+
+  <div class="card">
+    <div class="img"><img src="_stacks/triple-agonist-gh.jpg?v=1" alt="Triple-Agonist + GH Pair"></div>
+    <div class="meta"><p class="name">Triple-Agonist + GH Pair</p><p class="label">2 vials</p><p class="vials">GLP-3 R 5 mg + Ipamorelin 5 mg</p></div>
+  </div>
+
+  <div class="card">
+    <div class="img"><img src="_stacks/gh-axis-stack.jpg?v=1" alt="GH-Axis Stack"></div>
+    <div class="meta"><p class="name">GH-Axis Stack</p><p class="label">2 vials</p><p class="vials">CJC-1295 5 mg + Ipamorelin 5 mg</p></div>
+  </div>
+
+  <div class="card">
+    <div class="img"><img src="_stacks/ghrh-pair.jpg?v=1" alt="GHRH Pair"></div>
+    <div class="meta"><p class="name">GHRH Pair</p><p class="label">2 vials</p><p class="vials">Sermorelin 5 mg + Tesamorelin 5 mg</p></div>
+  </div>
+
+  <div class="card">
+    <div class="img"><img src="_stacks/mega-recovery-stack.jpg?v=1" alt="Mega Recovery Stack"></div>
+    <div class="meta"><p class="name">Mega Recovery Stack</p><p class="label">4 vials</p><p class="vials">GLP-3 R + Sermorelin + BPC-157 + TB-500</p></div>
+  </div>
+
+  <div class="card">
+    <div class="img"><img src="_stacks/metabolic-mitochondrial-stack.jpg?v=1" alt="Metabolic + Mitochondrial Stack"></div>
+    <div class="meta"><p class="name">Metabolic + Mitochondrial Stack</p><p class="label">3 vials</p><p class="vials">GLP-3 R + Tesamorelin + MOTS-c 10 mg</p></div>
+  </div>
+
+  <div class="card">
+    <div class="img"><img src="_stacks/metabolic-cu-tripeptide-stack.jpg?v=1" alt="Metabolic + Copper-Tripeptide Stack"></div>
+    <div class="meta"><p class="name">Metabolic + Copper-Tripeptide Stack</p><p class="label">3 vials</p><p class="vials">GLP-3 R + Tesamorelin + GHK-Cu 50 mg</p></div>
+  </div>
+
 </div>
 
 </body>

@@ -141,7 +141,7 @@ export function CartDrawer() {
                       alt={item.name}
                       fill
                       sizes="80px"
-                      className="object-cover [object-position:65%_50%]"
+                      className="object-cover"
                     />
                   </div>
                   <div className="flex-1 min-w-0">
