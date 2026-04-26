@@ -24,7 +24,15 @@ export function resolveClientIp(
   const fromReal = headers.get("x-real-ip");
   if (fromReal) return { ok: true, ip: fromReal };
 
-  const fromXff = headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  // Defense-in-depth: when falling back to x-forwarded-for, take the LAST
+  // entry (the one closest to our edge). The first entry is client-set
+  // and forgeable; well-behaved proxies append their own IP, so the last
+  // entry is the most-trusted hop. On Vercel we never reach this fallback
+  // (x-vercel-forwarded-for is preferred above), but staging / preview
+  // deploys without proper edge config benefit from this guard.
+  const xffRaw = headers.get("x-forwarded-for");
+  const xffParts = xffRaw?.split(",").map((p) => p.trim()).filter(Boolean) ?? [];
+  const fromXff = xffParts.length > 0 ? xffParts[xffParts.length - 1] : undefined;
   if (fromXff) return { ok: true, ip: fromXff };
 
   if (opts.isProduction) {

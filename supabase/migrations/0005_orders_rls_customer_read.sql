@@ -15,6 +15,13 @@
 --
 -- Rollback strategy:
 --   drop policy if exists "customers_read_own_orders" on public.orders;
+--
+-- Rollback semantics: dropping the policy returns the table to the
+-- pre-0005 state — RLS still enabled (set in 0001_init_orders.sql) with
+-- no policies, which means deny-by-default for both anon and authenticated
+-- roles. Service role continues to bypass RLS unchanged. The customer
+-- portal will return empty results until a new policy is applied; this
+-- is the intended pre-feature behavior, not an outage.
 
 -- Customers read only their own rows.
 drop policy if exists "customers_read_own_orders" on public.orders;

@@ -371,7 +371,13 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
         options: { redirectTo: `${SITE_URL}/auth/callback?next=/account` },
       });
       const actionLink = linkData?.properties?.action_link;
-      if (actionLink) {
+      // Defense-in-depth: explicitly assert https scheme before passing
+      // the URL into an email template. escapeHtml() in editorialEmailHtml
+      // handles attribute escaping, but a non-https value (javascript:,
+      // data:, http:) would survive escaping and remain clickable.
+      // Supabase admin.generateLink always returns https in normal flow;
+      // this guards against any future regression.
+      if (actionLink && actionLink.startsWith("https://")) {
         const claim = accountClaimEmail({
           ...emailCtx,
           magic_link_url: actionLink,
