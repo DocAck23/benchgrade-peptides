@@ -69,10 +69,10 @@ export default async function OrdersListPage() {
             Once you place an order it lives here — every lot, every COA, every tracking number.
           </p>
           <Link
-            href="/catalog"
+            href="/catalogue"
             className="inline-flex items-center h-11 px-6 bg-wine text-paper font-display uppercase text-[12px] tracking-[0.14em] hover:bg-wine-deep transition-colors duration-200 ease-out"
           >
-            Browse the catalog
+            Browse the catalogue
           </Link>
         </div>
       ) : (

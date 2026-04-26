@@ -52,7 +52,7 @@ export function SubscriptionActions({ sub }: SubscriptionActionsProps) {
             ? "Plan complete — every cycle shipped."
             : "This subscription is cancelled."}
         </p>
-        <Link href="/catalog" className={primaryBtn}>
+        <Link href="/catalogue" className={primaryBtn}>
           Subscribe again
         </Link>
       </div>

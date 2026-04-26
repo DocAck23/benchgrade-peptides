@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
-import { POPULAR_STACKS, resolveStack } from "@/lib/catalog/stacks";
-import { StackPickerForm, type StackPickerLine } from "@/components/catalog/StackPickerForm";
+import { POPULAR_STACKS, resolveStack } from "@/lib/catalogue/stacks";
+import { StackPickerForm, type StackPickerLine } from "@/components/catalogue/StackPickerForm";
 
 interface RouteParams {
   params: Promise<{ slug: string }>;
@@ -22,11 +22,11 @@ export async function generateMetadata({ params }: RouteParams): Promise<Metadat
   return {
     title: `${stack.name} · Customize and add to cart`,
     description: stack.tagline,
-    alternates: { canonical: `/catalog/stacks/${stack.slug}` },
+    alternates: { canonical: `/catalogue/stacks/${stack.slug}` },
     openGraph: {
       title: `${stack.name} · Bench Grade Peptides`,
       description: stack.tagline,
-      url: `/catalog/stacks/${stack.slug}`,
+      url: `/catalogue/stacks/${stack.slug}`,
       type: "website",
     },
   };
@@ -38,7 +38,7 @@ export default async function StackPickerPage({ params }: RouteParams) {
   if (!stack) notFound();
 
   const resolved = resolveStack(stack);
-  // If every line was orphaned (catalog churn), 404 — better UX than an empty page.
+  // If every line was orphaned (catalogue churn), 404 — better UX than an empty page.
   if (resolved.lines.length === 0) notFound();
 
   const pickerLines: StackPickerLine[] = resolved.lines.map(({ product, variant, line }) => ({
@@ -53,8 +53,8 @@ export default async function StackPickerPage({ params }: RouteParams) {
         <Breadcrumb
           items={[
             { label: "Home", href: "/" },
-            { label: "Catalog", href: "/catalog" },
-            { label: "Stacks", href: "/catalog#popular-stacks" },
+            { label: "Catalogue", href: "/catalogue" },
+            { label: "Stacks", href: "/catalogue#popular-stacks" },
             { label: stack.name },
           ]}
         />
@@ -81,16 +81,16 @@ export default async function StackPickerPage({ params }: RouteParams) {
 
         <div className="mt-12 sm:mt-16 pt-6 border-t rule flex items-center justify-between gap-4">
           <Link
-            href="/catalog#popular-stacks"
+            href="/catalogue#popular-stacks"
             className="text-sm text-ink-soft hover:text-wine transition-colors"
           >
             ← All popular stacks
           </Link>
           <Link
-            href="/catalog"
+            href="/catalogue"
             className="text-sm text-ink-soft hover:text-wine transition-colors"
           >
-            Browse the full catalog →
+            Browse the full catalogue →
           </Link>
         </div>
       </div>

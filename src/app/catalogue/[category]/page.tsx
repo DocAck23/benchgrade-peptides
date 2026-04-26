@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
-import { ProductCard } from "@/components/catalog/ProductCard";
-import { CATEGORIES, PRODUCTS, getCategoryBySlug } from "@/lib/catalog/data";
+import { ProductCard } from "@/components/catalogue/ProductCard";
+import { CATEGORIES, PRODUCTS, getCategoryBySlug } from "@/lib/catalogue/data";
 
 interface PageProps {
   params: Promise<{ category: string }>;
@@ -15,8 +15,8 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { category: slug } = await params;
   const category = getCategoryBySlug(slug);
-  if (!category) return { title: "Catalog category not found", robots: { index: false, follow: false } };
-  const canonical = `/catalog/${category.slug}`;
+  if (!category) return { title: "Catalogue category not found", robots: { index: false, follow: false } };
+  const canonical = `/catalogue/${category.slug}`;
   return {
     title: category.name,
     description: category.description,
@@ -43,7 +43,7 @@ export default async function CategoryPage({ params }: PageProps) {
         <Breadcrumb
           items={[
             { label: "Home", href: "/" },
-            { label: "Catalog", href: "/catalog" },
+            { label: "Catalogue", href: "/catalogue" },
             { label: category.name },
           ]}
         />

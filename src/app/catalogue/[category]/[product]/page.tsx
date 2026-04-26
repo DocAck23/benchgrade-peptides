@@ -3,14 +3,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Breadcrumb, Callout } from "@/components/ui";
-import { MolecularDataPanel } from "@/components/catalog/MolecularDataPanel";
-import { VariantPicker } from "@/components/catalog/VariantPicker";
+import { MolecularDataPanel } from "@/components/catalogue/MolecularDataPanel";
+import { VariantPicker } from "@/components/catalogue/VariantPicker";
 import {
   CATEGORIES,
   PRODUCTS,
   getCategoryBySlug,
   getProductBySlug,
-} from "@/lib/catalog/data";
+} from "@/lib/catalogue/data";
 import { RUO_STATEMENTS } from "@/lib/compliance";
 import { SITE_URL } from "@/lib/site";
 
@@ -29,11 +29,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { category: categorySlug, product: productSlug } = await params;
   const product = getProductBySlug(productSlug);
   // Cross-check category matches — don't emit product metadata for a URL
-  // that will 404 (e.g. /catalog/wrong-category/bpc-157).
+  // that will 404 (e.g. /catalogue/wrong-category/bpc-157).
   if (!product || product.category_slug !== categorySlug) {
     return { title: "Compound not found", robots: { index: false, follow: false } };
   }
-  const canonical = `/catalog/${product.category_slug}/${product.slug}`;
+  const canonical = `/catalogue/${product.category_slug}/${product.slug}`;
   const description = `${product.summary} Research use only. HPLC-verified, COA per lot.`;
   return {
     title: product.name,
@@ -95,8 +95,8 @@ export default async function ProductPage({ params }: PageProps) {
         <Breadcrumb
           items={[
             { label: "Home", href: "/" },
-            { label: "Catalog", href: "/catalog" },
-            { label: category.name, href: `/catalog/${category.slug}` },
+            { label: "Catalogue", href: "/catalogue" },
+            { label: category.name, href: `/catalogue/${category.slug}` },
             { label: product.name },
           ]}
         />

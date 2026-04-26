@@ -187,13 +187,13 @@ export default async function AccountDashboardPage() {
         {recent.length === 0 ? (
           <div className="border rule bg-paper-soft p-8 text-center">
             <p className="font-editorial text-lg text-ink-soft mb-5" style={{ fontFamily: "var(--font-editorial)" }}>
-              No orders on the bench yet. The catalog runs deep — stack-and-save kicks in at three vials.
+              No orders on the bench yet. The catalogue runs deep — stack-and-save kicks in at three vials.
             </p>
             <Link
-              href="/catalog"
+              href="/catalogue"
               className="inline-flex items-center h-11 px-6 bg-wine text-paper font-display uppercase text-[12px] tracking-[0.14em] hover:bg-wine-deep transition-colors duration-200 ease-out"
             >
-              Browse the catalog
+              Browse the catalogue
             </Link>
           </div>
         ) : (

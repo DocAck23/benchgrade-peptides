@@ -8,7 +8,7 @@ import { CartButton } from "@/components/cart/CartButton";
 import { cn } from "@/lib/utils";
 
 const PRIMARY_NAV = [
-  { href: "/catalog", label: "Catalog" },
+  { href: "/catalogue", label: "Catalogue" },
   { href: "/research", label: "Research" },
   { href: "/news", label: "News" },
   { href: "/compliance", label: "Compliance" },

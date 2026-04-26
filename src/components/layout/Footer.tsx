@@ -4,13 +4,13 @@ import { RUO_STATEMENTS } from "@/lib/compliance";
 
 const FOOTER_COLUMNS = [
   {
-    heading: "Catalog",
+    heading: "Catalogue",
     links: [
-      { href: "/catalog", label: "All compounds" },
-      { href: "/catalog/growth-hormone-secretagogues", label: "GH secretagogues" },
-      { href: "/catalog/tissue-repair", label: "Tissue-repair research" },
-      { href: "/catalog/neuropeptides", label: "Neuropeptide research" },
-      { href: "/catalog/metabolic", label: "Metabolic research" },
+      { href: "/catalogue", label: "All compounds" },
+      { href: "/catalogue/growth-hormone-secretagogues", label: "GH secretagogues" },
+      { href: "/catalogue/tissue-repair", label: "Tissue-repair research" },
+      { href: "/catalogue/neuropeptides", label: "Neuropeptide research" },
+      { href: "/catalogue/metabolic", label: "Metabolic research" },
     ],
   },
   {

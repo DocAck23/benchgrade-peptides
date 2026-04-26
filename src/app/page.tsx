@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { Flag, QrCode, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { ProductCarousel } from "@/components/catalog/ProductCarousel";
-import { PopularStacksHeroGrid } from "@/components/catalog/PopularStacksHeroGrid";
+import { ProductCarousel } from "@/components/catalogue/ProductCarousel";
+import { PopularStacksHeroGrid } from "@/components/catalogue/PopularStacksHeroGrid";
 
 /**
  * Homepage — locked brand visual system (spec §16.1, §16.4).
@@ -11,7 +11,7 @@ import { PopularStacksHeroGrid } from "@/components/catalog/PopularStacksHeroGri
  * callout · wine bottom CTA. Cinzel display, Cormorant editorial italic,
  * gold high-emphasis CTAs. Server-rendered for SEO.
  *
- * Strict scope: this file only. Catalog/cart/checkout/Logo/Layout/UI primitives
+ * Strict scope: this file only. Catalogue/cart/checkout/Logo/Layout/UI primitives
  * are owned by other Sprint 0 + Wave 2 tasks.
  */
 
@@ -57,9 +57,9 @@ export default function Home() {
                 Made in USA. Verified per lot. Receipts on every vial.
               </p>
               <div className="mt-10 sm:mt-12 flex flex-wrap items-center gap-6 sm:gap-8">
-                <Link href="/catalog" className="inline-flex">
+                <Link href="/catalogue" className="inline-flex">
                   <Button variant="gold" size="lg">
-                    Browse the catalog
+                    Browse the catalogue
                   </Button>
                 </Link>
                 <Link
@@ -109,7 +109,7 @@ export default function Home() {
       <section data-surface="wine" className="bg-wine border-t border-rule-wine">
         <div className="max-w-[1280px] mx-auto px-5 sm:px-6 lg:px-10 py-16 sm:py-20 text-center">
           <div className="label-eyebrow text-gold-light mb-3 text-[11px] sm:text-xs">
-            From the catalog
+            From the catalogue
           </div>
           <h2 className="font-display font-display-heavy text-4xl sm:text-5xl lg:text-6xl tracking-tight text-paper">
             Build your stack.
@@ -118,7 +118,7 @@ export default function Home() {
             className="mt-5 text-lg sm:text-xl italic max-w-2xl mx-auto"
             style={{ fontFamily: "var(--font-editorial)", color: "var(--color-paper-soft)" }}
           >
-            One catalog. One standard. Receipts on every vial.
+            One catalogue. One standard. Receipts on every vial.
           </p>
         </div>
       </section>
@@ -129,13 +129,13 @@ export default function Home() {
       {/* ── CTA row below the carousel (wine, full bleed) ────────────── */}
       <section data-surface="wine" className="bg-wine pb-20 sm:pb-24 lg:pb-28">
         <div className="max-w-[1280px] mx-auto px-5 sm:px-6 lg:px-10 flex flex-wrap items-center justify-center gap-5 sm:gap-7">
-          <Link href="/catalog" className="inline-flex">
+          <Link href="/catalogue" className="inline-flex">
             <Button variant="gold" size="lg">
               Build your stack →
             </Button>
           </Link>
           <Link
-            href="/catalog#popular-stacks"
+            href="/catalogue#popular-stacks"
             className="inline-flex items-center text-sm tracking-[0.04em] underline underline-offset-[6px] decoration-1 transition-colors duration-200 hover:opacity-80"
             style={{
               color: "var(--color-gold-light)",

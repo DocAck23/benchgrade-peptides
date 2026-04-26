@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import type { CartItem } from "@/lib/cart/types";
 import { useCart } from "@/lib/cart/CartContext";
-import { PRODUCTS } from "@/lib/catalog/data";
+import { PRODUCTS } from "@/lib/catalogue/data";
 import { formatPrice } from "@/lib/utils";
 
 /**

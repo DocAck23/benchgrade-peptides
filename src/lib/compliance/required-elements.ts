@@ -13,7 +13,7 @@
 
 /**
  * Intentionally narrow local types — this validator works off the
- * minimal shape each page has at render time, not the full catalog row.
+ * minimal shape each page has at render time, not the full catalogue row.
  * Decouples compliance from schema churn.
  */
 export interface RequiredElementsProduct {

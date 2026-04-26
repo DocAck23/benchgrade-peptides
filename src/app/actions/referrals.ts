@@ -22,7 +22,7 @@ import { z } from "zod";
 import { createServerSupabase } from "@/lib/supabase/client";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { generateReferralCode, validateReferralCode } from "@/lib/referrals/codes";
-import { PRODUCTS } from "@/lib/catalog/data";
+import { PRODUCTS } from "@/lib/catalogue/data";
 import { sendReferralEarned } from "@/lib/email/notifications/send-referral-emails";
 
 // ---------------------------------------------------------------------------

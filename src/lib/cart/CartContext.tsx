@@ -8,7 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import type { CatalogProduct, CatalogVariant } from "@/lib/catalog/data";
+import type { CatalogProduct, CatalogVariant } from "@/lib/catalogue/data";
 import type { CartApi, CartItem, SubscriptionMode } from "./types";
 import {
   computeCartTotals,

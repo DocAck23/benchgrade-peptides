@@ -1,20 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Breadcrumb, Callout } from "@/components/ui";
-import { ProductCard } from "@/components/catalog/ProductCard";
-import { PopularStacks } from "@/components/catalog/PopularStacks";
-import { CATEGORIES, PRODUCTS } from "@/lib/catalog/data";
+import { ProductCard } from "@/components/catalogue/ProductCard";
+import { PopularStacks } from "@/components/catalogue/PopularStacks";
+import { CATEGORIES, PRODUCTS } from "@/lib/catalogue/data";
 
 export const metadata: Metadata = {
-  title: "Catalog",
+  title: "Catalogue",
   description:
-    "Full catalog of research-grade synthetic peptides. HPLC-verified purity, COA per lot, for laboratory research use only.",
-  alternates: { canonical: "/catalog" },
+    "Full catalogue of research-grade synthetic peptides. HPLC-verified purity, COA per lot, for laboratory research use only.",
+  alternates: { canonical: "/catalogue" },
   openGraph: {
-    title: "Catalog · Bench Grade Peptides",
+    title: "Catalogue · Bench Grade Peptides",
     description:
-      "Full catalog of research-grade synthetic peptides. HPLC-verified purity, COA per lot.",
-    url: "/catalog",
+      "Full catalogue of research-grade synthetic peptides. HPLC-verified purity, COA per lot.",
+    url: "/catalogue",
     type: "website",
   },
 };
@@ -23,10 +23,10 @@ export default function CatalogPage() {
   return (
     <div className="bg-paper">
       <div className="max-w-[1280px] mx-auto px-5 sm:px-6 lg:px-10 py-8 sm:py-12 lg:py-16">
-        <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Catalog" }]} />
+        <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Catalogue" }]} />
 
         <header className="mt-4 sm:mt-6 mb-6 sm:mb-12 border-b rule pb-6 sm:pb-12">
-          <div className="label-eyebrow text-ink-muted mb-2 sm:mb-4 text-[10px] sm:text-xs">Full catalog</div>
+          <div className="label-eyebrow text-ink-muted mb-2 sm:mb-4 text-[10px] sm:text-xs">Full catalogue</div>
           <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl text-ink leading-[1.08] sm:leading-[1.05] mb-3 sm:mb-6">
             Research-grade synthetic peptides.
           </h1>
@@ -38,7 +38,7 @@ export default function CatalogPage() {
         </header>
 
         <Callout variant="ruo" title="Research use only" className="mb-6 sm:mb-12">
-          All products on this catalog are supplied for laboratory research use only. Not for human or
+          All products on this catalogue are supplied for laboratory research use only. Not for human or
           veterinary use. Not a drug, supplement, or medical device. Customer certification is required at
           checkout per our{" "}
           <Link href="/terms" className="text-teal underline">Terms of Sale</Link>.
@@ -65,7 +65,7 @@ export default function CatalogPage() {
                   </h2>
                 </div>
                 <Link
-                  href={`/catalog/${category.slug}`}
+                  href={`/catalogue/${category.slug}`}
                   className="inline-flex items-center min-h-11 px-2 text-xs sm:text-sm text-teal hover:underline whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal"
                 >
                   {products.length} →

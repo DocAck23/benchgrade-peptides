@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { getProductBySlug } from "@/lib/catalog/data";
+import { getProductBySlug } from "@/lib/catalogue/data";
 
 export const runtime = "nodejs";
 export const contentType = "image/png";

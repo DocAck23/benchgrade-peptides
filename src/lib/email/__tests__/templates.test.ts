@@ -501,9 +501,9 @@ describe("referralEarnedEmail (U-EMAIL-RE-1)", () => {
     expect(email.html).toMatch(/5mg/);
   });
 
-  it("CTA href points at /catalog?free_vial=true", () => {
+  it("CTA href points at /catalogue?free_vial=true", () => {
     const email = referralEarnedEmail(ctx);
-    expect(email.html).toContain("/catalog?free_vial=true");
+    expect(email.html).toContain("/catalogue?free_vial=true");
   });
 
   it("escapes user-supplied substitutions (name, referee email)", () => {

@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import type { CatalogProduct } from "@/lib/catalog/data";
-import { PRODUCTS, getMinPrice } from "@/lib/catalog/data";
+import type { CatalogProduct } from "@/lib/catalogue/data";
+import { PRODUCTS, getMinPrice } from "@/lib/catalogue/data";
 import { formatPrice } from "@/lib/utils";
 import { QuickAddButton } from "./QuickAddButton";
 
@@ -30,10 +30,10 @@ export function ProductCarousel() {
         <div>
           <div className="label-eyebrow text-gold-light mb-2">Featured compounds</div>
           <h2 className="font-display text-3xl lg:text-4xl text-paper leading-tight">
-            From the catalog
+            From the catalogue
           </h2>
         </div>
-        <Link href="/catalog" className="text-sm text-gold-light hover:underline whitespace-nowrap">
+        <Link href="/catalogue" className="text-sm text-gold-light hover:underline whitespace-nowrap">
           Browse all {PRODUCTS.length} →
         </Link>
       </div>
@@ -77,7 +77,7 @@ function ProductCarouselCard({ product }: { product: CatalogProduct }) {
   return (
     <article className="w-[240px] lg:w-[280px] shrink-0 bg-paper border rule p-5 hover:bg-paper-soft transition-colors flex flex-col">
       <Link
-        href={`/catalog/${product.category_slug}/${product.slug}`}
+        href={`/catalogue/${product.category_slug}/${product.slug}`}
         className="block focus-visible:outline-none"
       >
         {/* Vial photograph */}

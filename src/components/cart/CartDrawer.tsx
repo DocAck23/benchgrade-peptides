@@ -122,11 +122,11 @@ export function CartDrawer() {
             <div>
               <p className="text-ink-soft mb-6">Your cart is empty.</p>
               <Link
-                href="/catalog"
+                href="/catalogue"
                 onClick={closeDrawer}
                 className="inline-flex items-center h-11 px-6 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-gold transition-colors"
               >
-                Browse the catalog
+                Browse the catalogue
               </Link>
             </div>
           </div>
@@ -147,7 +147,7 @@ export function CartDrawer() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between gap-2">
                       <Link
-                        href={`/catalog/${item.category_slug}/${item.product_slug}`}
+                        href={`/catalogue/${item.category_slug}/${item.product_slug}`}
                         onClick={closeDrawer}
                         className="font-display text-base text-ink hover:text-gold truncate"
                       >

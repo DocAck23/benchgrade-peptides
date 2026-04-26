@@ -18,13 +18,13 @@ export function CartPageClient() {
         </h1>
         <div className="border rule bg-paper-soft p-12 text-center">
           <p className="text-ink-soft mb-6">
-            Your cart is empty. Browse the catalog to add research compounds.
+            Your cart is empty. Browse the catalogue to add research compounds.
           </p>
           <Link
-            href="/catalog"
+            href="/catalogue"
             className="inline-flex items-center h-12 px-8 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-teal transition-colors"
           >
-            Browse the catalog
+            Browse the catalogue
           </Link>
         </div>
       </article>
@@ -54,7 +54,7 @@ export function CartPageClient() {
               <div className="flex-1 min-w-0 flex flex-col">
                 <div className="flex items-baseline justify-between gap-2">
                   <Link
-                    href={`/catalog/${item.category_slug}/${item.product_slug}`}
+                    href={`/catalogue/${item.category_slug}/${item.product_slug}`}
                     className="font-display text-lg text-ink hover:text-teal truncate"
                   >
                     {item.name}

@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { resolveAllStacks } from "@/lib/catalog/stacks";
+import { resolveAllStacks } from "@/lib/catalogue/stacks";
 import { formatPrice } from "@/lib/utils";
 import { AddStackToCartButton } from "./AddStackToCartButton";
 
 /**
  * Hero-side popular-stacks grid. Renders the right column of the homepage
  * hero — a compact list of curated stack mini-cards. Each card click-
- * throughs to the stack picker at `/catalog/stacks/[slug]` where the
+ * throughs to the stack picker at `/catalogue/stacks/[slug]` where the
  * customer chooses vial sizes per line, optionally removes/swaps items,
  * sets stack quantity, and adds the whole thing to cart in one step.
  *
@@ -43,7 +43,7 @@ export function PopularStacksHeroGrid() {
             className="border border-rule bg-paper-soft hover:border-gold-dark transition-colors duration-200"
           >
             <Link
-              href={`/catalog/stacks/${r.stack.slug}`}
+              href={`/catalogue/stacks/${r.stack.slug}`}
               className="group block px-4 sm:px-5 pt-3.5 sm:pt-4 pb-3 focus-visible:outline-none"
             >
               <div className="flex items-baseline justify-between gap-3 mb-1.5">

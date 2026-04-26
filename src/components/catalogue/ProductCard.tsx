@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { CatalogProduct } from "@/lib/catalog/data";
-import { getMinPrice, getMaxPrice } from "@/lib/catalog/data";
+import type { CatalogProduct } from "@/lib/catalogue/data";
+import { getMinPrice, getMaxPrice } from "@/lib/catalogue/data";
 import { formatPrice } from "@/lib/utils";
 import { QuickAddButton } from "./QuickAddButton";
 
@@ -11,7 +11,7 @@ interface ProductCardProps {
 }
 
 /**
- * Product card for the catalog grid.
+ * Product card for the catalogue grid.
  *
  * Uniform sizing: every card is the same height regardless of how long
  * the compound name, molecular formula, or summary text is. The image
@@ -29,7 +29,7 @@ export function ProductCard({ product, categorySlug }: ProductCardProps) {
   return (
     <article className="group flex flex-col bg-paper border rule p-3 sm:p-5 lg:p-6 hover:bg-paper-soft transition-colors">
       <Link
-        href={`/catalog/${categorySlug}/${product.slug}`}
+        href={`/catalogue/${categorySlug}/${product.slug}`}
         className="flex flex-col flex-1 focus-visible:outline-none focus-visible:bg-paper-soft"
       >
       {/* Vial photograph — fixed aspect ratio for uniform card height */}

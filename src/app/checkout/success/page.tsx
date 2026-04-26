@@ -34,8 +34,8 @@ export default async function CheckoutSuccessPage({ searchParams }: PageProps) {
         </p>
       </div>
       <div className="mt-10">
-        <Link href="/catalog" className="text-sm text-teal hover:underline">
-          ← Back to the catalog
+        <Link href="/catalogue" className="text-sm text-teal hover:underline">
+          ← Back to the catalogue
         </Link>
       </div>
     </article>

@@ -37,7 +37,7 @@ describe("sendReferralEarned", () => {
       "Free vial earned — your friend's first order shipped"
     );
     expect(arg.html).toContain("friend@example.edu");
-    expect(arg.html).toContain("/catalog?free_vial=true");
+    expect(arg.html).toContain("/catalogue?free_vial=true");
   });
 
   it("returns ok:false reason:resend-unconfigured when Resend is null", async () => {

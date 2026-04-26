@@ -1137,7 +1137,7 @@ export function referralEarnedEmail(ctx: ReferralEarnedContext): {
   const subject = `Free vial earned — your friend's first order shipped`;
   const customerName = escapeHtml(ctx.customer_name);
   const refereeEmailSafe = escapeHtml(ctx.referee_email);
-  const ctaHref = "/catalog?free_vial=true";
+  const ctaHref = "/catalogue?free_vial=true";
   const memo = `REFERRAL · ${ctx.referral_count} of yours`;
 
   const text = [

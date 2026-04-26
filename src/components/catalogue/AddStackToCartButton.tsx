@@ -5,7 +5,7 @@ import { Check, Plus } from "lucide-react";
 import { useCart } from "@/lib/cart/CartContext";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import type { ResolvedPopularStack } from "@/lib/catalog/stacks";
+import type { ResolvedPopularStack } from "@/lib/catalogue/stacks";
 
 /**
  * Adds every line of a popular stack to the cart in one click. Each line

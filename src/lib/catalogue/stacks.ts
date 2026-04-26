@@ -1,13 +1,13 @@
 import { PRODUCTS, type CatalogProduct, type CatalogVariant } from "./data";
 
 /**
- * Popular stacks — curated combinations of catalog SKUs that are
- * frequently bought together by repeat customers. Rendered on /catalog
+ * Popular stacks — curated combinations of catalogue SKUs that are
+ * frequently bought together by repeat customers. Rendered on /catalogue
  * as a "View popular stacks" section, each with an "Add stack to cart"
  * action that drops every line into the cart in one click.
  *
- * Stack contents reference live catalog SKUs only — if a SKU is removed
- * from the catalog, the resolveStack() helper drops the line and reports
+ * Stack contents reference live catalogue SKUs only — if a SKU is removed
+ * from the catalogue, the resolveStack() helper drops the line and reports
  * a missing-line warning. No silent failures.
  *
  * Pricing: each stack's per-vial total is computed from current retail
@@ -37,7 +37,7 @@ export interface PopularStack {
 
 /**
  * Curated v1 popular stacks. Each uses class-coded names (BPC-157,
- * CJC-1295, etc.) and references actual catalog SKUs. No INNs leaked.
+ * CJC-1295, etc.) and references actual catalogue SKUs. No INNs leaked.
  *
  * Per spec §3, when 3+ vials land in cart Stack & Save automatically
  * unlocks 15% off + free domestic shipping — so every stack here gives
@@ -106,10 +106,32 @@ export const POPULAR_STACKS: PopularStack[] = [
       { sku: "BGP-TB-5", quantity: 1 },
     ],
   },
+  {
+    slug: "metabolic-mitochondrial-stack",
+    name: "Metabolic + Mitochondrial Stack",
+    tagline: "GLP-3 R + Tesamorelin + MOTS-c — incretin + GHRH + mitochondrial peptide.",
+    why: "Three-compound study set spanning incretin signaling, GHRH receptor pathway, and mitochondrial-derived peptide research. Useful for cross-axis metabolic + cellular-energy investigations.",
+    items: [
+      { sku: "BGP-GLP3R-5", quantity: 1 },
+      { sku: "BGP-TES-5", quantity: 1 },
+      { sku: "BGP-MOTS-10", quantity: 1 },
+    ],
+  },
+  {
+    slug: "metabolic-cu-tripeptide-stack",
+    name: "Metabolic + Copper-Tripeptide Stack",
+    tagline: "GLP-3 R + Tesamorelin + GHK-Cu — incretin + GHRH + copper-binding tripeptide.",
+    why: "Three-compound combination joining incretin and GHRH signaling with the GHK-Cu copper-binding tripeptide. Studied in cross-axis metabolic + extracellular-matrix research.",
+    items: [
+      { sku: "BGP-GLP3R-5", quantity: 1 },
+      { sku: "BGP-TES-5", quantity: 1 },
+      { sku: "BGP-GHK-50", quantity: 1 },
+    ],
+  },
 ];
 
 /**
- * Resolve a stack's lines against the live catalog. Drops any SKU that
+ * Resolve a stack's lines against the live catalogue. Drops any SKU that
  * has been removed and returns the resolved variants + the running
  * retail total in cents (pre-discount).
  */
@@ -122,7 +144,7 @@ export interface ResolvedPopularStack {
   }>;
   /** Pre-discount retail total in cents. Stack & Save fires on top in cart. */
   retail_total_cents: number;
-  /** SKUs from the stack that no longer exist in the catalog. */
+  /** SKUs from the stack that no longer exist in the catalogue. */
   missing_skus: string[];
 }
 

@@ -5,10 +5,10 @@
  * Applied migrations at launch: `0001_init_orders.sql` +
  * `0002_rate_limits.sql`.
  *
- * Catalog types (Product, ProductVariant, Category) are NOT in the live
- * schema today — the catalog is a TS constant (`src/lib/catalog/data.ts`)
+ * Catalogue types (Product, ProductVariant, Category) are NOT in the live
+ * schema today — the catalog is a TS constant (`src/lib/catalogue/data.ts`)
  * and only order / acknowledgment / rate-limit tables actually live in
- * Postgres. When we move the catalog into Supabase those types go here.
+ * Postgres. When we move the catalogue into Supabase those types go here.
  */
 
 import type { OrderStatus } from "@/lib/orders/status";

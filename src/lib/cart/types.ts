@@ -1,4 +1,4 @@
-import type { CatalogProduct, CatalogVariant } from "@/lib/catalog/data";
+import type { CatalogProduct, CatalogVariant } from "@/lib/catalogue/data";
 
 export interface CartItem {
   sku: string;

@@ -93,10 +93,10 @@ export function CheckoutPageClient({
       <article className="max-w-3xl mx-auto px-6 lg:px-10 py-20 text-center">
         <h1 className="font-display text-4xl text-ink mb-6">Your cart is empty.</h1>
         <Link
-          href="/catalog"
+          href="/catalogue"
           className="inline-flex items-center h-12 px-8 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-gold transition-colors"
         >
-          Browse the catalog
+          Browse the catalogue
         </Link>
       </article>
     );

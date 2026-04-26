@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { resolveAllStacks } from "@/lib/catalog/stacks";
+import { resolveAllStacks } from "@/lib/catalogue/stacks";
 import { formatPrice } from "@/lib/utils";
 import { AddStackToCartButton } from "./AddStackToCartButton";
 
 /**
- * "Popular stacks" section on /catalog. Surfaces curated SKU combinations
+ * "Popular stacks" section on /catalogue. Surfaces curated SKU combinations
  * that are frequently bought together — each rendered as a card with the
  * stack contents, retail total, and a one-click "Add stack to cart" button
  * that drops every line into the cart at once.
@@ -78,7 +78,7 @@ export function PopularStacks() {
                   className="flex items-baseline justify-between gap-3"
                 >
                   <Link
-                    href={`/catalog/${product.category_slug}/${product.slug}`}
+                    href={`/catalogue/${product.category_slug}/${product.slug}`}
                     className="text-ink hover:text-wine transition-colors duration-200 underline-offset-2 hover:underline"
                   >
                     {product.name} · {variant.size_mg}mg{line.quantity > 1 ? ` × ${line.quantity}` : ""}

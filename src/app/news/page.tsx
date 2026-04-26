@@ -46,10 +46,10 @@ export default function NewsPage() {
             certificate template. No filler.
           </p>
           <Link
-            href="/catalog"
+            href="/catalogue"
             className="inline-flex items-center h-12 px-8 bg-wine text-paper text-sm tracking-[0.04em] hover:bg-gold-dark transition-colors"
           >
-            Browse the catalog
+            Browse the catalogue
           </Link>
         </section>
       </div>

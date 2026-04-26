@@ -161,9 +161,95 @@ export const CATEGORIES: readonly CatalogCategory[] = [
   },
 ] as const;
 
+// Slug-to-filename mapping. The slug strings on the right come from the
+// per-SKU photo batch in public/brand/vials/. Capsules/topicals/supplies
+// don't have per-SKU photos yet — they fall through to the placeholder.
+const VIAL_PHOTO: Record<string, string> = {
+  // GLP-class (blinded)
+  "glp1s": "glp-1-s-5mg",
+  "glp2t": "glp-2-t-5mg",
+  "glp3r": "glp-3-r-5mg",
+  "amya": "amya-5mg",
+  "glp2m-10mg": "glp-2-m-10mg",
+  "glp2sv-10mg": "glp-2-sv-10mg",
+  // CJC family
+  "cjc-1295-no-dac": "cjc-1295-5mg",
+  "cjc-1295-with-dac-5mg": "cjc-1295-w-dac-5mg",
+  // Growth hormone secretagogues
+  "ipamorelin": "ipamorelin-5mg",
+  "ghrp-2": "ghrp-2-5mg",
+  "ghrp-6": "ghrp-6-5mg",
+  "hexarelin-acetate-5mg": "hexarelin-acetate-5mg",
+  "sermorelin": "sermorelin-5mg",
+  "tesamorelin": "tesamorelin-5mg",
+  "mgf-2mg": "mgf-2mg",
+  "igf-1-lr3-0-1mg": "igf-1-lr3-1mg",
+  "igf-1-lr3-1mg": "igf-1-lr3-1mg",
+  "follistatin-344-1mg": "follistatin-344-1mg",
+  "hgh-fragment-176-191": "hgh-fragment-176-191-5mg",
+  // Healing
+  "bpc-157": "bpc-157-5mg",
+  "tb-500": "tb-500-5mg",
+  "ghk-cu": "ghk-cu-50mg",
+  "ahk-cu": "ahk-cu-20mg",
+  "kpv": "kpv-5mg",
+  "larazatide-5mg": "larazatide-5mg",
+  "ll-37-5mg": "ll-37-5mg",
+  // Nootropics
+  "selank": "selank-5mg",
+  "semax": "semax-5mg",
+  "cerebrolysin-60mg": "cerebrolysin-60mg",
+  "cartalax-20mg": "cartalax-20mg",
+  "dsip": "dsip-5mg",
+  "dihexa": "dihexa-5mg",
+  "humanin": "humanin-5mg",
+  "pe-22-28-5mg": "pe-22-28-5mg",
+  "pinealon": "pinealon-10mg",
+  "ara-290": "ara-290-5mg",
+  "epitalon": "epitalon-10mg",
+  "mots-c": "mots-c-10mg",
+  "ss-31-10mg": "ss-31-10mg",
+  "foxo4-dri-10mg": "foxo4-dri-10mg",
+  "5-amino-1mq": "5-amino-1mq-5mg",
+  // Metabolic
+  "aicar": "aicar-50mg",
+  "aod-9604": "aod-9604-5mg",
+  "adipotide": "adipotide-5mg",
+  "slu-pp-332-5mg": "slu-pp-332-5mg",
+  // Longevity
+  "nad": "nad-100mg",
+  "glutathione-1500mg": "glutathione-1500mg",
+  "thymosin-alpha-1-5mg": "thymosin-alpha-1-5mg",
+  "thymalin-10mg": "thymalin-10mg",
+  // Sexual / aesthetic
+  "pt-141-10mg": "pt-141-10mg",
+  "melanotan-1-10mg": "melanotan-1-10mg",
+  "melanotan-2-10mg": "melanotan-2-10mg",
+  "oxytocin-acetate-2mg": "oxytocin-acetate-2mg",
+  "kisspeptin": "kisspeptin-5mg",
+  "vip": "vip-5mg",
+  // Blends
+  "klow-blend-80mg": "klow-blend-80mg",
+  "glow-blend-70mg": "glow-blend-70mg",
+  "bpc-tb-5-5mg": "bpc-157-tb-500-5mg",
+  "bpc-tb-10-10mg": "bpc-157-tb-500-5mg",
+  "cjc-ipa-5-5mg": "cjc-1295-ipamorelin-5mg",
+  "super-human-blend-10ml": "super-human-blend-10mg",
+  // Liquid carnitines
+  "l-carnitine-10ml": "l-carnitine-10mg",
+  "lc120-10ml": "lc120-10mg",
+  "lc216-10ml": "lc216-10mg",
+  // Topicals (uses cosmetic-research blends)
+  "snap-8-10mg": "snap-8-10mg",
+  // Diluents
+  "acetic-acid-water-10ml": "acetic-acid-water-10ml",
+};
+
 function vialPath(slug: string, container: "vial-3ml" | "vial-10ml" | "capsule-bottle" | "topical-bottle" | "supply"): string {
-  // Photos haven't been generated yet — point every product at the
-  // placeholder. When the per-SKU photos land, swap to per-slug paths.
+  const fname = VIAL_PHOTO[slug];
+  if (fname) {
+    return `/brand/vials/${fname}.jpg?v=56`;
+  }
   return "/brand/vials/_placeholder.jpg?v=4";
 }
 

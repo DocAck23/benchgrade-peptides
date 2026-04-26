@@ -4,7 +4,7 @@ import crypto from "node:crypto";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { RUO_STATEMENTS } from "@/lib/compliance";
-import { PRODUCTS } from "@/lib/catalog/data";
+import { PRODUCTS } from "@/lib/catalogue/data";
 import type { CartItem } from "@/lib/cart/types";
 import { computeCartTotals } from "@/lib/cart/discounts";
 import { getSupabaseServer } from "@/lib/supabase/server";

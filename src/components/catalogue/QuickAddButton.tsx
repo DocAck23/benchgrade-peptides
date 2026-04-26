@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Check, Plus } from "lucide-react";
-import type { CatalogProduct, CatalogVariant } from "@/lib/catalog/data";
+import type { CatalogProduct, CatalogVariant } from "@/lib/catalogue/data";
 import { useCart } from "@/lib/cart/CartContext";
 import { formatPrice, cn } from "@/lib/utils";
 

@@ -1,4 +1,4 @@
-import type { CatalogProduct } from "@/lib/catalog/data";
+import type { CatalogProduct } from "@/lib/catalogue/data";
 import { DataRow } from "@/components/ui";
 
 interface MolecularDataPanelProps {

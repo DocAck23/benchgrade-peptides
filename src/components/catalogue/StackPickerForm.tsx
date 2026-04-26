@@ -3,14 +3,14 @@
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { Trash2, Plus, Check } from "lucide-react";
-import type { CatalogProduct, CatalogVariant } from "@/lib/catalog/data";
+import type { CatalogProduct, CatalogVariant } from "@/lib/catalogue/data";
 import { useCart } from "@/lib/cart/CartContext";
 import { Button } from "@/components/ui/Button";
 import { formatPrice, cn } from "@/lib/utils";
 
 /**
- * Editable stack picker. Customer arrives at /catalog/stacks/[slug] from
- * the hero or from /catalog#popular-stacks; this component then lets them:
+ * Editable stack picker. Customer arrives at /catalogue/stacks/[slug] from
+ * the hero or from /catalogue#popular-stacks; this component then lets them:
  *   - Pick a vial size per line (variant select)
  *   - Adjust per-line quantity
  *   - Remove a line entirely
@@ -19,7 +19,7 @@ import { formatPrice, cn } from "@/lib/utils";
  *
  * Server provides the resolved (product, defaultVariant, lineQuantity)
  * tuples; the client manages the editable state. The "swap a vial for
- * another vial" feature is deferred — for now removing + the catalog's
+ * another vial" feature is deferred — for now removing + the catalogue's
  * own product page covers the use case.
  */
 
@@ -119,8 +119,8 @@ export function StackPickerForm({ stackName, lines: initialLines }: StackPickerF
         {lines.length === 0 ? (
           <div className="border border-rule bg-paper-soft p-8 text-center">
             <p className="text-ink-soft mb-4">All items removed from this stack.</p>
-            <Link href="/catalog" className="text-wine underline hover:text-gold-dark">
-              Browse the catalog →
+            <Link href="/catalogue" className="text-wine underline hover:text-gold-dark">
+              Browse the catalogue →
             </Link>
           </div>
         ) : (
@@ -132,7 +132,7 @@ export function StackPickerForm({ stackName, lines: initialLines }: StackPickerF
               >
                 <div className="min-w-0">
                   <Link
-                    href={`/catalog/${l.product.category_slug}/${l.product.slug}`}
+                    href={`/catalogue/${l.product.category_slug}/${l.product.slug}`}
                     className="block font-display text-lg sm:text-xl text-ink hover:text-wine transition-colors truncate"
                   >
                     {l.product.name}
@@ -188,11 +188,11 @@ export function StackPickerForm({ stackName, lines: initialLines }: StackPickerF
         )}
 
         <Link
-          href="/catalog"
+          href="/catalogue"
           className="inline-flex items-center gap-2 text-sm text-wine hover:text-gold-dark transition-colors mt-2"
         >
           <Plus className="w-4 h-4" strokeWidth={2} />
-          Add another vial from the catalog
+          Add another vial from the catalogue
         </Link>
       </section>
 
