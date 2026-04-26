@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="320" viewBox="0 0 240 320"
+     font-family="'Cormorant Garamond', 'Times New Roman', serif">
+  <!-- Bench Grade Peptides · 3ml vial FRONT-FACE label · advertising/mockup version
+       Designed for the visible front portion when the wraparound is on the vial.
+       Logo lives on the back of the wrap (not shown here). -->
+  <defs>
+    <style>
+      .maroon { fill: #5C1A1A; }
+      .gold { fill: #B8923A; }
+      .cream { fill: #F2EAD9; }
+      .gold-stroke { stroke: #B8923A; fill: none; }
+      .display { font-family: 'Cormorant Garamond', 'Times New Roman', serif; }
+      .sans { font-family: 'Inter', -apple-system, sans-serif; }
+      .mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; }
+    </style>
+  </defs>
+
+  <!-- Maroon ground (matches the wrap) -->
+  <rect width="240" height="320" class="maroon"/>
+
+  <!-- Top hairline -->
+  <line x1="14" y1="14" x2="226" y2="14" class="gold-stroke" stroke-width="0.5" opacity="0.5"/>
+  <line x1="14" y1="18" x2="226" y2="18" class="gold-stroke" stroke-width="0.3" opacity="0.35"/>
+
+  <!-- PRODUCT NAME BANNER -->
+  <g transform="translate(14,32)">
+    <rect width="212" height="56" class="gold"/>
+    <text x="106" y="38" text-anchor="middle" class="maroon display"
+          font-size="32" font-weight="700" letter-spacing="-0.4">KLOW Blend</text>
+  </g>
+
+  <!-- Strength pill (centered) -->
+  <g transform="translate(75,104)">
+    <rect width="90" height="32" class="gold-stroke" stroke-width="1.4" rx="3"/>
+    <text x="45" y="22" text-anchor="middle" class="gold mono"
+          font-size="14" font-weight="600" letter-spacing="1.5">10 MG</text>
+  </g>
+
+  <!-- Pack info -->
+  <text x="120" y="156" text-anchor="middle" class="cream sans"
+        font-size="10" letter-spacing="0.6">3mL Multi-Dose Vial</text>
+
+  <!-- Ingredients (small mono) -->
+  <text class="cream mono" font-size="8.5" letter-spacing="0.8" text-anchor="middle">
+    <tspan x="120" y="180">GHK-Cu &#183; BPC-157</tspan>
+    <tspan x="120" y="194">TB-500 &#183; KPV</tspan>
+  </text>
+
+  <!-- 99% PURITY HIGHLIGHT BANNER -->
+  <g transform="translate(14,222)">
+    <rect width="212" height="34" class="gold"/>
+    <text x="106" y="23" text-anchor="middle" class="maroon mono"
+          font-size="13" font-weight="700" letter-spacing="2.6">99% PURITY · HPLC</text>
+  </g>
+
+  <!-- RUO disclaimer -->
+  <text x="120" y="276" text-anchor="middle" class="cream mono"
+        font-size="7" letter-spacing="1.6" opacity="0.85">FOR RESEARCH USE ONLY</text>
+
+  <!-- Bottom LOT line -->
+  <text x="120" y="294" text-anchor="middle" class="gold mono"
+        font-size="7" letter-spacing="1.4">LOT H.012526 · EXP 01.2028</text>
+
+  <!-- Bottom hairline -->
+  <line x1="14" y1="306" x2="226" y2="306" class="gold-stroke" stroke-width="0.5" opacity="0.5"/>
+</svg>

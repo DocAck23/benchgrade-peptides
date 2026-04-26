@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="450" height="225" viewBox="0 0 450 225" font-family="'Cormorant Garamond', 'Times New Roman', serif">
+  <!-- Bench Grade Peptides · 3ml single-peptide vial label · MAROON · 450 x 225 @ 300 DPI -->
+  <defs>
+    <style>
+      .maroon { fill: #5C1A1A; }
+      .gold { fill: #B8923A; }
+      .cream { fill: #F2EAD9; }
+      .gold-stroke { stroke: #B8923A; fill: none; }
+      .display { font-family: 'Cormorant Garamond', 'Times New Roman', serif; }
+      .sans { font-family: 'Inter', -apple-system, sans-serif; }
+      .mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; }
+    </style>
+  </defs>
+
+  <rect width="450" height="225" class="maroon"/>
+
+  <!-- LEFT: F6 vector logo, 150 wide, vertically centered in label area -->
+  <image x="6" y="22" width="150" height="150"
+         xlink:href="F6-gold-vector.svg?v=14"
+         preserveAspectRatio="xMidYMid meet"/>
+
+  <line x1="166" y1="20" x2="166" y2="170" class="gold-stroke" stroke-width="0.5" opacity="0.5"/>
+
+  <!-- CENTER: Product name banner (gold ground, maroon text) -->
+  <g transform="translate(170,22)">
+    <rect width="140" height="32" class="gold"/>
+    <text x="70" y="22" text-anchor="middle" class="maroon display" font-size="22" font-weight="700" letter-spacing="-0.3">Semaglutide</text>
+  </g>
+
+  <g transform="translate(178,64)">
+    <rect width="56" height="20" class="gold-stroke" stroke-width="1" rx="2"/>
+    <text x="28" y="14" text-anchor="middle" class="gold mono" font-size="10" font-weight="600" letter-spacing="1">10 MG</text>
+  </g>
+
+  <text x="178" y="104" class="cream sans" font-size="9" letter-spacing="0.5">3mL Multi-Dose Vial</text>
+
+  <!-- RIGHT: LOT / EXP block -->
+  <g transform="translate(322,64)">
+    <rect width="118" height="50" class="gold-stroke" stroke-width="1"/>
+    <text x="10" y="20" class="gold mono" font-size="8.5" letter-spacing="1.5">LOT</text>
+    <text x="108" y="20" text-anchor="end" class="cream mono" font-size="10" font-weight="600" letter-spacing="0.8">H.012526</text>
+    <line x1="10" y1="28" x2="108" y2="28" class="gold-stroke" stroke-width="0.5" opacity="0.5"/>
+    <text x="10" y="42" class="gold mono" font-size="8.5" letter-spacing="1.5">EXP</text>
+    <text x="108" y="42" text-anchor="end" class="cream mono" font-size="10" font-weight="600" letter-spacing="0.8">01.2028</text>
+  </g>
+
+  <!-- 99% PURITY HIGHLIGHT BANNER -->
+  <g transform="translate(178,120)">
+    <rect width="262" height="28" class="gold"/>
+    <text x="131" y="19" text-anchor="middle" class="maroon mono" font-size="12" font-weight="700" letter-spacing="2.8">99% PURITY · HPLC VERIFIED</text>
+  </g>
+
+  <!-- BOTTOM strip -->
+  <line x1="10" y1="178" x2="440" y2="178" class="gold-stroke" stroke-width="0.5" opacity="0.5"/>
+  <text x="10" y="190" class="cream sans" font-size="7" letter-spacing="0.4">Store at room temperature. Refrigerate after opening.</text>
+  <text x="10" y="201" class="cream mono" font-size="6.5" letter-spacing="1.4" opacity="0.85">FOR RESEARCH USE ONLY · NOT FOR HUMAN OR VETERINARY USE</text>
+  <text x="10" y="214" class="gold mono" font-size="7" letter-spacing="1.5">EST. 2026 · MADE IN USA · BENCH GRADE PEPTIDES LLC</text>
+  <text x="440" y="214" text-anchor="end" class="gold mono" font-size="6.5" letter-spacing="1" opacity="0.85">benchgradepeptides.com/coa</text>
+</svg>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="675" height="375" viewBox="0 0 675 375" font-family="'Cormorant Garamond', 'Times New Roman', serif">
+  <!-- Bench Grade Peptides · 10ml LARGE/LIQUID vial label · MAROON · 675 x 375 -->
+  <defs>
+    <style>
+      .maroon { fill: #5C1A1A; }
+      .gold { fill: #B8923A; }
+      .cream { fill: #F2EAD9; }
+      .gold-stroke { stroke: #B8923A; fill: none; }
+      .display { font-family: 'Cormorant Garamond', 'Times New Roman', serif; }
+      .sans { font-family: 'Inter', -apple-system, sans-serif; }
+      .mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; }
+    </style>
+  </defs>
+
+  <rect width="675" height="375" class="maroon"/>
+
+  <!-- LEFT: F6 vector logo, 240 wide, vertically centered -->
+  <image x="10" y="30" width="240" height="240"
+         xlink:href="F6-gold-vector.svg?v=14"
+         preserveAspectRatio="xMidYMid meet"/>
+
+  <line x1="262" y1="22" x2="262" y2="290" class="gold-stroke" stroke-width="0.5" opacity="0.5"/>
+
+  <!-- Product banner -->
+  <g transform="translate(275,28)">
+    <rect width="220" height="58" class="gold"/>
+    <text x="110" y="40" text-anchor="middle" class="maroon display" font-size="32" font-weight="700" letter-spacing="-0.5">Glutathione</text>
+  </g>
+
+  <!-- Strength + pack info -->
+  <g transform="translate(275,108)">
+    <rect width="105" height="38" class="gold-stroke" stroke-width="1.2" rx="3"/>
+    <text x="52" y="26" text-anchor="middle" class="gold mono" font-size="17" font-weight="600" letter-spacing="1.4">1500 MG</text>
+  </g>
+  <g transform="translate(390,108)">
+    <rect width="105" height="38" class="gold-stroke" stroke-width="1.2" rx="3"/>
+    <text x="52" y="26" text-anchor="middle" class="gold mono" font-size="14" font-weight="600" letter-spacing="1.5">10 ML</text>
+  </g>
+
+  <text x="275" y="170" class="cream sans" font-size="10" letter-spacing="0.4">10mL Multi-Dose Vial · Reconstitute with BAC water</text>
+
+  <!-- LOT / EXP block, top-right -->
+  <g transform="translate(515,28)">
+    <rect width="140" height="58" class="gold-stroke" stroke-width="1.2"/>
+    <text x="12" y="22" class="gold mono" font-size="10" letter-spacing="1.6">LOT</text>
+    <text x="130" y="22" text-anchor="end" class="cream mono" font-size="14" font-weight="600" letter-spacing="1.2">H.012526</text>
+    <line x1="12" y1="32" x2="130" y2="32" class="gold-stroke" stroke-width="0.5" opacity="0.5"/>
+    <text x="12" y="50" class="gold mono" font-size="10" letter-spacing="1.6">EXP</text>
+    <text x="130" y="50" text-anchor="end" class="cream mono" font-size="14" font-weight="600" letter-spacing="1.2">01.2028</text>
+  </g>
+
+  <!-- 99% PURITY HIGHLIGHT BANNER -->
+  <g transform="translate(275,194)">
+    <rect width="380" height="34" class="gold"/>
+    <text x="190" y="23" text-anchor="middle" class="maroon mono" font-size="14" font-weight="700" letter-spacing="3.2">99% PURITY · HPLC VERIFIED</text>
+  </g>
+
+  <!-- Storage + Use -->
+  <g transform="translate(275,250)">
+    <text class="cream mono" font-size="8.5" letter-spacing="1.2">
+      <tspan x="0" y="0" class="gold">STORAGE</tspan>
+      <tspan x="0" y="14">Store at room temperature.</tspan>
+      <tspan x="0" y="26">Refrigerate after opening.</tspan>
+    </text>
+    <text class="cream mono" font-size="8.5" letter-spacing="1.2" transform="translate(195,0)">
+      <tspan x="0" y="0" class="gold">USE</tspan>
+      <tspan x="0" y="14">For research use only. Not for</tspan>
+      <tspan x="0" y="26">human or veterinary consumption.</tspan>
+    </text>
+  </g>
+
+  <!-- BOTTOM strip -->
+  <line x1="20" y1="328" x2="655" y2="328" class="gold-stroke" stroke-width="0.5" opacity="0.5"/>
+  <text x="20" y="346" class="gold mono" font-size="9" letter-spacing="1.5">EST. 2026 · MADE IN USA · BENCH GRADE PEPTIDES LLC</text>
+  <text x="20" y="360" class="cream mono" font-size="7" letter-spacing="0.8" opacity="0.85">benchgradepeptides.com</text>
+  <text x="655" y="360" text-anchor="end" class="gold mono" font-size="7.5" letter-spacing="1.4">VERIFY COA: benchgradepeptides.com/coa/H.012526</text>
+</svg>
