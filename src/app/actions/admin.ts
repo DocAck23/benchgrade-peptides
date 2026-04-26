@@ -14,6 +14,8 @@ import {
   sendOrderShipped,
   lookupCoaUrls,
 } from "@/lib/email/notifications/send-order-emails";
+import { sendMessageNotification } from "@/lib/email/notifications/send-messaging-emails";
+import { SITE_URL } from "@/lib/site";
 import type { CartItem } from "@/lib/cart/types";
 import type { SubscriptionRow } from "@/lib/supabase/types";
 import { nextCycleDate } from "@/lib/subscriptions/cycles";
@@ -293,4 +295,132 @@ export async function adminSwapSubscriptionItems(
   });
 
   return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Sprint 3 Wave B1 — admin messaging
+// ---------------------------------------------------------------------------
+
+const ADMIN_MSG_BODY_MIN = 1;
+const ADMIN_MSG_BODY_MAX = 2000;
+const ADMIN_MSG_PREVIEW = 60;
+
+export interface AdminSendMessageResult {
+  ok: boolean;
+  message_id?: string;
+  error?: string;
+}
+
+/**
+ * Admin sends a reply to a specific customer's thread. Service-role
+ * client because RLS restricts INSERTs on `messages` to the row's
+ * customer (cookie-bound auth.uid()) — admin sits outside that auth
+ * scope, so we bypass via service role and gate via `isAdmin()`.
+ *
+ * The post-insert email is best-effort: a Resend outage must not flip
+ * the success result of a row that already landed in Postgres.
+ */
+export async function adminSendMessage(
+  customerUserId: string,
+  body: string
+): Promise<AdminSendMessageResult> {
+  if (!(await isAdmin())) return { ok: false, error: "Unauthorized." };
+  if (!isValidUuid(customerUserId)) return { ok: false, error: "Invalid customer id." };
+  const trimmed = typeof body === "string" ? body.trim() : "";
+  if (trimmed.length < ADMIN_MSG_BODY_MIN || trimmed.length > ADMIN_MSG_BODY_MAX) {
+    return { ok: false, error: `Body must be 1–${ADMIN_MSG_BODY_MAX} characters.` };
+  }
+  const supa = getSupabaseServer();
+  if (!supa) return { ok: false, error: "Database unavailable." };
+
+  const { data, error } = await supa
+    .from("messages")
+    .insert({
+      customer_user_id: customerUserId,
+      sender: "admin",
+      body: trimmed,
+    })
+    .select("id")
+    .single();
+  if (error || !data) {
+    return { ok: false, error: error?.message ?? "Insert failed." };
+  }
+  const messageId = (data as { id: string }).id;
+
+  // Best-effort notification to the customer's email.
+  try {
+    const { data: userResp } = await supa.auth.admin.getUserById(customerUserId);
+    const email = userResp?.user?.email;
+    if (email) {
+      const preview =
+        trimmed.length > ADMIN_MSG_PREVIEW
+          ? trimmed.slice(0, ADMIN_MSG_PREVIEW)
+          : trimmed;
+      await sendMessageNotification(email, {
+        customer_name: userResp?.user?.user_metadata?.name ?? "",
+        message_id: messageId,
+        message_preview: preview,
+        thread_url: `${SITE_URL}/account/messages`,
+        truncated: trimmed.length > ADMIN_MSG_PREVIEW,
+      });
+    }
+  } catch (err) {
+    console.error("[adminSendMessage] notification email failed:", err);
+  }
+
+  return { ok: true, message_id: messageId };
+}
+
+export interface AdminThreadSummary {
+  customer_user_id: string;
+  latest_at: string;
+  unread_count: number;
+  latest_body_preview: string;
+}
+
+interface MessageSelectRow {
+  id: string;
+  customer_user_id: string;
+  sender: "customer" | "admin";
+  body: string;
+  created_at: string;
+  read_at: string | null;
+}
+
+/**
+ * Aggregate every customer's thread into one row per customer with the
+ * latest body preview + unread customer-message count. v1 does the
+ * GROUP BY in app code (small data volume, simple to reason about);
+ * if the table grows we move this into a SQL view or RPC.
+ */
+export async function adminListAllThreads(): Promise<AdminThreadSummary[]> {
+  if (!(await isAdmin())) return [];
+  const supa = getSupabaseServer();
+  if (!supa) return [];
+
+  const { data, error } = await supa
+    .from("messages")
+    .select("id, customer_user_id, sender, body, created_at, read_at")
+    .order("created_at", { ascending: false });
+  if (error || !data) return [];
+  const rows = data as MessageSelectRow[];
+
+  const byCustomer = new Map<string, AdminThreadSummary>();
+  for (const r of rows) {
+    const existing = byCustomer.get(r.customer_user_id);
+    const isUnreadCustomerMsg = r.sender === "customer" && r.read_at === null;
+    if (!existing) {
+      const preview =
+        r.body.length > ADMIN_MSG_PREVIEW ? r.body.slice(0, ADMIN_MSG_PREVIEW) : r.body;
+      byCustomer.set(r.customer_user_id, {
+        customer_user_id: r.customer_user_id,
+        latest_at: r.created_at,
+        unread_count: isUnreadCustomerMsg ? 1 : 0,
+        latest_body_preview: preview,
+      });
+    } else if (isUnreadCustomerMsg) {
+      existing.unread_count += 1;
+    }
+  }
+  return Array.from(byCustomer.values());
 }

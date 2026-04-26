@@ -26,6 +26,8 @@ import {
 } from "@/lib/payments/methods";
 import { subscriptionDiscountPercent } from "@/lib/subscriptions/discounts";
 import { createSubscription } from "@/app/actions/subscriptions";
+import { parseReferralCookie } from "@/lib/referrals/cookie";
+import { claimReferralOnOrder } from "@/app/actions/referrals";
 
 // Dev-only fallback store — in prod we require Supabase-backed counting.
 const devMemoryStore = new MemoryRateLimitStore();
@@ -487,6 +489,50 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
       console.error("[submitOrder] account-claim email failed:", err);
       // Best-effort: do NOT fail the order on email/auth-admin error.
     }
+  }
+
+  // Sprint 3 Task 9 — referral attribution. If the request has a bgp_ref
+  // cookie, link this order to the referral. Self-referral and repeat-buyer
+  // guards live inside claimReferralOnOrder. Best-effort — never block
+  // the order.
+  //
+  // Stacking policy: when subscription_mode is set, the subscription
+  // discount wins (already applied via createSubscription) and the
+  // referral 10% does not stack. When subscription_mode is null AND a
+  // referral cookie is present, we apply the 10% via a compensating
+  // UPDATE on the order's discount_cents / total_cents.
+  try {
+    if (!validInput.subscription_mode) {
+      const cookieHeader = headerBag.get("cookie");
+      const attribution = parseReferralCookie(cookieHeader);
+      if (attribution) {
+        const result = await claimReferralOnOrder({
+          customer_email: validInput.customer.email,
+          cookie_code: attribution.code,
+          order_id,
+        });
+        if (result.ok && result.ten_percent_off_applied) {
+          const refDiscount = Math.round(resolved.subtotal_cents * 0.1);
+          const refTotal = resolved.subtotal_cents - refDiscount;
+          const { error: discountErr } = await supa
+            .from("orders")
+            .update({
+              discount_cents: refDiscount,
+              total_cents: refTotal,
+            })
+            .eq("order_id", order_id);
+          if (discountErr) {
+            console.error(
+              "[submitOrder] referral discount apply failed:",
+              discountErr
+            );
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error("[submitOrder] referral hook threw:", err);
+    // Best-effort — never propagate.
   }
 
   return { ok: true, order_id };
