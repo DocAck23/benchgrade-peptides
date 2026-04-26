@@ -6,6 +6,7 @@ import { z } from "zod";
 import { RUO_STATEMENTS } from "@/lib/compliance";
 import { PRODUCTS } from "@/lib/catalog/data";
 import type { CartItem } from "@/lib/cart/types";
+import { computeCartTotals } from "@/lib/cart/discounts";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getResend, EMAIL_FROM, ADMIN_NOTIFICATION_EMAIL } from "@/lib/email/client";
 import { orderConfirmationEmail, adminOrderNotification } from "@/lib/email/templates";
@@ -207,6 +208,14 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
   const resolved = resolveCartOnServer(validInput.items);
   if ("error" in resolved) return { ok: false, error: resolved.error };
 
+  // Authoritative discount math — server-side only. Anything the client
+  // sent in `discount_cents` / `total_cents` was schema-stripped by Zod
+  // upstream; even if they slipped through, we ignore them here. The
+  // engine is the single source of truth so a hostile client can't
+  // forge a $0 total.
+  const totals = computeCartTotals(resolved.items);
+  const discount_cents = totals.subtotal_cents - totals.total_cents;
+
   // Certification text + timestamp are stamped from server-side constants,
   // not from the client. The hash binds compound inputs that make the ack
   // evidence-unique per order (HIGH H6 codex fix).
@@ -231,6 +240,9 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
     customer: validInput.customer,
     items: resolved.items,
     subtotal_cents: resolved.subtotal_cents,
+    discount_cents,
+    total_cents: totals.total_cents,
+    free_vial_entitlement: totals.free_vial_entitlement,
     payment_method,
     acknowledgment: {
       certification_text,

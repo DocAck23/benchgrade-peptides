@@ -38,6 +38,12 @@ export interface OrderRow {
     vial_image: string;
   }>;
   subtotal_cents: number;
+  /** Server-computed discount in cents (Stack&Save + Same-SKU multiplier). */
+  discount_cents?: number;
+  /** Server-computed amount owed in cents (subtotal_cents - discount_cents). */
+  total_cents?: number;
+  /** Free-vial entitlement captured at order time; null if no tier reached. */
+  free_vial_entitlement?: { size_mg: 5 | 10 } | null;
   acknowledgment: {
     certification_text: string;
     certification_version: string;
