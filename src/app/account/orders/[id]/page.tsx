@@ -7,6 +7,7 @@ import { isValidUuid, type OrderStatus } from "@/lib/orders/status";
 import { OrderTimeline, type OrderTimelineEvent } from "@/components/account/OrderTimeline";
 import { OrderStatusPill } from "@/components/account/OrderStatusPill";
 import { PendingPaymentPanel } from "@/components/account/PendingPaymentPanel";
+import { OrderManagePanel } from "@/components/account/OrderManagePanel";
 import { formatPrice } from "@/lib/utils";
 import { isPaymentMethod, enabledPaymentMethods, getPaymentMethodDetails, type PaymentMethod } from "@/lib/payments/methods";
 
@@ -44,6 +45,13 @@ interface OrderDetail {
   updated_at: string;
   payment_method: PaymentMethod | null;
   nowpayments_invoice_url: string | null;
+  ship_address: {
+    ship_address_1: string;
+    ship_address_2: string | null;
+    ship_city: string;
+    ship_state: string;
+    ship_zip: string;
+  } | null;
 }
 
 const VALID_CARRIERS: readonly Carrier[] = ["USPS", "UPS", "FedEx", "DHL"];
@@ -101,6 +109,30 @@ function narrow(row: unknown): OrderDetail | null {
     if (sz === 5 || sz === 10) entitlement = { size_mg: sz };
   }
 
+  // Pull just the ship-address slice off `customer` JSON for the
+  // edit/cancel panel. Don't attempt to surface name/email here —
+  // the customer can't change those self-serve.
+  let ship_address: OrderDetail["ship_address"] = null;
+  const c = r.customer;
+  if (c && typeof c === "object") {
+    const co = c as Record<string, unknown>;
+    if (
+      typeof co.ship_address_1 === "string" &&
+      typeof co.ship_city === "string" &&
+      typeof co.ship_state === "string" &&
+      typeof co.ship_zip === "string"
+    ) {
+      ship_address = {
+        ship_address_1: co.ship_address_1,
+        ship_address_2:
+          typeof co.ship_address_2 === "string" ? co.ship_address_2 : null,
+        ship_city: co.ship_city,
+        ship_state: co.ship_state,
+        ship_zip: co.ship_zip,
+      };
+    }
+  }
+
   return {
     order_id: r.order_id,
     status: r.status as OrderStatus,
@@ -121,6 +153,7 @@ function narrow(row: unknown): OrderDetail | null {
         : null,
     nowpayments_invoice_url:
       typeof r.nowpayments_invoice_url === "string" ? r.nowpayments_invoice_url : null,
+    ship_address,
   };
 }
 
@@ -195,7 +228,7 @@ export default async function CustomerOrderDetailPage({
   const { data, error } = await supa
     .from("orders")
     .select(
-      "order_id, status, items, subtotal_cents, discount_cents, total_cents, free_vial_entitlement, tracking_number, tracking_carrier, shipped_at, funded_at, created_at, updated_at, payment_method, nowpayments_invoice_url"
+      "order_id, status, items, subtotal_cents, discount_cents, total_cents, free_vial_entitlement, tracking_number, tracking_carrier, shipped_at, funded_at, created_at, updated_at, payment_method, nowpayments_invoice_url, customer"
     )
     .eq("order_id", id)
     .maybeSingle();
@@ -237,15 +270,23 @@ export default async function CustomerOrderDetailPage({
       </header>
 
       {(order.status === "awaiting_payment" || order.status === "awaiting_wire") && (
-        <PendingPaymentPanel
-          orderId={order.order_id}
-          memo={`BGP-${order.order_id.slice(0, 8).toUpperCase()}`}
-          amountCents={total}
-          currentMethod={order.payment_method}
-          availableMethods={enabledPaymentMethods()}
-          details={getPaymentMethodDetails()}
-          invoiceUrl={order.nowpayments_invoice_url}
-        />
+        <>
+          <PendingPaymentPanel
+            orderId={order.order_id}
+            memo={`BGP-${order.order_id.slice(0, 8).toUpperCase()}`}
+            amountCents={total}
+            currentMethod={order.payment_method}
+            availableMethods={enabledPaymentMethods()}
+            details={getPaymentMethodDetails()}
+            invoiceUrl={order.nowpayments_invoice_url}
+          />
+          {order.ship_address && (
+            <OrderManagePanel
+              orderId={order.order_id}
+              current={order.ship_address}
+            />
+          )}
+        </>
       )}
 
       {order.free_vial_entitlement && (

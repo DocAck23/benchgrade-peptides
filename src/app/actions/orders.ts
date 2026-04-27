@@ -33,6 +33,11 @@ import { createSubscription } from "@/app/actions/subscriptions";
 import { parseReferralCookie } from "@/lib/referrals/cookie";
 import { composeReferralDiscount } from "@/lib/referrals/discount";
 import { makeSuccessToken } from "@/lib/orders/success-token";
+import { US_STATES_AND_TERRITORIES } from "@/lib/geography/us-states";
+import { upsertMarketingSubscriber } from "@/lib/marketing/subscribers";
+// Coupon math runs server-side in the `redeem_coupon` Postgres RPC
+// (one atomic transaction). The pure helper at @/lib/coupons/apply is
+// kept for future cart-preview UI use.
 import { createNowpaymentsInvoice } from "@/lib/payments/nowpayments/invoice";
 import { sendCryptoPaymentLink } from "@/lib/email/notifications/send-order-emails";
 import type { OrderRow } from "@/lib/supabase/types";
@@ -49,14 +54,8 @@ const devMemoryStore = new MemoryRateLimitStore();
 const CERTIFICATION_VERSION = "2026-04-22";
 
 // Whitelist of valid US state + territory + military-mail 2-letter codes.
-// Anything outside this set is rejected at checkout — keeps the address
-// field from accepting `ZZ` or similar bogus 2-letter strings.
-const US_STATES_AND_TERRITORIES = new Set<string>([
-  "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
-  "KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
-  "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT",
-  "VA","WA","WV","WI","WY","DC","PR","GU","VI","AS","MP","AA","AE","AP",
-]);
+// US state/territory/military codes live in @/lib/geography/us-states
+// (imported at the top of this file).
 
 export interface CustomerInfo {
   name: string;
@@ -106,6 +105,10 @@ export interface SubmitOrderInput {
   acknowledgment: ClientAcknowledgment;
   payment_method: PaymentMethod;
   subscription_mode?: SubmitOrderSubscriptionMode | null;
+  /** Defaults to true at the schema layer if omitted. */
+  marketing_opt_in?: boolean;
+  /** Optional coupon code from the cart. Best-of vs Stack & Save / referral. */
+  coupon_code?: string | null;
 }
 
 export interface SubmitOrderResult {
@@ -193,6 +196,14 @@ const SubmitOrderSchema = z.object({
   acknowledgment: AcknowledgmentSchema,
   payment_method: PaymentMethodSchema,
   subscription_mode: SubscriptionModeSchema,
+  // Marketing-email opt-in checkbox state from checkout. Defaults to
+  // true (the checkbox is pre-checked); customer can untick at submit
+  // time. Persisted on the order row + mirrored to marketing_subscribers.
+  marketing_opt_in: z.boolean().default(true),
+  // Optional coupon code typed in at checkout. Normalized to lowercase
+  // server-side; non-existent / expired / capped codes return a clean
+  // error path (the order still submits, but no discount is applied).
+  coupon_code: z.string().trim().toLowerCase().min(1).max(64).optional().nullable(),
 });
 
 function resolveCartOnServer(
@@ -458,6 +469,7 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
       user_agent: userAgent,
     },
     status: "awaiting_payment" as const,
+    marketing_opt_in: validInput.marketing_opt_in,
     created_at: acknowledged_at,
   };
 
@@ -516,6 +528,17 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
       ok: false,
       error: `Order submission failed at compliance step. Please retry in a minute; if it persists, email admin@benchgradepeptides.com with any reference you have.`,
     };
+  }
+
+  // Marketing-list housekeeping — opt-in or revive subscription
+  // based on the checkout checkbox. Best-effort: a failure here MUST
+  // NOT roll back an order that already landed.
+  if (validInput.marketing_opt_in) {
+    try {
+      await upsertMarketingSubscriber(validInput.customer.email, order_id);
+    } catch (err) {
+      console.error("[submitOrder] upsertMarketingSubscriber failed:", err);
+    }
   }
 
   // Subscription branch — Wave C1. If the customer toggled the
@@ -791,6 +814,40 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
   } catch (err) {
     console.error("[submitOrder] referral hook threw:", err);
     // Best-effort — never propagate.
+  }
+
+  // Coupon redemption — runs LAST so the best-of comparison sees the
+  // post-referral / post-Stack&Save discount. Coupon does NOT stack;
+  // it replaces the existing discount stack only if it would save the
+  // customer more money.
+  //
+  // Delegated to the `redeem_coupon` Postgres RPC so the entire
+  // sequence (validity check → cap check → redemption insert → order
+  // total update) runs in a single transaction with the coupon row
+  // locked FOR UPDATE. Closes the race conditions the prior app-side
+  // flow had with concurrent redemptions and TOCTOU expiry.
+  if (validInput.coupon_code) {
+    try {
+      const code = validInput.coupon_code.trim().toLowerCase();
+      const emailLower = validInput.customer.email.trim().toLowerCase();
+      const { data: applied, error: rpcErr } = await supa.rpc("redeem_coupon", {
+        p_code: code,
+        p_order_id: order_id,
+        p_customer_email_lower: emailLower,
+      });
+      if (rpcErr) {
+        console.error("[submitOrder] redeem_coupon rpc failed:", rpcErr);
+      } else if (applied === null) {
+        // Coupon didn't apply — either invalid, capped, expired, or
+        // lost the best-of comparison. The Postgres function logs the
+        // specific reason via RAISE NOTICE.
+        console.warn(
+          `[submitOrder] coupon ${code} did not apply for order ${order_id}`,
+        );
+      }
+    } catch (err) {
+      console.error("[submitOrder] coupon apply threw:", err);
+    }
   }
 
   return { ok: true, order_id, success_token: makeSuccessToken(order_id) };

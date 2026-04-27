@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   images: {
@@ -32,4 +33,24 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Sentry wrapper — uploads source maps + injects the SDK into the
+// build. `SENTRY_AUTH_TOKEN` is required for source-map upload (set
+// on Vercel only); locally the wrapper no-ops the upload step.
+// Tunnel + tracing/replay opts kept conservative; we can ratchet
+// sampling up after we see baseline error volume.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  silent: !process.env.CI,
+  // Hide source maps from public access (still uploaded to Sentry).
+  sourcemaps: { deleteSourcemapsAfterUpload: true },
+  // Disable Sentry tunneling (would route browser SDK calls through
+  // /monitoring); ad-blockers don't bother us yet and the route adds
+  // edge function invocations.
+  tunnelRoute: undefined,
+  // Don't fail the Vercel build on Sentry upload errors — error
+  // visibility is a "nice to have" and we don't want it to gate
+  // production releases.
+  errorHandler: () => {},
+  disableLogger: true,
+});

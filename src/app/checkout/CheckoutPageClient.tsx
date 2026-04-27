@@ -71,6 +71,13 @@ export function CheckoutPageClient({
   const [ruoOpen, setRuoOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Marketing opt-in defaults to true at checkout. Customer can untick;
+  // can also unsubscribe later from /account/security or via any
+  // marketing email's standard unsubscribe link.
+  const [marketingOptIn, setMarketingOptIn] = useState(true);
+  // Optional coupon code typed at checkout. Server-side validates +
+  // best-of-stacks against Stack & Save / referral. Empty = none.
+  const [couponCode, setCouponCode] = useState("");
 
   // Sprint 3 Wave C — referral discount preview line.
   //
@@ -156,6 +163,8 @@ export function CheckoutPageClient({
         },
         payment_method: paymentMethod,
         subscription_mode: subscriptionMode,
+        marketing_opt_in: marketingOptIn,
+        coupon_code: couponCode.trim() ? couponCode.trim().toLowerCase() : null,
       });
       if (!res.ok) {
         setError(res.error ?? "Order submission failed.");
@@ -218,6 +227,27 @@ export function CheckoutPageClient({
             </div>
           </Section>
 
+          <Section title="Coupon (optional)">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-[10px] uppercase tracking-[0.1em] text-ink-muted">
+                Coupon code
+              </span>
+              <input
+                type="text"
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value)}
+                disabled={submitting}
+                autoCapitalize="characters"
+                className="h-10 px-3 border rule bg-paper text-sm font-mono-data uppercase focus:outline-none focus:border-ink"
+                placeholder="WELCOME10"
+              />
+              <span className="text-[11px] text-ink-muted leading-snug">
+                Coupon does not stack with Stack &amp; Save or referrals — we&rsquo;ll
+                automatically apply whichever discount saves you the most.
+              </span>
+            </label>
+          </Section>
+
           <Section title="Notes (optional)">
             <Field
               label="Anything the lab should know"
@@ -231,6 +261,24 @@ export function CheckoutPageClient({
             No card processor. After you submit, we email you instructions for the method you chose.
             Your order ships within 1-2 business days of payment confirmation.
           </Callout>
+
+          {/* Marketing-email opt-in. Pre-checked per product decision;
+              customer can untick. They can also unsubscribe later from
+              account settings or any future marketing email. */}
+          <label className="flex items-start gap-3 cursor-pointer text-sm text-ink-soft">
+            <input
+              type="checkbox"
+              checked={marketingOptIn}
+              onChange={(e) => setMarketingOptIn(e.target.checked)}
+              disabled={submitting}
+              className="mt-1 w-4 h-4 accent-wine cursor-pointer"
+            />
+            <span>
+              Email me occasional research updates and new-compound announcements
+              from Bench Grade Peptides. Transactional order emails always send
+              regardless. Unsubscribe anytime.
+            </span>
+          </label>
 
           {error && (
             <div className="border border-danger/40 bg-danger/5 text-danger px-4 py-3 text-sm">
@@ -409,7 +457,7 @@ function FreeShippingBar({ subtotal }: { subtotal: number }) {
 const TRUST_ITEMS = [
   { icon: Flag, label: "Made in USA", sub: "Synthesized + tested stateside" },
   { icon: ShieldCheck, label: "≥99% HPLC", sub: "Verified per lot" },
-  { icon: QrCode, label: "QR-COA on every vial", sub: "Scan to see receipts" },
+  { icon: QrCode, label: "Per-lot COA", sub: "Email request after ship" },
   { icon: Snowflake, label: "Cold-chain shipped", sub: "Insulated, tracked" },
 ] as const;
 
@@ -443,7 +491,7 @@ const TIMELINE_STEPS = [
   {
     when: "1–2 business days",
     title: "Ships from our US lab",
-    body: "Cold-chain pack with QR-COA on every vial. Tracking included.",
+    body: "Cold-chain pack with FedEx tracking. Per-lot COA available on request — email us with your order memo.",
   },
 ] as const;
 

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase/client";
 import { SetPasswordForm } from "@/components/account/SetPasswordForm";
+import { MarketingPreferences } from "@/components/account/MarketingPreferences";
+import { getMyMarketingState } from "@/app/actions/account";
 
 export const metadata: Metadata = {
   title: "Security",
@@ -47,6 +49,11 @@ export default async function SecurityPage() {
       </header>
 
       <SetPasswordForm email={user.email ?? ""} />
+
+      <MarketingPreferences
+        email={user.email ?? ""}
+        initialSubscribed={(await getMyMarketingState()).subscribed}
+      />
 
       <section className="border rule bg-paper-soft p-5">
         <div className="label-eyebrow text-ink-muted mb-2">Tips</div>

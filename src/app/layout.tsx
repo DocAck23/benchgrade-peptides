@@ -88,6 +88,35 @@ export default function RootLayout({
       className={`${cinzel.variable} ${cormorant.variable} ${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[color:var(--color-paper)] text-[color:var(--color-ink)]">
+        {/* Schema.org Organization markup — site-wide, gives Google
+            the canonical name + logo + contact for knowledge-graph
+            and rich-result eligibility. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              "@id": `${SITE_URL}/#org`,
+              name: "Bench Grade Peptides",
+              legalName: "Bench Grade Peptides LLC",
+              url: SITE_URL,
+              logo: `${SITE_URL}/brand/logo-mark-gold.png`,
+              email: "admin@benchgradepeptides.com",
+              address: {
+                "@type": "PostalAddress",
+                streetAddress: "8 The Green",
+                addressLocality: "Dover",
+                addressRegion: "DE",
+                postalCode: "19901",
+                addressCountry: "US",
+              },
+              sameAs: [],
+              description:
+                "Research-grade synthetic peptides. HPLC-verified, COA per lot, cold-chain shipped. Sold for laboratory research use only.",
+            }),
+          }}
+        />
         <CartProvider>
           <a
             href="#main"

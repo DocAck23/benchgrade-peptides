@@ -28,11 +28,21 @@ export default function ContactPage() {
           </a>
         </section>
 
+        <section>
+          <h2 className="label-eyebrow text-ink-muted mb-3">Mailing address</h2>
+          <address className="not-italic text-ink leading-relaxed">
+            Bench Grade Peptides LLC<br />
+            8 The Green<br />
+            Dover, DE 19901<br />
+            United States
+          </address>
+        </section>
+
         <section className="pt-8 border-t rule">
           <p className="text-sm text-ink-muted leading-relaxed">
             Bench Grade Peptides LLC is a United States limited liability company supplying
             research-grade synthetic peptides for laboratory research use only. Inquiries are typically
-            answered within one business day.
+            answered within one business day, Monday–Friday, 9am–5pm CT.
           </p>
         </section>
       </div>
