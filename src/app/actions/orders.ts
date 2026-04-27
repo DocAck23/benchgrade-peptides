@@ -4,7 +4,8 @@ import crypto from "node:crypto";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { RUO_STATEMENTS } from "@/lib/compliance";
-import { PRODUCTS } from "@/lib/catalogue/data";
+import { PRODUCTS, getSupplyVariantBySku } from "@/lib/catalogue/data";
+import type { CatalogProduct } from "@/lib/catalogue/data";
 import type { CartItem } from "@/lib/cart/types";
 import { computeCartTotals } from "@/lib/cart/discounts";
 import { getSupabaseServer } from "@/lib/supabase/server";
@@ -194,8 +195,22 @@ function resolveCartOnServer(
     if (!Number.isFinite(qty) || qty <= 0 || qty > 500) {
       return { error: `Invalid quantity for ${line.sku}.` };
     }
-    const match = PRODUCTS.find((p) => p.variants.some((v) => v.sku === line.sku));
-    const variant = match?.variants.find((v) => v.sku === line.sku);
+    // Resolve from PRODUCTS first; fall back to SUPPLIES (BAC water,
+    // syringes, draw needles) which are auto-added but never appear in
+    // the public catalogue.
+    let match: CatalogProduct | undefined = PRODUCTS.find((p) =>
+      p.variants.some((v) => v.sku === line.sku),
+    );
+    let variant = match?.variants.find((v) => v.sku === line.sku);
+    let isSupply = false;
+    if (!match || !variant) {
+      const supply = getSupplyVariantBySku(line.sku);
+      if (supply) {
+        match = supply.product;
+        variant = supply.variant;
+        isSupply = true;
+      }
+    }
     if (!match || !variant) return { error: `Unknown SKU: ${line.sku}` };
     items.push({
       sku: variant.sku,
@@ -207,8 +222,13 @@ function resolveCartOnServer(
       unit_price: variant.retail_price,
       quantity: qty,
       vial_image: match.vial_image,
+      ...(isSupply ? { is_supply: true as const } : {}),
     });
-    subtotal_cents += Math.round(variant.retail_price * 100) * qty;
+    // First-unit-free pricing on bundle supplies — mirrors the cart's
+    // `lineSubtotalCents` so server-computed total matches what the
+    // user saw in the drawer.
+    const billable = isSupply ? Math.max(0, qty - 1) : qty;
+    subtotal_cents += Math.round(variant.retail_price * 100) * billable;
   }
   return { items, subtotal_cents };
 }

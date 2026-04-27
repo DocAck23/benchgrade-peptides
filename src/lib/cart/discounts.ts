@@ -38,7 +38,23 @@ export interface CartTotals {
 }
 
 function vialCount(items: CartItem[]): number {
-  return items.reduce((n, i) => n + i.quantity * i.pack_size, 0);
+  // Bundle supplies (BAC water, syringes, draw needles) are not vials —
+  // they shouldn't shift Stack & Save tier or the same-SKU multiplier.
+  return items
+    .filter((i) => !i.is_supply)
+    .reduce((n, i) => n + i.quantity * i.pack_size, 0);
+}
+
+/**
+ * Per-line subtotal in cents. Supply lines apply first-unit-free pricing
+ * (qty - 1) so a single BAC water + 1 of each syringe pack are bundled
+ * with every order at no charge; additional units charge full price.
+ */
+export function lineSubtotalCents(item: CartItem): number {
+  const billableQty = item.is_supply
+    ? Math.max(0, item.quantity - 1)
+    : item.quantity;
+  return Math.round(item.unit_price * billableQty * 100);
 }
 
 export function computeStackSaveDiscount(items: CartItem[]): StackSaveResult {
@@ -78,6 +94,7 @@ export function nextStackSaveTier(vials: number): NextTierInfo | null {
 export function computeSameSkuMultiplier(items: CartItem[]): 0 | 5 {
   const counts = new Map<string, number>();
   for (const i of items) {
+    if (i.is_supply) continue; // supplies don't trip the multiplier
     counts.set(i.sku, (counts.get(i.sku) ?? 0) + i.quantity * i.pack_size);
   }
   for (const c of counts.values()) {
@@ -87,10 +104,19 @@ export function computeSameSkuMultiplier(items: CartItem[]): 0 | 5 {
 }
 
 export function computeCartTotals(items: CartItem[]): CartTotals {
-  const subtotal_cents = Math.round(items.reduce((s, i) => s + i.unit_price * i.quantity * 100, 0));
+  // Per-line subtotal: supplies use first-unit-free pricing.
+  const subtotal_cents = items.reduce(
+    (s, i) => s + lineSubtotalCents(i),
+    0,
+  );
+  // Stack & Save / same-SKU discounts apply only to peptide vials —
+  // supplies are billed flat at the (already-discounted-by-1) price.
+  const peptide_subtotal_cents = items
+    .filter((i) => !i.is_supply)
+    .reduce((s, i) => s + Math.round(i.unit_price * i.quantity * 100), 0);
   const ss = computeStackSaveDiscount(items);
-  const stack_save_discount_cents = Math.round(subtotal_cents * (ss.tier_percent / 100));
-  const post_stack = subtotal_cents - stack_save_discount_cents;
+  const stack_save_discount_cents = Math.round(peptide_subtotal_cents * (ss.tier_percent / 100));
+  const post_stack = peptide_subtotal_cents - stack_save_discount_cents;
   const sameSku = computeSameSkuMultiplier(items);
   const same_sku_discount_cents = Math.round(post_stack * (sameSku / 100));
   return {
@@ -102,7 +128,10 @@ export function computeCartTotals(items: CartItem[]): CartTotals {
     same_sku_discount_cents,
     free_shipping: ss.free_shipping,
     free_vial_entitlement: ss.free_vial_size_mg ? { size_mg: ss.free_vial_size_mg } : null,
-    total_cents: post_stack - same_sku_discount_cents,
+    // Total = (peptide subtotal - stack-save - same-sku) + supplies-portion
+    // where supplies-portion is already first-unit-free in subtotal_cents.
+    total_cents:
+      subtotal_cents - stack_save_discount_cents - same_sku_discount_cents,
   };
 }
 

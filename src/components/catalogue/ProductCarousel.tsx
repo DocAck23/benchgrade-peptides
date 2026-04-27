@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { CatalogProduct } from "@/lib/catalogue/data";
@@ -10,16 +11,91 @@ import { QuickAddButton } from "./QuickAddButton";
 /**
  * Homepage product carousel.
  *
- * Infinite-loop marquee of product cards. CSS-only animation via the
- * `marquee-track` class defined in globals.css. The tile list is rendered
- * once as the real (announced, keyboard-reachable) set and once as an
- * aria-hidden + inert decorative duplicate so the visual loop is seamless
- * while assistive tech only sees each product once.
+ * JS-driven auto-scroll over a native horizontal-scroll viewport. The
+ * tile list is rendered once as the real (announced, keyboard-reachable)
+ * set and once as an aria-hidden + inert decorative duplicate so the
+ * loop is seamless: when scrollLeft passes the halfway mark we subtract
+ * half the track width in a single frame — invisible because the second
+ * set is pixel-identical to the first at that position.
  *
- * Hover and focus-within pause the marquee. Users with
- * `prefers-reduced-motion: reduce` see a static row.
+ * Why JS instead of a CSS `transform` animation?
+ *  - CSS transform animations interfere with native horizontal scroll on
+ *    mobile (the user's swipe gets fought by the transform under their
+ *    finger). Driving `scrollLeft` directly composes cleanly with touch:
+ *    a finger drag IS the scroll, and our auto-tick just resumes after
+ *    a short idle.
+ *  - Identical behavior on desktop and mobile — no `@media` divergence.
+ *
+ * Pause rules:
+ *  - hover / focus-within → pause until the cursor / focus leaves
+ *  - pointer/touch/wheel interaction → pause for ~2.5s after the last event
+ *  - prefers-reduced-motion: reduce → no animation at all
  */
 export function ProductCarousel() {
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    const track = trackRef.current;
+    if (!viewport || !track) return;
+    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (mql.matches) return;
+
+    let hovered = false;
+    let lastInteraction = 0;
+    const RESUME_DELAY_MS = 2500;
+
+    let raf = 0;
+    let last = performance.now();
+    const tick = (now: number) => {
+      const dt = (now - last) / 1000;
+      last = now;
+      if (!hovered && now - lastInteraction > RESUME_DELAY_MS) {
+        // Slightly slower on mobile (cards are smaller; same px/sec
+        // would feel rushed); a touch faster on desktop where the
+        // viewport is wide.
+        const speed = window.innerWidth < 768 ? 28 : 50;
+        const half = track.scrollWidth / 2;
+        if (half > viewport.clientWidth) {
+          viewport.scrollLeft += speed * dt;
+          if (viewport.scrollLeft >= half) {
+            viewport.scrollLeft -= half;
+          }
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+
+    const onEnter = () => { hovered = true; };
+    const onLeave = () => { hovered = false; };
+    const onInteract = () => { lastInteraction = performance.now(); };
+
+    viewport.addEventListener("mouseenter", onEnter);
+    viewport.addEventListener("mouseleave", onLeave);
+    viewport.addEventListener("focusin", onEnter);
+    viewport.addEventListener("focusout", onLeave);
+    viewport.addEventListener("pointerdown", onInteract);
+    viewport.addEventListener("touchstart", onInteract, { passive: true });
+    viewport.addEventListener("touchmove", onInteract, { passive: true });
+    viewport.addEventListener("touchend", onInteract, { passive: true });
+    viewport.addEventListener("wheel", onInteract, { passive: true });
+
+    return () => {
+      cancelAnimationFrame(raf);
+      viewport.removeEventListener("mouseenter", onEnter);
+      viewport.removeEventListener("mouseleave", onLeave);
+      viewport.removeEventListener("focusin", onEnter);
+      viewport.removeEventListener("focusout", onLeave);
+      viewport.removeEventListener("pointerdown", onInteract);
+      viewport.removeEventListener("touchstart", onInteract);
+      viewport.removeEventListener("touchmove", onInteract);
+      viewport.removeEventListener("touchend", onInteract);
+      viewport.removeEventListener("wheel", onInteract);
+    };
+  }, []);
+
   return (
     <section
       aria-label="Featured compounds"
@@ -38,22 +114,20 @@ export function ProductCarousel() {
         </Link>
       </div>
 
-      {/* Marquee viewport — on mobile this is a native horizontal scroll
-          container (with the marquee animation disabled in globals.css).
-          `touch-action: pan-x` declares horizontal-pan as the primary
-          gesture so iOS / Android don't lose the swipe to vertical-pan
-          arbitration. `overscroll-x-contain` keeps page-level horizontal
-          chrome scroll out of it. */}
       <div
-        className="relative overflow-x-auto overflow-y-hidden md:overflow-hidden overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        ref={viewportRef}
+        className="relative overflow-x-auto overflow-y-hidden overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y" }}
       >
-        {/* edge fades for a premium feel — desktop only; on mobile they
-            get in the way of the swipe-to-end visual cue. */}
+        {/* Edge fades — desktop only; on mobile they get in the way of
+            the swipe-to-end visual cue. */}
         <div className="pointer-events-none absolute inset-y-0 left-0 w-16 lg:w-32 bg-gradient-to-r from-wine to-transparent z-10 hidden md:block" />
         <div className="pointer-events-none absolute inset-y-0 right-0 w-16 lg:w-32 bg-gradient-to-l from-wine to-transparent z-10 hidden md:block" />
 
-        <div className="marquee-track flex gap-2 sm:gap-4 lg:gap-5 w-max px-3 sm:px-6 lg:px-10">
+        <div
+          ref={trackRef}
+          className="flex gap-2 sm:gap-4 lg:gap-5 w-max px-3 sm:px-6 lg:px-10"
+        >
           {/* Real set — keyboard-reachable, announced */}
           <ul className="flex gap-2 sm:gap-4 lg:gap-5 shrink-0">
             {PRODUCTS.map((product) => (
@@ -62,7 +136,9 @@ export function ProductCarousel() {
               </li>
             ))}
           </ul>
-          {/* Decorative duplicate — hidden from assistive tech, removed from tab order */}
+          {/* Decorative duplicate — hidden from assistive tech + removed
+              from tab order. Identical to the real set so the wrap-around
+              is invisible. */}
           <ul
             className="flex gap-2 sm:gap-4 lg:gap-5 shrink-0"
             aria-hidden="true"

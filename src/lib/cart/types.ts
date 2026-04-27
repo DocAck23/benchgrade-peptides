@@ -14,6 +14,12 @@ export interface CartItem {
   /** Number of packs of this variant in the cart. */
   quantity: number;
   vial_image: string;
+  /**
+   * Bundle-supply line (BAC water, syringes, draw needles). First unit
+   * is free; additional units charge `unit_price`. Excluded from the
+   * vial-count for Stack & Save tiers and same-SKU multipliers.
+   */
+  is_supply?: boolean;
 }
 
 export interface CartState {

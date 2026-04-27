@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Minus, Plus } from "lucide-react";
 import { useCart } from "@/lib/cart/CartContext";
 import { formatPrice } from "@/lib/utils";
+import { lineSubtotalCents } from "@/lib/cart/discounts";
 
 export function CartPageClient() {
   const { items, subtotal, itemCount, updateQuantity, removeItem } = useCart();
@@ -68,7 +69,16 @@ export function CartPageClient() {
                   </button>
                 </div>
                 <div className="font-mono-data text-[11px] sm:text-xs text-ink-muted mb-2 sm:mb-3 break-words">
-                  {item.pack_size}-vial pack · {item.size_mg}mg ea. · {item.sku} · {formatPrice((item.unit_price / item.pack_size) * 100)}/vial
+                  {item.is_supply ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="px-1.5 py-px bg-gold-light/40 text-gold-dark text-[9px] uppercase tracking-[0.1em]">
+                        1st free
+                      </span>
+                      <span>{item.sku} · {formatPrice(item.unit_price * 100)} ea. after the first</span>
+                    </span>
+                  ) : (
+                    <>{item.pack_size}-vial pack · {item.size_mg}mg ea. · {item.sku} · {formatPrice((item.unit_price / item.pack_size) * 100)}/vial</>
+                  )}
                 </div>
                 <div className="mt-auto flex items-center justify-between gap-2 flex-wrap">
                   <div className="inline-flex items-center border rule shrink-0">
@@ -93,7 +103,13 @@ export function CartPageClient() {
                     </button>
                   </div>
                   <span className="font-mono-data text-sm sm:text-base text-ink shrink-0">
-                    {formatPrice(item.unit_price * item.quantity * 100)}
+                    {item.is_supply && lineSubtotalCents(item) === 0 ? (
+                      <span className="text-gold-dark uppercase tracking-[0.1em] text-[10px]">
+                        Free
+                      </span>
+                    ) : (
+                      formatPrice(lineSubtotalCents(item))
+                    )}
                   </span>
                 </div>
               </div>

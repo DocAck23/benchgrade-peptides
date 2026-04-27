@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { X, Minus, Plus } from "lucide-react";
 import { useCart } from "@/lib/cart/CartContext";
+import { lineSubtotalCents } from "@/lib/cart/discounts";
 import { formatPrice, cn } from "@/lib/utils";
 import { StackSaveProgress } from "./StackSaveProgress";
 import { CartItemVariantSelect } from "./CartItemVariantSelect";
@@ -163,11 +164,22 @@ export function CartDrawer() {
                       </button>
                     </div>
                     <div className="font-mono-data text-[11px] text-ink-muted mb-2">
-                      {item.pack_size}-vial pack · {item.sku}
+                      {item.is_supply ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="px-1.5 py-px bg-gold-light/40 text-gold-dark text-[9px] uppercase tracking-[0.1em]">
+                            1st free
+                          </span>
+                          <span>{item.sku}</span>
+                        </span>
+                      ) : (
+                        <>{item.pack_size}-vial pack · {item.sku}</>
+                      )}
                     </div>
-                    <div className="mb-2">
-                      <CartItemVariantSelect item={item} />
-                    </div>
+                    {!item.is_supply && (
+                      <div className="mb-2">
+                        <CartItemVariantSelect item={item} />
+                      </div>
+                    )}
                     <div className="flex items-center justify-between gap-2">
                       <div className="inline-flex items-center border rule">
                         <button
@@ -191,7 +203,13 @@ export function CartDrawer() {
                         </button>
                       </div>
                       <span className="font-mono-data text-sm text-ink">
-                        {formatPrice(item.unit_price * item.quantity * 100)}
+                        {item.is_supply && lineSubtotalCents(item) === 0 ? (
+                          <span className="text-gold-dark uppercase tracking-[0.1em] text-[10px]">
+                            Free
+                          </span>
+                        ) : (
+                          formatPrice(lineSubtotalCents(item))
+                        )}
                       </span>
                     </div>
                   </div>

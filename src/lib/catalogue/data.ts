@@ -44,6 +44,13 @@ export interface CatalogVariant {
   wholesale_cost: number;
   /** Retail price (USD) for the entire pack. */
   retail_price: number;
+  /**
+   * Bundle-supply pricing: the first unit of this variant in the cart is
+   * free (BAC water, syringes, draw needles). Auto-added when the cart
+   * contains lyophilized peptides; user can remove or top up. Subsequent
+   * units charge `retail_price` each.
+   */
+  bundle_supply?: boolean;
 }
 
 export interface CatalogProduct {
@@ -1815,4 +1822,124 @@ export function getMaxPrice(product: CatalogProduct): number {
 /** Per-vial / per-unit retail price for a given variant. */
 export function perVialPrice(variant: CatalogVariant): number {
   return variant.retail_price / variant.pack_size;
+}
+
+// ---------- bundle supplies ----------
+//
+// Hidden from /catalogue (kept out of PRODUCTS) but reachable as cart
+// line items via auto-add when a lyophilized peptide enters the cart.
+// Pricing model: first unit of each variant is free, additional units
+// charge retail_price. Quantity ratio: 1 supply per 5 lyo vials, ceil.
+//
+// User can decrement / remove supplies entirely (e.g. "I have plenty
+// from last order") — auto-add only fires on add/upsize, never re-adds
+// after a manual removal unless a *new* threshold crossing happens.
+
+export const SUPPLIES: readonly CatalogProduct[] = [
+  {
+    slug: "bac-water-10ml",
+    name: "Bacteriostatic Water 10ml",
+    category_slug: "supplies",
+    dose_mg: 0,
+    cas_number: null,
+    molecular_formula: null,
+    molecular_weight: null,
+    sequence: null,
+    summary:
+      "Sterile bacteriostatic water for reconstitution of lyophilized research peptides. 10ml multi-use vial.",
+    research_context: null,
+    vial_image: "/brand/supplies/bac-water.jpg",
+    container: "supply",
+    variants: [
+      {
+        size_mg: 10,
+        pack_size: 1,
+        sku: "BAC-WATER-10ML",
+        wholesale_cost: 2,
+        retail_price: 8,
+        bundle_supply: true,
+      },
+    ],
+  },
+  {
+    slug: "insulin-syringes-100",
+    name: "Insulin Syringes 29G ½″ — pack of 100",
+    category_slug: "supplies",
+    dose_mg: 0,
+    cas_number: null,
+    molecular_formula: null,
+    molecular_weight: null,
+    sequence: null,
+    summary:
+      "Single-use 1ml insulin syringes (29G × ½″) for subcutaneous research administration. 100 per pack.",
+    research_context: null,
+    vial_image: "/brand/supplies/insulin-syringes.jpg",
+    container: "supply",
+    variants: [
+      {
+        size_mg: 0,
+        pack_size: 1,
+        sku: "SYRINGE-INSULIN-100",
+        wholesale_cost: 4,
+        retail_price: 15,
+        bundle_supply: true,
+      },
+    ],
+  },
+  {
+    slug: "draw-needles-100",
+    name: "Draw Needles 18G — pack of 100",
+    category_slug: "supplies",
+    dose_mg: 0,
+    cas_number: null,
+    molecular_formula: null,
+    molecular_weight: null,
+    sequence: null,
+    summary:
+      "18-gauge drawing needles for transferring bacteriostatic water from vial to syringe during reconstitution. 100 per pack.",
+    research_context: null,
+    vial_image: "/brand/supplies/draw-needles.jpg",
+    container: "supply",
+    variants: [
+      {
+        size_mg: 0,
+        pack_size: 1,
+        sku: "NEEDLE-DRAW-100",
+        wholesale_cost: 4,
+        retail_price: 15,
+        bundle_supply: true,
+      },
+    ],
+  },
+];
+
+const SUPPLY_SKUS = new Set(
+  SUPPLIES.flatMap((p) => p.variants.map((v) => v.sku)),
+);
+
+export function isSupplySku(sku: string): boolean {
+  return SUPPLY_SKUS.has(sku);
+}
+
+export function getSupplyVariantBySku(
+  sku: string,
+): { product: CatalogProduct; variant: CatalogVariant } | undefined {
+  for (const p of SUPPLIES) {
+    const v = p.variants.find((v) => v.sku === sku);
+    if (v) return { product: p, variant: v };
+  }
+  return undefined;
+}
+
+/**
+ * Lyophilized vials require BAC water + needles to reconstitute.
+ * Pre-mixed liquids, capsules, and topicals do not. Drives auto-add of
+ * supplies in the cart.
+ */
+export function requiresReconstitution(product: CatalogProduct): boolean {
+  if (product.category_slug === "liquid-formulations") return false;
+  if (product.container === "capsule-bottle") return false;
+  if (product.container === "topical-bottle") return false;
+  if (product.container === "supply") return false;
+  return true;
 }

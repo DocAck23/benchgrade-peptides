@@ -9,10 +9,12 @@ import {
   useState,
 } from "react";
 import type { CatalogProduct, CatalogVariant } from "@/lib/catalogue/data";
+import { SUPPLIES, requiresReconstitution } from "@/lib/catalogue/data";
 import type { CartApi, CartItem, SubscriptionMode } from "./types";
 import {
   computeCartTotals,
   computeCartTotalsForCheckout,
+  lineSubtotalCents,
   nextStackSaveTier,
 } from "./discounts";
 
@@ -44,6 +46,53 @@ function readStoredSubscriptionMode(): SubscriptionMode | null {
   }
 }
 const CartContext = createContext<CartApi | null>(null);
+
+/**
+ * Top up bundled supplies (BAC water + each syringe pack) so that the
+ * cart contains 1 of each per 5 lyophilized vials, ceil. Never
+ * decrements existing supply quantities — the user's manual "I don't
+ * need these" stays sticky. Returns a possibly-mutated copy of
+ * `items`; if no top-up is needed, returns `items` unchanged.
+ */
+function topUpSupplies(items: CartItem[]): CartItem[] {
+  const lyoVials = items
+    .filter((i) => !i.is_supply && i.category_slug !== "liquid-formulations")
+    .reduce((n, i) => n + i.quantity * i.pack_size, 0);
+  const desired = Math.max(0, Math.ceil(lyoVials / 5));
+  if (desired === 0) return items;
+  let next = items;
+  let changed = false;
+  for (const supply of SUPPLIES) {
+    const v = supply.variants[0];
+    const cur = next.find((i) => i.sku === v.sku);
+    const have = cur?.quantity ?? 0;
+    const needed = desired - have;
+    if (needed <= 0) continue;
+    changed = true;
+    if (cur) {
+      next = next.map((i) =>
+        i.sku === v.sku ? { ...i, quantity: i.quantity + needed } : i,
+      );
+    } else {
+      next = [
+        ...next,
+        {
+          sku: v.sku,
+          product_slug: supply.slug,
+          category_slug: supply.category_slug,
+          name: supply.name,
+          size_mg: v.size_mg,
+          pack_size: v.pack_size,
+          unit_price: v.retail_price,
+          quantity: needed,
+          vial_image: supply.vial_image,
+          is_supply: true,
+        },
+      ];
+    }
+  }
+  return changed ? next : items;
+}
 
 function readStoredItems(): CartItem[] {
   if (typeof window === "undefined") return [];
@@ -125,24 +174,39 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const addItem = useCallback(
     (product: CatalogProduct, variant: CatalogVariant, quantity: number) => {
       setItems((prev) => {
+        // Step 1: add (or top-up) the requested line.
         const existing = prev.find((i) => i.sku === variant.sku);
+        let next: CartItem[];
         if (existing) {
-          return prev.map((i) =>
-            i.sku === variant.sku ? { ...i, quantity: i.quantity + quantity } : i
+          next = prev.map((i) =>
+            i.sku === variant.sku
+              ? { ...i, quantity: i.quantity + quantity }
+              : i
           );
+        } else {
+          const newItem: CartItem = {
+            sku: variant.sku,
+            product_slug: product.slug,
+            category_slug: product.category_slug,
+            name: product.name,
+            size_mg: variant.size_mg,
+            pack_size: variant.pack_size,
+            unit_price: variant.retail_price,
+            quantity,
+            vial_image: product.vial_image,
+            is_supply: variant.bundle_supply ? true : undefined,
+          };
+          next = [...prev, newItem];
         }
-        const next: CartItem = {
-          sku: variant.sku,
-          product_slug: product.slug,
-          category_slug: product.category_slug,
-          name: product.name,
-          size_mg: variant.size_mg,
-          pack_size: variant.pack_size,
-          unit_price: variant.retail_price,
-          quantity,
-          vial_image: product.vial_image,
-        };
-        return [...prev, next];
+
+        // Step 2: top up bundle supplies if the freshly-added line is a
+        // reconstitution-needing peptide. Supplies themselves never
+        // trigger a top-up (otherwise removing then re-adding a supply
+        // would re-trigger the cascade).
+        if (!variant.bundle_supply && requiresReconstitution(product)) {
+          next = topUpSupplies(next);
+        }
+        return next;
       });
       setDrawerOpen(true);
     },
@@ -151,8 +215,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const updateQuantity = useCallback((sku: string, quantity: number) => {
     setItems((prev) => {
-      if (quantity <= 0) return prev.filter((i) => i.sku !== sku);
-      return prev.map((i) => (i.sku === sku ? { ...i, quantity } : i));
+      let next: CartItem[];
+      if (quantity <= 0) {
+        next = prev.filter((i) => i.sku !== sku);
+      } else {
+        next = prev.map((i) => (i.sku === sku ? { ...i, quantity } : i));
+      }
+      // If the user just bumped a peptide line up (or kept the line),
+      // make sure supplies are still topped up. Decrements that drop the
+      // peptide count never re-add supplies (we only top up).
+      const touched = prev.find((i) => i.sku === sku);
+      if (touched && !touched.is_supply) {
+        next = topUpSupplies(next);
+      }
+      return next;
     });
   }, []);
 
@@ -216,7 +292,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     () => ({
       items,
       itemCount: items.reduce((n, i) => n + i.quantity, 0),
-      subtotal: items.reduce((s, i) => s + i.unit_price * i.quantity, 0),
+      // First-free supply pricing in dollars (not cents) so legacy
+      // callers reading `cart.subtotal` see the same number the
+      // drawer / cart page show.
+      subtotal: items.reduce((s, i) => s + lineSubtotalCents(i) / 100, 0),
       totals,
       checkoutTotals,
       nextTier,
