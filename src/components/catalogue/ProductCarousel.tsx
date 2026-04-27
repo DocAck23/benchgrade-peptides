@@ -155,8 +155,11 @@ export function ProductCarousel() {
       >
         {/* Edge fades — desktop only; on mobile they get in the way of
             the swipe-to-end visual cue. */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-6 lg:w-10 bg-gradient-to-r from-wine to-transparent z-10 hidden md:block" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-6 lg:w-10 bg-gradient-to-l from-wine to-transparent z-10 hidden md:block" />
+        {/* Edge-fade gradients removed — they were tinting any card
+            currently within the gradient zone with a wine overlay
+            ("red line through some items" customer report). The
+            wine surface already provides clean contrast against the
+            cream cards without the fade. */}
 
         <div
           ref={trackRef}
@@ -194,13 +197,18 @@ function ProductCarouselCard({ product }: { product: CatalogProduct }) {
   const minPrice = getMinPrice(product);
   const sizes = product.variants.map((v) => `${v.size_mg}mg`).join(" · ");
   return (
-    <article className="w-[108px] sm:w-[240px] lg:w-[280px] shrink-0 bg-paper border rule p-2 sm:p-5 hover:bg-paper-soft transition-colors flex flex-col">
+    // Fixed total card height (`h-[*]`) makes every card the same
+    // visible footprint regardless of whether the variant has a
+    // molecular formula, the name wraps to 1 vs 2 lines, or the
+    // QuickAddButton has a size selector. Inner sections each
+    // reserve a fixed slot so missing data doesn't collapse upward.
+    <article className="w-[108px] sm:w-[240px] lg:w-[280px] shrink-0 bg-paper border rule p-2 sm:p-5 hover:bg-paper-soft transition-colors flex flex-col h-[260px] sm:h-[440px] lg:h-[480px]">
       <Link
         href={`/catalogue/${product.category_slug}/${product.slug}`}
-        className="block focus-visible:outline-none"
+        className="flex flex-col flex-1 focus-visible:outline-none min-h-0"
       >
         {/* Vial photograph */}
-        <div className="relative aspect-square bg-paper-soft border rule mb-2 sm:mb-4 overflow-hidden">
+        <div className="relative aspect-square bg-paper-soft border rule mb-2 sm:mb-4 overflow-hidden shrink-0">
           <Image
             src={product.vial_image}
             alt={`${product.name} research vial`}
@@ -210,26 +218,39 @@ function ProductCarouselCard({ product }: { product: CatalogProduct }) {
           />
         </div>
 
-        {product.molecular_formula && (
-          <div className="hidden sm:block font-mono-data text-[10px] text-ink-muted mb-2 truncate">
-            {product.molecular_formula}
-          </div>
-        )}
-        <h3 className="font-display text-[12px] sm:text-lg text-ink leading-tight mb-2 sm:mb-3 line-clamp-2 sm:truncate min-h-[2.4em] sm:min-h-0">
+        {/* Molecular formula slot — fixed-height row so cards
+            without a formula don't collapse up. */}
+        <div className="hidden sm:block h-4 mb-2">
+          {product.molecular_formula && (
+            <span className="font-mono-data text-[10px] text-ink-muted block truncate">
+              {product.molecular_formula}
+            </span>
+          )}
+        </div>
+
+        {/* Name — single-line truncate from sm up so wrapping variant
+            names don't push the price/size row down by an extra line. */}
+        <h3 className="font-display text-[12px] sm:text-lg text-ink leading-tight mb-2 sm:mb-3 line-clamp-2 sm:truncate min-h-[2.4em] sm:min-h-0 sm:h-7">
           {product.name}
         </h3>
-        <div className="flex items-baseline justify-between pt-2 sm:pt-3 border-t rule gap-1">
-          <span className="font-mono-data text-[11px] sm:text-sm text-ink">
+
+        {/* Price + sizes pinned to bottom of the link via mt-auto.
+            Sizes truncate on a single line so a multi-variant
+            compound (5/10/30/50/60mg) doesn't wrap and inflate the
+            footer row. */}
+        <div className="mt-auto flex items-baseline justify-between pt-2 sm:pt-3 border-t rule gap-1">
+          <span className="font-mono-data text-[11px] sm:text-sm text-ink whitespace-nowrap">
             from {formatPrice(minPrice * 100)}
           </span>
-          <span className="hidden sm:inline label-eyebrow text-ink-muted">{sizes}</span>
+          <span className="hidden sm:inline label-eyebrow text-ink-muted truncate text-right max-w-[60%]">
+            {sizes}
+          </span>
         </div>
       </Link>
 
-      {/* Quick-add hidden on mobile — the cramped 108px card prefers the
-          tap-to-open detail page. From sm up the size selector + add CTA
-          land back as siblings. */}
-      <div className="hidden sm:block mt-3">
+      {/* QuickAddButton at the very bottom — fixed-height container so
+          single-variant cards (no select) match multi-variant cards. */}
+      <div className="hidden sm:block mt-3 h-10">
         <QuickAddButton product={product} size="sm" />
       </div>
     </article>
