@@ -115,7 +115,13 @@ describe("markOrderFunded", () => {
   it("flips status and fires payment-confirmed email on success", async () => {
     const res = await markOrderFunded(validOrderId);
     expect(res).toEqual({ ok: true });
-    expect(updateSpy).toHaveBeenCalledWith({ status: "funded" });
+    expect(updateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "funded",
+        // Stamps the discrete funded_at timestamp (ISO 8601).
+        funded_at: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
+      }),
+    );
     expect(sendPaymentConfirmedMock).toHaveBeenCalledTimes(1);
   });
 

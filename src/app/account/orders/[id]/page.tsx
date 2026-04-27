@@ -39,6 +39,7 @@ interface OrderDetail {
   tracking_number: string | null;
   tracking_carrier: Carrier | null;
   shipped_at: string | null;
+  funded_at: string | null;
   created_at: string;
   updated_at: string;
   payment_method: PaymentMethod | null;
@@ -111,6 +112,7 @@ function narrow(row: unknown): OrderDetail | null {
     tracking_number: typeof r.tracking_number === "string" ? r.tracking_number : null,
     tracking_carrier: isCarrier(r.tracking_carrier) ? r.tracking_carrier : null,
     shipped_at: typeof r.shipped_at === "string" ? r.shipped_at : null,
+    funded_at: typeof r.funded_at === "string" ? r.funded_at : null,
     created_at: r.created_at,
     updated_at: r.updated_at,
     payment_method:
@@ -155,14 +157,14 @@ function statusHeadline(status: OrderStatus): string {
 function buildTimeline(order: OrderDetail): OrderTimelineEvent[] {
   const placed: OrderTimelineEvent = { status: "awaiting_payment", at: order.created_at, label: "Order placed" };
 
-  // We don't have a discrete `funded_at` column yet — when status has
-  // advanced past awaiting_payment we infer the funded transition from
-  // updated_at as a stand-in. Spec acknowledges this gap.
+  // Prefer the discrete funded_at timestamp set by markOrderFunded /
+  // the NOWPayments IPN. Fall back to updated_at for legacy rows
+  // backfilled by migration 0012.
   const fundedReached =
     order.status === "funded" || order.status === "shipped";
   const funded: OrderTimelineEvent = {
     status: "funded",
-    at: fundedReached ? order.updated_at : null,
+    at: fundedReached ? order.funded_at ?? order.updated_at : null,
     label: "Payment received",
   };
 
@@ -193,7 +195,7 @@ export default async function CustomerOrderDetailPage({
   const { data, error } = await supa
     .from("orders")
     .select(
-      "order_id, status, items, subtotal_cents, discount_cents, total_cents, free_vial_entitlement, tracking_number, tracking_carrier, shipped_at, created_at, updated_at, payment_method, nowpayments_invoice_url"
+      "order_id, status, items, subtotal_cents, discount_cents, total_cents, free_vial_entitlement, tracking_number, tracking_carrier, shipped_at, funded_at, created_at, updated_at, payment_method, nowpayments_invoice_url"
     )
     .eq("order_id", id)
     .maybeSingle();

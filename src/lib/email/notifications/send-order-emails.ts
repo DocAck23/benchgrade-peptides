@@ -20,6 +20,7 @@ import {
   accountClaimEmail,
   agerecodeFulfillmentEmail,
   cryptoPaymentLinkEmail,
+  orderRefundedEmail,
   type ShippedContext,
 } from "@/lib/email/templates";
 import type { OrderRow } from "@/lib/supabase/types";
@@ -251,6 +252,33 @@ export async function sendCryptoPaymentLink(
     return { ok: true };
   } catch (err) {
     console.error("[sendCryptoPaymentLink] failed:", err);
+    return { ok: false };
+  }
+}
+
+/**
+ * Refund confirmation email — sent on funded → refunded transition
+ * (admin button OR a NOWPayments refund IPN). Best-effort; failure
+ * logged so admin can recover via /admin if needed.
+ */
+export async function sendOrderRefunded(row: OrderRow): Promise<SendResult> {
+  const resend = getResend();
+  if (!resend) {
+    console.error("[sendOrderRefunded] Resend not configured; skipping email for", row.order_id);
+    return { ok: false, reason: "resend-unconfigured" };
+  }
+  const e = orderRefundedEmail(rowToOrderContext(row));
+  try {
+    await resend.emails.send({
+      from: EMAIL_FROM,
+      to: row.customer.email,
+      subject: e.subject,
+      text: e.text,
+      html: e.html,
+    });
+    return { ok: true };
+  } catch (err) {
+    console.error("[sendOrderRefunded] failed:", err);
     return { ok: false };
   }
 }

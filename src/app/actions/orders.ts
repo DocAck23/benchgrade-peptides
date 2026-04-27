@@ -31,6 +31,8 @@ import {
 } from "@/lib/subscriptions/discounts";
 import { createSubscription } from "@/app/actions/subscriptions";
 import { parseReferralCookie } from "@/lib/referrals/cookie";
+import { composeReferralDiscount } from "@/lib/referrals/discount";
+import { makeSuccessToken } from "@/lib/orders/success-token";
 import { createNowpaymentsInvoice } from "@/lib/payments/nowpayments/invoice";
 import { sendCryptoPaymentLink } from "@/lib/email/notifications/send-order-emails";
 import type { OrderRow } from "@/lib/supabase/types";
@@ -109,6 +111,12 @@ export interface SubmitOrderInput {
 export interface SubmitOrderResult {
   ok: boolean;
   order_id?: string;
+  /**
+   * Short-lived HMAC token for /checkout/success?id=<order_id>&t=<token>.
+   * Without it the success page would expose order details to anyone
+   * who knew the order UUID. 1-hour lifetime; rotated each submit.
+   */
+  success_token?: string;
   error?: string;
 }
 
@@ -467,7 +475,7 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
       "[submitOrder] Supabase not configured; dev-mode logging only:\n",
       JSON.stringify(row, null, 2)
     );
-    return { ok: true, order_id };
+    return { ok: true, order_id, success_token: makeSuccessToken(order_id) };
   }
 
   const { error: orderError } = await supa.from("orders").insert(row);
@@ -572,15 +580,16 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
   // error the customer sees. We log and move on; ops can resend from
   // the admin dashboard if needed.
   const resend = getResend();
+  const emailCtx = {
+    order_id,
+    customer: validInput.customer,
+    items: resolved.items,
+    subtotal_cents: resolved.subtotal_cents,
+    total_cents: finalTotalCents,
+    payment_method,
+  };
+
   if (resend) {
-    const emailCtx = {
-      order_id,
-      customer: validInput.customer,
-      items: resolved.items,
-      subtotal_cents: resolved.subtotal_cents,
-      total_cents: finalTotalCents,
-      payment_method,
-    };
     const customerEmail = orderConfirmationEmail(emailCtx);
     const adminEmail = adminOrderNotification(emailCtx);
     try {
@@ -603,86 +612,94 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
     } catch (err) {
       console.error("[submitOrder] email dispatch failed:", err);
     }
+  }
 
-    // Sprint 1 Task 9 — account-claim email. We generate a single-use
-    // magic link via Supabase admin so the customer can transition from
-    // guest to authenticated user with one click. If an auth.users row
-    // already exists for this email, generateLink emits a sign-in link
-    // for that existing account (no duplicate user is created); if not,
-    // it provisions one. Best-effort: any failure here logs and falls
-    // through — the order is durable regardless.
-    try {
-      const { data: linkData } = await supa.auth.admin.generateLink({
-        type: "magiclink",
-        email: validInput.customer.email,
-        options: { redirectTo: `${SITE_URL}/auth/callback?next=/account` },
-      });
-      const actionLink = linkData?.properties?.action_link;
-      // Defense-in-depth: explicitly assert https scheme before passing
-      // the URL into an email template. escapeHtml() in editorialEmailHtml
-      // handles attribute escaping, but a non-https value (javascript:,
-      // data:, http:) would survive escaping and remain clickable.
-      // Supabase admin.generateLink always returns https in normal flow;
-      // this guards against any future regression.
-      if (actionLink && actionLink.startsWith("https://")) {
+  // Account-claim magic link — generated UNCONDITIONALLY, even when
+  // Resend isn't configured. Supabase admin.generateLink returns a
+  // single-use sign-in URL whether or not we have an emailer; if Resend
+  // is up we email it, if not we log it so an admin can recover the
+  // claim flow manually. Customer can also always request a fresh
+  // link from /login on their own.
+  try {
+    const { data: linkData } = await supa.auth.admin.generateLink({
+      type: "magiclink",
+      email: validInput.customer.email,
+      options: { redirectTo: `${SITE_URL}/auth/callback?next=/account` },
+    });
+    const actionLink = linkData?.properties?.action_link;
+    // Defense-in-depth: explicitly assert https scheme before passing
+    // the URL into an email template. escapeHtml() handles attribute
+    // escaping, but a non-https value (javascript:, data:, http:) would
+    // survive escaping and remain clickable.
+    if (actionLink && actionLink.startsWith("https://")) {
+      if (resend) {
         const claim = accountClaimEmail({
           ...emailCtx,
           magic_link_url: actionLink,
         });
-        await resend.emails.send({
-          from: EMAIL_FROM,
-          to: validInput.customer.email,
-          subject: claim.subject,
-          text: claim.text,
-          html: claim.html,
-        });
+        try {
+          await resend.emails.send({
+            from: EMAIL_FROM,
+            to: validInput.customer.email,
+            subject: claim.subject,
+            text: claim.text,
+            html: claim.html,
+          });
+        } catch (err) {
+          console.error("[submitOrder] account-claim email send failed:", err);
+        }
+      } else {
+        console.warn(
+          "[submitOrder] Resend not configured; account-claim link generated but not emailed:",
+          { order_id, email: validInput.customer.email },
+        );
       }
-    } catch (err) {
-      console.error("[submitOrder] account-claim email failed:", err);
-      // Best-effort: do NOT fail the order on email/auth-admin error.
     }
+  } catch (err) {
+    console.error("[submitOrder] account-claim link generation failed:", err);
+    // Best-effort: do NOT fail the order on auth-admin error.
+  }
 
-    // Crypto branch — create the NOWPayments hosted invoice and email
-    // the link in a follow-up. Best-effort: if NP is down or the API
-    // key is missing, the order is still durable; the customer can
-    // switch to a manual method from /account/orders/[id] or an admin
-    // can regenerate the invoice later.
-    if (payment_method === "crypto") {
-      try {
-        const orderItems = resolved.items as { name: string; quantity: number }[];
-        const description =
-          orderItems
-            .slice(0, 3)
-            .map((i) => `${i.name} ×${i.quantity}`)
-            .join(", ") || `Order ${order_id.slice(0, 8)}`;
-        const inv = await createNowpaymentsInvoice({
-          order_id,
-          order_description: description,
-          amount_usd: finalTotalCents / 100,
-        });
-        if (inv.ok) {
-          await supa
-            .from("orders")
-            .update({
-              nowpayments_invoice_id: inv.invoice_id,
-              nowpayments_invoice_url: inv.invoice_url,
-            })
-            .eq("order_id", order_id);
-          // Email the hosted link as a follow-up so the customer has
-          // it in their inbox alongside the order confirmation.
+  // NOWPayments crypto invoice — runs UNCONDITIONALLY when the order is
+  // crypto, regardless of Resend. NP only needs its own API key; the
+  // hosted-link email is sent if Resend is up, but the invoice URL
+  // persists on the order row so the customer can find it on
+  // /account/orders/[id] either way.
+  if (payment_method === "crypto") {
+    try {
+      const orderItems = resolved.items as { name: string; quantity: number }[];
+      const description =
+        orderItems
+          .slice(0, 3)
+          .map((i) => `${i.name} ×${i.quantity}`)
+          .join(", ") || `Order ${order_id.slice(0, 8)}`;
+      const inv = await createNowpaymentsInvoice({
+        order_id,
+        order_description: description,
+        amount_usd: finalTotalCents / 100,
+      });
+      if (inv.ok) {
+        await supa
+          .from("orders")
+          .update({
+            nowpayments_invoice_id: inv.invoice_id,
+            nowpayments_invoice_url: inv.invoice_url,
+          })
+          .eq("order_id", order_id);
+        if (resend) {
           await sendCryptoPaymentLink(
             { ...row, total_cents: finalTotalCents } as unknown as OrderRow,
             inv.invoice_url,
           );
-        } else {
-          console.error(
-            "[submitOrder] NOWPayments invoice creation failed:",
-            inv.reason,
-          );
         }
-      } catch (err) {
-        console.error("[submitOrder] NOWPayments path threw:", err);
+      } else {
+        console.error(
+          "[submitOrder] NOWPayments invoice creation failed:",
+          inv.reason,
+        );
       }
+    } catch (err) {
+      console.error("[submitOrder] NOWPayments path threw:", err);
     }
   }
 
@@ -707,20 +724,66 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
           order_id,
         });
         if (result.ok && result.ten_percent_off_applied) {
-          const refDiscount = Math.round(resolved.subtotal_cents * 0.1);
-          const refTotal = resolved.subtotal_cents - refDiscount;
-          const { error: discountErr } = await supa
+          // Compose referral on top of any existing discount/total
+          // (Stack & Save, same-SKU, affiliate). Earlier code REPLACED
+          // these — wiping the customer's stacked discounts.
+          const { data: current, error: readErr } = await supa
             .from("orders")
-            .update({
-              discount_cents: refDiscount,
-              total_cents: refTotal,
-            })
-            .eq("order_id", order_id);
-          if (discountErr) {
+            .select("discount_cents, total_cents, subtotal_cents")
+            .eq("order_id", order_id)
+            .maybeSingle();
+          if (readErr || !current) {
             console.error(
-              "[submitOrder] referral discount apply failed:",
-              discountErr
+              "[submitOrder] referral discount read failed:",
+              readErr,
             );
+          } else {
+            const readDiscount =
+              typeof current.discount_cents === "number"
+                ? current.discount_cents
+                : 0;
+            const readTotal =
+              typeof current.total_cents === "number"
+                ? current.total_cents
+                : resolved.subtotal_cents;
+            const composed = composeReferralDiscount({
+              subtotal_cents:
+                typeof current.subtotal_cents === "number"
+                  ? current.subtotal_cents
+                  : resolved.subtotal_cents,
+              current_discount_cents: readDiscount,
+              current_total_cents: readTotal,
+            });
+            // Optimistic concurrency: the UPDATE only succeeds if
+            // discount_cents AND total_cents still equal what we just
+            // read. If anything changed in between (admin edit,
+            // affiliate apply, etc.) we abort rather than overwrite
+            // with stale composed values.
+            const { data: updRows, error: discountErr } = await supa
+              .from("orders")
+              .update({
+                discount_cents: composed.next_discount_cents,
+                total_cents: composed.next_total_cents,
+              })
+              .eq("order_id", order_id)
+              .eq("discount_cents", readDiscount)
+              .eq("total_cents", readTotal)
+              .select("order_id");
+            if (discountErr) {
+              console.error(
+                "[submitOrder] referral discount apply failed:",
+                discountErr,
+              );
+            } else if (!updRows || updRows.length === 0) {
+              // Lost the race — values shifted between SELECT and
+              // UPDATE. Best-effort: log and move on. The customer's
+              // referral attribution is recorded via claimReferralOnOrder
+              // already; only the cents adjustment was lost.
+              console.warn(
+                "[submitOrder] referral discount apply skipped — concurrent update on order",
+                order_id,
+              );
+            }
           }
         }
       }
@@ -730,5 +793,5 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
     // Best-effort — never propagate.
   }
 
-  return { ok: true, order_id };
+  return { ok: true, order_id, success_token: makeSuccessToken(order_id) };
 }

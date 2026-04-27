@@ -109,6 +109,28 @@ describe("linkOrdersToUser — Sprint 1 Task 9 account claim", () => {
     expect(emailFilter?.value).toBe("x@y.z");
   });
 
+  it("I-CLAIM-LIKE-ESCAPE: ILIKE wildcards `%` and `_` in the email are escaped", async () => {
+    stubState.config = { results: [[{ order_id: "ord-underscore" }]] };
+    // RFC-allowed underscore in local-part is the realistic threat:
+    // without escaping, `john_doe@x.com` ilike-pattern would match
+    // `johnXdoe@x.com` and let the wrong user claim it.
+    await linkOrdersToUser("user-escape", "john_doe@x.com");
+    const emailFilter = stubState.queries[0].filters.find(
+      (f) => f.column === "customer->>email"
+    );
+    // Underscore must be escaped with a backslash so PG treats it
+    // as literal in the LIKE pattern.
+    expect(emailFilter?.value).toBe("john\\_doe@x.com");
+
+    stubState.queries = [];
+    stubState.config = { results: [[{ order_id: "ord-percent" }]] };
+    await linkOrdersToUser("user-escape", "weird%addr@x.com");
+    const emailFilter2 = stubState.queries[0].filters.find(
+      (f) => f.column === "customer->>email"
+    );
+    expect(emailFilter2?.value).toBe("weird\\%addr@x.com");
+  });
+
   it("I-CLAIM-2: email match is case-insensitive (lowercases input + uses ilike)", async () => {
     stubState.config = {
       results: [[{ order_id: "ord-mixed" }]],

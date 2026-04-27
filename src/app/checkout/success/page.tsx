@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/utils";
 import { isPaymentMethod, paymentMethodLabel, getPaymentMethodDetails, type PaymentMethod } from "@/lib/payments/methods";
+import { verifySuccessToken } from "@/lib/orders/success-token";
 
 export const metadata: Metadata = {
   title: "Order received",
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  searchParams: Promise<{ id?: string }>;
+  searchParams: Promise<{ id?: string; t?: string }>;
 }
 
 interface OrderRow {
@@ -25,6 +26,7 @@ interface OrderRow {
   total_cents: number | null;
   payment_method: string | null;
   status: string;
+  nowpayments_invoice_url: string | null;
 }
 
 function memoFor(orderId: string): string {
@@ -32,15 +34,24 @@ function memoFor(orderId: string): string {
 }
 
 export default async function CheckoutSuccessPage({ searchParams }: PageProps) {
-  const { id } = await searchParams;
+  const { id, t } = await searchParams;
   if (!id) redirect("/catalogue");
+
+  // Privacy gate: only fetch the row if the caller has the HMAC token
+  // we issued at submitOrder. Without it we still render the memo +
+  // generic instructions, but never the customer name / items / totals.
+  // Anyone who guesses or scrapes a UUID without the token gets the
+  // minimal view, not a privacy leak.
+  const tokenValid = id && t ? verifySuccessToken(id, t) : false;
 
   const supa = getSupabaseServer();
   let row: OrderRow | null = null;
-  if (supa) {
+  if (tokenValid && supa) {
     const { data } = await supa
       .from("orders")
-      .select("order_id, customer, items, subtotal_cents, total_cents, payment_method, status")
+      .select(
+        "order_id, customer, items, subtotal_cents, total_cents, payment_method, status, nowpayments_invoice_url",
+      )
       .eq("order_id", id)
       .maybeSingle();
     if (data && typeof data === "object") {
@@ -86,7 +97,7 @@ export default async function CheckoutSuccessPage({ searchParams }: PageProps) {
             <>
               Type this code into the <strong>memo / note / reference</strong> field
               when you send your payment. It&rsquo;s the only way we can match your
-              transfer to your order until our card-network merchant account is approved.
+              transfer to your order — we don&rsquo;t use a card processor.
             </>
           )}
         </p>
@@ -98,14 +109,33 @@ export default async function CheckoutSuccessPage({ searchParams }: PageProps) {
       )}
       {method === "crypto" && (
         <div className="border rule bg-paper-soft p-5 sm:p-6 mb-8">
-          <div className="label-eyebrow text-ink-muted mb-3">Crypto payment — next step</div>
-          <p className="text-sm text-ink-soft mb-3 leading-relaxed">
-            We&rsquo;re generating your hosted NOWPayments link. It will arrive by
-            email within a few minutes from <span className="font-mono-data text-ink">admin@benchgradepeptides.com</span>.
-            Pay in BTC, ETH, USDT, USDC, LTC, or any of 40+ supported tokens; we
-            auto-confirm the transaction on-chain (10–60 minutes depending on network)
-            and your order ships within 1 business day.
-          </p>
+          <div className="label-eyebrow text-ink-muted mb-3">Crypto payment — pay now</div>
+          {row?.nowpayments_invoice_url ? (
+            <>
+              <p className="text-sm text-ink-soft mb-4 leading-relaxed">
+                One-click hosted payment page — pick BTC, ETH, USDT, USDC, LTC, or
+                any of 40+ supported tokens. We auto-confirm on-chain (10–60 minutes
+                depending on network) and your order ships within 1 business day.
+              </p>
+              <a
+                href={row.nowpayments_invoice_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center h-12 px-8 bg-wine text-paper text-sm font-display uppercase tracking-[0.12em] hover:bg-ink transition-colors"
+              >
+                Open hosted payment page →
+              </a>
+              <p className="mt-3 text-[11px] text-ink-muted break-all">
+                {row.nowpayments_invoice_url}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-ink-soft leading-relaxed">
+              We&rsquo;re generating your hosted NOWPayments link. It will arrive by
+              email within a few minutes — or refresh this page to retrieve it as
+              soon as it&rsquo;s ready.
+            </p>
+          )}
         </div>
       )}
 

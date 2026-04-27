@@ -43,14 +43,24 @@ export async function linkOrdersToUser(
   if (!supa) return { ok: false, linked: 0 };
 
   const lower = email.trim().toLowerCase();
+  // ILIKE treats `%` and `_` as wildcards. RFC-allowed `_` is the
+  // common case (e.g. `firstname_lastname@x.com`) — without escaping,
+  // `john_doe@x.com` would match `johnXdoe@x.com` and the wrong
+  // user could claim someone else's orders. Escape both so the
+  // pattern matches only the literal address.
+  const safe = lower
+    .replace(/\\/g, "\\\\")
+    .replace(/%/g, "\\%")
+    .replace(/_/g, "\\_");
 
   const { data, error } = await supa
     .from("orders")
     .update({ customer_user_id: userId })
     // First-claim-wins: only touch rows that haven't been claimed yet.
     .filter("customer_user_id", "is", null)
-    // Case-insensitive email match against customer->>email JSON path.
-    .filter("customer->>email", "ilike", lower)
+    // Case-insensitive but literal: ILIKE against the JSON path with
+    // % and _ escaped so the match is byte-for-byte (mod case).
+    .filter("customer->>email", "ilike", safe)
     .select("order_id");
 
   if (error) {
@@ -119,13 +129,24 @@ export async function changeOrderPaymentMethod(
 
   // Persist the method change. We use the admin client for the write so
   // RLS doesn't block — ownership was already verified above via the
-  // cookie-scoped read.
-  const { error: updateErr } = await admin
+  // cookie-scoped read. The `.in("status", ...)` guard closes the TOCTOU
+  // window between the cookie-scoped read and this write: if the order
+  // funded concurrently (admin marked it, IPN landed) the rowcount is
+  // zero and we abort instead of silently mutating a paid order.
+  const { data: updated, error: updateErr } = await admin
     .from("orders")
     .update({ payment_method: next_method })
-    .eq("order_id", order_id);
+    .eq("order_id", order_id)
+    .in("status", ["awaiting_payment", "awaiting_wire"])
+    .select("order_id");
   if (updateErr) {
     return { ok: false, error: `Update failed: ${updateErr.message}` };
+  }
+  if (!updated || updated.length === 0) {
+    return {
+      ok: false,
+      error: "Order is no longer awaiting payment — method cannot be changed.",
+    };
   }
 
   let invoice_url: string | undefined =

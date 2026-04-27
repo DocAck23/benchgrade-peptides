@@ -60,7 +60,7 @@ function ctxFor(method: "wire" | "ach" | "zelle" | "crypto") {
 }
 
 export async function GET(req: Request) {
-  if (process.env.NODE_ENV === "production" && !(await isAdmin())) {
+  if (!(await isAdmin())) {
     return NextResponse.redirect(new URL("/admin/login", req.url));
   }
   const url = new URL(req.url);

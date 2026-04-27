@@ -13,6 +13,7 @@ import {
   sendPaymentConfirmed,
   sendOrderShipped,
   sendAgerecodeFulfillment,
+  sendOrderRefunded,
   lookupCoaUrls,
 } from "@/lib/email/notifications/send-order-emails";
 import { sendMessageNotification } from "@/lib/email/notifications/send-messaging-emails";
@@ -22,6 +23,7 @@ import {
 } from "@/lib/email/notifications/send-affiliate-emails";
 import { commissionPercent } from "@/lib/affiliate/tiers";
 import { generateReferralCode } from "@/lib/referrals/codes";
+import { buildCycleOrderRow } from "@/lib/subscriptions/cycle-row";
 import {
   awardCommissionForOrder,
   clawbackCommissionForOrder,
@@ -58,19 +60,40 @@ export async function adminLogout(): Promise<void> {
   redirect("/admin/login");
 }
 
-export async function updateOrderStatus(
+/**
+ * Admin marks an order as `cancelled`. Allowed only from awaiting-payment
+ * states — once funded, the refund flow (which fires the customer email
+ * + clawback) is the right path.
+ *
+ * The previous unrestricted `updateOrderStatus(orderId, status)` action
+ * was removed: it let an admin push any state from any source state
+ * with no side effects (no email, no clawback, no funded_at stamp), and
+ * a forged/stale request with a valid admin cookie could fund or refund
+ * orders silently. Funded / shipped / refunded each have a dedicated
+ * validating action with its required side effects.
+ */
+export async function cancelOrder(
   orderId: string,
-  status: OrderStatus
 ): Promise<{ ok: boolean; error?: string }> {
   if (!(await isAdmin())) return { ok: false, error: "Unauthorized." };
-  // Runtime validation — TS types don't narrow over the network boundary.
-  // A forged request can set `status` to anything the client chooses.
   if (!isValidUuid(orderId)) return { ok: false, error: "Invalid order id." };
-  if (!isValidStatus(status)) return { ok: false, error: "Invalid status." };
   const supa = getSupabaseServer();
   if (!supa) return { ok: false, error: "Database unavailable." };
-  const { error } = await supa.from("orders").update({ status }).eq("order_id", orderId);
+  const { data, error } = await supa
+    .from("orders")
+    .update({ status: "cancelled" })
+    .eq("order_id", orderId)
+    // Same source filter as ALLOWED_SOURCES.cancelled in the IPN — a
+    // funded / shipped order cannot be silently cancelled.
+    .in("status", ["awaiting_payment", "awaiting_wire"])
+    .select("order_id");
   if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) {
+    return {
+      ok: false,
+      error: "Order is not in a cancellable state (must be awaiting payment).",
+    };
+  }
   return { ok: true };
 }
 
@@ -90,7 +113,7 @@ export async function markOrderFunded(
   if (!supa) return { ok: false, error: "Database unavailable." };
   const { data, error } = await supa
     .from("orders")
-    .update({ status: "funded" })
+    .update({ status: "funded", funded_at: new Date().toISOString() })
     .eq("order_id", orderId)
     .in("status", ["awaiting_payment", "awaiting_wire"])
     .select("*");
@@ -207,6 +230,13 @@ export async function markOrderRefunded(
       error: "Order must be in `funded` state before it can be refunded.",
     };
   }
+  // Best-effort customer refund-confirmation email so the customer
+  // isn't left guessing why money is moving back. Failures logged.
+  try {
+    await sendOrderRefunded(data[0] as OrderRow);
+  } catch (err) {
+    console.error("[markOrderRefunded] sendOrderRefunded failed:", err);
+  }
   // Best-effort affiliate clawback. Failures here MUST NOT roll back the
   // refunded transition that already landed in Postgres — admin can rerun
   // the clawback from the dashboard if needed.
@@ -266,30 +296,37 @@ export async function adminFireNextCycle(
   const cycleSubtotal = subtotalCentsFromItems(row.items as CartItem[]);
   const cycleTotal = row.cycle_total_cents;
 
-  const { error: insertError } = await supa.from("orders").insert({
+  // Pull customer JSON from the earliest order in this subscription so
+  // ship-to and email render correctly in admin / fulfillment. Without
+  // this the row would carry blank customer fields and the
+  // `narrowOrderRow` defensive parse would reject it as schema drift.
+  const { data: parentOrder, error: parentErr } = await supa
+    .from("orders")
+    .select("customer")
+    .eq("subscription_id", subscriptionId)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (parentErr) {
+    return { ok: false, error: `Could not load parent order: ${parentErr.message}` };
+  }
+  if (!parentOrder?.customer || typeof parentOrder.customer !== "object") {
+    return {
+      ok: false,
+      error: "Cannot fire cycle — parent order's customer record is missing.",
+    };
+  }
+  const parent_customer = parentOrder.customer as OrderRow["customer"];
+
+  const cycleRow = buildCycleOrderRow({
     order_id,
-    customer: { name: "", email: "", ship_address_1: "", ship_city: "", ship_state: "", ship_zip: "" },
-    items: row.items,
-    subtotal_cents: cycleSubtotal,
-    discount_cents: cycleSubtotal - cycleTotal,
-    total_cents: cycleTotal,
-    payment_method: row.payment_cadence === "prepay" ? "subscription_prepaid" : "bill_pay",
-    status: row.payment_cadence === "prepay" ? "funded" : "awaiting_payment",
-    subscription_id: subscriptionId,
-    customer_user_id: row.customer_user_id,
-    created_at: now.toISOString(),
-    acknowledgment: {
-      certification_text: "subscription-cycle",
-      certification_version: "n/a",
-      certification_hash: "n/a",
-      is_adult: true,
-      is_researcher: true,
-      accepts_ruo: true,
-      acknowledged_at: now.toISOString(),
-      ip: "subscription",
-      user_agent: "subscription-cycle",
-    },
+    subscription: row,
+    parent_customer,
+    cycle_subtotal_cents: cycleSubtotal,
+    cycle_total_cents: cycleTotal,
+    now,
   });
+  const { error: insertError } = await supa.from("orders").insert(cycleRow);
   if (insertError) return { ok: false, error: insertError.message };
 
   const newCyclesCompleted = row.cycles_completed + 1;

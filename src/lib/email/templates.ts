@@ -418,8 +418,8 @@ function memoEmphasisHtml(memo: string): string {
       </div>
       <div style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:30px;font-weight:700;letter-spacing:4px;color:#4A0E1A;background:#F4EBD7;border:1px solid #D4C8A8;padding:14px 18px;display:inline-block;margin:2px 0 6px 0;">${escapeHtml(memo)}</div>
       <div style="font-family:Helvetica,Arial,sans-serif;font-size:11px;color:#6B5350;font-style:italic;line-height:1.55;margin-top:10px;">
-        Temporary — until our card-network merchant account is approved, this
-        reference code is how we connect a payment to a customer.
+        We don&rsquo;t use a card processor — this reference code is the only way
+        we can connect a payment to a customer.
         <strong style="color:#4A0E1A;font-style:normal;">Skip it and your order will sit in queue until we email to confirm.</strong>
       </div>
     </div>
@@ -431,10 +431,9 @@ function memoEmphasisText(memo: string): string {
 
   Memo / reference / note field:    ${memo}
 
-  Type this exactly. Temporary — until our card-network merchant
-  account is approved, the memo is the only way we can match a
-  payment to your order. Without it, your order waits until we
-  email you to confirm.
+  Type this exactly. We don't use a card processor — the memo is the
+  only way we can match a payment to your order. Without it, your
+  order waits until we email you to confirm.
 `;
 }
 
@@ -723,6 +722,75 @@ Lyophilized vials: 2–8°C refrigerated (or –20°C for 6+ months).
 Light-protect; do not freeze-thaw repeatedly.
 Reconstitute only when ready to use; per-peptide reconstituted shelf
 life on the COA enclosed.`;
+
+/**
+ * Refund confirmation email. Fired on the funded → refunded transition
+ * (admin button OR a NOWPayments refund IPN). Tells the customer the
+ * refund landed and sets expectations for the bank/network return time.
+ */
+export function orderRefundedEmail(ctx: OrderContext): {
+  subject: string;
+  text: string;
+  html: string;
+} {
+  const ref = ctx.order_id.slice(0, 8);
+  const memo = `BGP-${ref}`;
+  const total = formatPrice(ctx.total_cents ?? ctx.subtotal_cents);
+  const subject = `Refund processed — order ${memo}`;
+  const customerName = escapeHtml(ctx.customer.name);
+  const portalUrl = `${SITE_URL}/account/orders/${ctx.order_id}`;
+
+  const text = [
+    `${ctx.customer.name} —`,
+    ``,
+    `Your refund for order ${memo} has been processed on our end.`,
+    ``,
+    `Refund amount: ${total}`,
+    ``,
+    `When you'll see it back depends on the original payment rail:`,
+    `  • Wire / ACH: 1-3 business days back to the originating account.`,
+    `  • Zelle: typically same-day.`,
+    `  • Crypto: returned to the same address NOWPayments saw, on-chain confirmation 10-60 minutes.`,
+    ``,
+    `Order detail: ${portalUrl}`,
+    ``,
+    `If the refund doesn't arrive in the window above, reply to this email`,
+    `with a note and we'll trace it with our payments partner.`,
+    ``,
+    RUO_DISCLAIMER,
+    ``,
+    `— Bench Grade Peptides`,
+    SITE_URL,
+  ].join("\n");
+
+  const bodyHtml = `
+    <p style="margin:0 0 14px 0;">${customerName} —</p>
+    <p style="margin:0 0 18px 0;">Your refund for order <strong>${escapeHtml(memo)}</strong> has been processed on our end.</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:6px;border-top:1px solid #1A0506;">
+      <tr>
+        <td style="padding-top:14px;font-family:Georgia,'Times New Roman',serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;">Refund amount</td>
+        <td style="padding-top:14px;text-align:right;font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:18px;font-weight:700;color:#1A0506;">${total}</td>
+      </tr>
+    </table>
+    <p style="margin:18px 0 6px 0;font-family:Georgia,'Times New Roman',serif;font-size:13px;line-height:1.6;color:#1A0506;">When you&rsquo;ll see it depends on the original payment rail:</p>
+    <ul style="margin:6px 0 0 18px;padding:0;font-family:Helvetica,Arial,sans-serif;font-size:13px;line-height:1.7;color:#4A2528;">
+      <li>Wire / ACH — 1&ndash;3 business days back to the originating account.</li>
+      <li>Zelle — typically same-day.</li>
+      <li>Crypto — returned to the same address NOWPayments saw, on-chain confirmation 10&ndash;60 minutes.</li>
+    </ul>
+    <p style="margin:18px 0 0 0;font-family:Georgia,'Times New Roman',serif;font-size:13px;line-height:1.6;color:#6B5350;font-style:italic;">
+      If it doesn&rsquo;t arrive in that window, reply to this email and we&rsquo;ll trace it with our payments partner.
+    </p>`;
+
+  const html = editorialEmailHtml({
+    title: "Your refund has been processed.",
+    bodyHtml,
+    memo,
+    cta: { label: "View order", href: portalUrl },
+  });
+
+  return { subject, text, html };
+}
 
 export function orderShippedEmail(ctx: ShippedContext): {
   subject: string;

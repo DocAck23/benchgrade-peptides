@@ -104,7 +104,10 @@ export default async function EmailPreviewPage({
 }: {
   searchParams: Promise<{ t?: string; mode?: string }>;
 }) {
-  if (process.env.NODE_ENV === "production" && !(await isAdmin())) {
+  // Always require admin — including on Vercel preview deployments
+  // where leaving this open would expose every email template (and any
+  // sensitive copy in them) to anyone with the deploy URL.
+  if (!(await isAdmin())) {
     redirect("/admin/login");
   }
   const params = await searchParams;

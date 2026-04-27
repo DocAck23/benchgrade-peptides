@@ -161,8 +161,14 @@ describe("paymentConfirmedEmail", () => {
       customer: { ...baseCtx.customer, name: "<img src=x onerror=alert(1)>" },
       payment_method: "wire",
     });
-    expect(email.html).not.toContain("<img");
-    expect(email.html).toContain("&lt;img");
+    // escapeHtml() rewrites the angle brackets so the payload renders
+    // as text — `&lt;img src=x onerror=alert(1)&gt;` instead of an
+    // active `<img>` tag. The escaped form is the assertion.
+    expect(email.html).toContain("&lt;img src=x onerror=alert(1)&gt;");
+    // The editorial wrapper does include a legitimate <img> for the
+    // gold logo (data: URL), so we can't assert absence of <img
+    // wholesale. Instead, assert no UNESCAPED user payload survived.
+    expect(email.html).not.toContain("<img src=x");
   });
 });
 
@@ -655,11 +661,13 @@ describe("affiliatePayoutSentEmail (U-EMAIL-AFFPAY-1)", () => {
   });
 });
 
-describe("orderConfirmationEmail — why-no-cards narrative line (Wave 2d)", () => {
-  it("includes the why-no-cards narrative line in both text and html", () => {
+describe("orderConfirmationEmail — no-cards narrative line", () => {
+  it("explains the no-card-processor stance and links to /why-no-cards", () => {
     const email = orderConfirmationEmail({ ...baseCtx, payment_method: "wire" });
-    expect(email.text).toMatch(/Why no cards/);
-    expect(email.html).toMatch(/Why no cards/);
+    // Copy was reworded from "Why no cards" → "No card processor yet"
+    // to make the stance permanent rather than transitional.
+    expect(email.text).toMatch(/No card processor/);
+    expect(email.html).toMatch(/No card processor/);
     expect(email.html).toContain("/why-no-cards");
     expect(email.text).toContain("/why-no-cards");
   });

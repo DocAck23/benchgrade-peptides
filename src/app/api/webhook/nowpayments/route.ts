@@ -9,6 +9,7 @@ import type { OrderRow } from "@/lib/supabase/types";
 import {
   sendPaymentConfirmed,
   sendAgerecodeFulfillment,
+  sendOrderRefunded,
 } from "@/lib/email/notifications/send-order-emails";
 import {
   awardCommissionForOrder,
@@ -44,6 +45,14 @@ interface NowpaymentsIpnBody {
   pay_currency?: string;
   price_amount?: number;
   price_currency?: string;
+  /**
+   * NOWPayments invoice id this payment was made against. Present on
+   * IPNs that originated from a hosted invoice (the only kind we
+   * create). We bind to it on the FIRST funded transition so a forged
+   * IPN with a coincidentally-matching `order_id` can't fund the order
+   * just because the amount happens to match.
+   */
+  invoice_id?: number | string;
 }
 
 /**
@@ -113,7 +122,7 @@ export async function POST(req: Request) {
   // whose UUID happened to match.
   const { data: existing, error: selectError } = await supa
     .from("orders")
-    .select("status, payment_method, subtotal_cents, total_cents")
+    .select("status, payment_method, subtotal_cents, total_cents, nowpayments_payment_id, nowpayments_invoice_id")
     .eq("order_id", orderId)
     .maybeSingle();
   if (selectError) {
@@ -132,6 +141,62 @@ export async function POST(req: Request) {
         error: "Order was not a crypto order; IPN refused.",
       },
       { status: 409 }
+    );
+  }
+
+  // Payment-identity binding. Two layers, in priority order:
+  //
+  //   1. invoice_id. We created a hosted invoice at order submit and
+  //      stored its id on the row. Every IPN that targets a hosted-
+  //      invoice payment carries `invoice_id` — if it's present and
+  //      doesn't match the stored value, it CANNOT be a payment for
+  //      this order, no matter what `order_id` says. Refuse hard.
+  //
+  //   2. payment_id. The first IPN we accept for an order stamps the
+  //      payment_id on the row. Every subsequent IPN MUST carry the
+  //      same payment_id. This guards against a second forged IPN
+  //      replayed against the same order with a different payment.
+  //
+  // Together these mean: even with a valid signature and a matching
+  // amount, a wrong invoice_id OR a wrong payment_id is rejected.
+  const incomingInvoiceId =
+    typeof parsed.invoice_id !== "undefined" ? String(parsed.invoice_id) : null;
+  const storedInvoiceId =
+    typeof existing.nowpayments_invoice_id === "string"
+      ? existing.nowpayments_invoice_id
+      : null;
+  if (incomingInvoiceId && storedInvoiceId && incomingInvoiceId !== storedInvoiceId) {
+    console.error(
+      `[nowpayments webhook] invoice_id mismatch order=${orderId} stored=${storedInvoiceId} got=${incomingInvoiceId}`,
+    );
+    return NextResponse.json(
+      { ok: false, error: "IPN invoice_id does not match the bound invoice for this order." },
+      { status: 409 },
+    );
+  }
+  // For the funded transition we additionally REQUIRE that an
+  // invoice_id was supplied AND matches our stored one. Without this,
+  // a payment that NP routed without an invoice (e.g. a replay of a
+  // legacy direct-payment IPN) could fund through.
+  if (target === "funded" && storedInvoiceId && incomingInvoiceId !== storedInvoiceId) {
+    return NextResponse.json(
+      { ok: false, error: "Funded IPN missing or mismatched invoice_id binding." },
+      { status: 409 },
+    );
+  }
+  const incomingPaymentId =
+    typeof parsed.payment_id !== "undefined" ? String(parsed.payment_id) : null;
+  const storedPaymentId =
+    typeof existing.nowpayments_payment_id === "string"
+      ? existing.nowpayments_payment_id
+      : null;
+  if (incomingPaymentId && storedPaymentId && incomingPaymentId !== storedPaymentId) {
+    console.error(
+      `[nowpayments webhook] payment_id mismatch order=${orderId} stored=${storedPaymentId} got=${incomingPaymentId}`,
+    );
+    return NextResponse.json(
+      { ok: false, error: "IPN payment_id does not match the bound payment for this order." },
+      { status: 409 },
     );
   }
 
@@ -184,9 +249,23 @@ export async function POST(req: Request) {
       { ok: true, applied: false, reason: "IPN target is not a legal webhook transition." }
     );
   }
+  // Stamp funded_at on the funded transition so the customer-portal
+  // timeline gets a discrete timestamp instead of inferring from
+  // updated_at (which drifts on every later mutation).
+  const updatePayload: Record<string, unknown> = { status: target };
+  if (target === "funded") {
+    updatePayload.funded_at = new Date().toISOString();
+  }
+  // Bind the NOWPayments payment_id to the order on the first IPN that
+  // carries one. Subsequent IPNs for the same order MUST carry the
+  // same payment_id; mismatch is rejected up-stream in the verification
+  // section.
+  if (typeof parsed.payment_id !== "undefined") {
+    updatePayload.nowpayments_payment_id = String(parsed.payment_id);
+  }
   const { data: updated, error: updateError } = await supa
     .from("orders")
-    .update({ status: target })
+    .update(updatePayload)
     .eq("order_id", orderId)
     .in("status", allowedSources)
     .select("*");
@@ -222,6 +301,16 @@ export async function POST(req: Request) {
   // `refunded`, reverse any commission already earned and cancel
   // unredeemed referral entitlements pinned to this order. Best-effort.
   if (applied && target === "refunded") {
+    if (updated && updated[0]) {
+      try {
+        await sendOrderRefunded(updated[0] as OrderRow);
+      } catch (err) {
+        console.error(
+          "[nowpayments webhook] sendOrderRefunded failed:",
+          err,
+        );
+      }
+    }
     try {
       await clawbackCommissionForOrder(orderId);
     } catch (err) {

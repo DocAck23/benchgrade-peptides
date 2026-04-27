@@ -157,9 +157,8 @@ function MemoCallout() {
         the moment you submit this order.
       </p>
       <p className="text-[11px] text-ink-muted italic mt-2 leading-snug">
-        <strong className="text-wine not-italic">Temporary system</strong> — until our
-        merchant processor goes live, the memo is the only way we link a payment to
-        your order. Skip it and your order sits until we email to confirm.
+        We don&rsquo;t use a card processor — the memo is the only way we link a
+        payment to your order. Skip it and your order sits until we email to confirm.
       </p>
     </div>
   );

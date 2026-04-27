@@ -164,7 +164,15 @@ export function CheckoutPageClient({
         return;
       }
       clear();
-      router.push(`/checkout/success?id=${res.order_id ?? ""}`);
+      // Include the HMAC token so the success page can render order
+      // details. Without it the page falls back to its minimal view
+      // (memo only) — protecting customer name/email/items from
+      // anyone who guesses or scrapes the order UUID.
+      {
+        const params = new URLSearchParams({ id: res.order_id ?? "" });
+        if (res.success_token) params.set("t", res.success_token);
+        router.push(`/checkout/success?${params.toString()}`);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unexpected error.");
       setSubmitting(false);
