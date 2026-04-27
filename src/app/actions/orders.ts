@@ -555,6 +555,7 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
       customer: validInput.customer,
       items: resolved.items,
       subtotal_cents: resolved.subtotal_cents,
+      total_cents: finalTotalCents,
       payment_method,
     };
     const customerEmail = orderConfirmationEmail(emailCtx);

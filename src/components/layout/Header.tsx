@@ -80,9 +80,9 @@ export function Header({ accountSlot }: { accountSlot?: ReactNode }) {
             aria-expanded={mobileOpen}
             aria-controls="mobile-nav"
             onClick={() => setMobileOpen((v) => !v)}
-            className="md:hidden p-2 text-ink-soft hover:text-ink transition-colors duration-200 ease-out"
+            className="md:hidden p-2 -mr-1 text-paper-soft hover:text-gold-light active:text-gold transition-colors duration-200 ease-out"
           >
-            {mobileOpen ? <X className="w-5 h-5" strokeWidth={1.5} /> : <Menu className="w-5 h-5" strokeWidth={1.5} />}
+            {mobileOpen ? <X className="w-6 h-6" strokeWidth={1.75} /> : <Menu className="w-6 h-6" strokeWidth={1.75} />}
           </button>
         </div>
       </div>
@@ -93,8 +93,8 @@ export function Header({ accountSlot }: { accountSlot?: ReactNode }) {
         aria-label="Primary"
         inert={!mobileOpen}
         className={cn(
-          "md:hidden overflow-hidden border-t rule bg-paper transition-[max-height,opacity] duration-[250ms] ease-out",
-          mobileOpen ? "max-h-[320px] opacity-100" : "max-h-0 opacity-0 pointer-events-none"
+          "md:hidden absolute left-0 right-0 top-full z-40 overflow-hidden border-t border-rule-wine bg-paper shadow-lg transition-[max-height,opacity] duration-[250ms] ease-out",
+          mobileOpen ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0 pointer-events-none"
         )}
       >
         <ul className="px-6 py-4 flex flex-col">

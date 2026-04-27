@@ -11,12 +11,12 @@ import { formatPrice, cn } from "@/lib/utils";
 import { Callout } from "@/components/ui";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/site";
 import { CardProcessorFootnote } from "@/components/checkout/CardProcessorFootnote";
+import { PaymentMethodAccordion } from "@/components/checkout/PaymentMethodAccordion";
 import { SubscriptionUpsellCard } from "@/components/checkout/SubscriptionUpsellCard";
 import { parseReferralCookie } from "@/lib/referrals/cookie";
 import {
   type PaymentMethod,
-  paymentMethodLabel,
-  paymentMethodBlurb,
+  type PaymentMethodDetails,
 } from "@/lib/payments/methods";
 import {
   personalVialDiscount,
@@ -40,6 +40,12 @@ interface CheckoutPageClientProps {
   /** Methods the server has confirmed are configured + available. */
   availableMethods: PaymentMethod[];
   /**
+   * Per-method bank/Zelle/crypto details, resolved server-side. The
+   * accordion renders these inside each panel so the customer sees the
+   * exact same numbers they'll get in the order-confirmation email.
+   */
+  paymentDetails: PaymentMethodDetails;
+  /**
    * Affiliate state for the current viewer, resolved server-side. When set,
    * we surface a "personal discount" preview line in the summary aside
    * (Sprint 4 Wave C). The actual discount is applied authoritatively in
@@ -50,6 +56,7 @@ interface CheckoutPageClientProps {
 
 export function CheckoutPageClient({
   availableMethods,
+  paymentDetails,
   affiliate = null,
 }: CheckoutPageClientProps) {
   const router = useRouter();
@@ -87,6 +94,8 @@ export function CheckoutPageClient({
     const discountCents = Math.round(subtotal * 100 * 0.1);
     setReferralPreview({ code: attribution.code, discountCents });
   }, [subtotal]);
+
+  const inFlight = useRef(false);
 
   if (items.length === 0 && !submitting) {
     return (
@@ -130,7 +139,6 @@ export function CheckoutPageClient({
     setRuoOpen(true);
   };
 
-  const inFlight = useRef(false);
   const onAcknowledge = async (ack: RUOAcknowledgmentPayload) => {
     if (inFlight.current) return;
     if (!paymentMethod) return;
@@ -191,40 +199,15 @@ export function CheckoutPageClient({
           </Section>
 
           <Section title="Payment method">
-            <fieldset
-              className="grid grid-cols-1 gap-2"
-              role="radiogroup"
-              aria-label="Payment method"
-            >
-              {availableMethods.map((m) => {
-                const selected = paymentMethod === m;
-                return (
-                  <label
-                    key={m}
-                    className={cn(
-                      "flex items-start gap-3 border rule p-3 cursor-pointer transition-colors",
-                      selected ? "border-ink bg-paper-soft" : "bg-paper hover:bg-paper-soft"
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      name="payment_method"
-                      value={m}
-                      checked={selected}
-                      onChange={() => setPaymentMethod(m)}
-                      className="mt-0.5 accent-ink"
-                    />
-                    <span className="flex-1">
-                      <span className="block text-sm text-ink">{paymentMethodLabel(m)}</span>
-                      <span className="block text-xs text-ink-muted mt-0.5">
-                        {paymentMethodBlurb(m)}
-                      </span>
-                    </span>
-                  </label>
-                );
-              })}
-            </fieldset>
-            <CardProcessorFootnote />
+            <PaymentMethodAccordion
+              availableMethods={availableMethods}
+              details={paymentDetails}
+              selected={paymentMethod}
+              onSelect={(m) => setPaymentMethod(m)}
+            />
+            <div className="mt-3">
+              <CardProcessorFootnote />
+            </div>
           </Section>
 
           <Section title="Notes (optional)">

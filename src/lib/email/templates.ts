@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { CartItem } from "@/lib/cart/types";
 import type { CustomerInfo } from "@/app/actions/orders";
 import { formatPrice } from "@/lib/utils";
@@ -5,11 +7,52 @@ import { SITE_URL } from "@/lib/site";
 import type { PaymentMethod } from "@/lib/payments/methods";
 import { paymentMethodLabel } from "@/lib/payments/methods";
 
+/**
+ * Base64-embedded logo for transactional emails. Read once at module
+ * load (server-side only — templates.ts never reaches the client). We
+ * embed rather than link because:
+ *   1. The production CDN may not yet have /brand/logo-mark-gold.png on
+ *      first deploy → linked image renders broken.
+ *   2. Most email clients (Apple Mail, Outlook desktop, iOS/Android Mail)
+ *      render data: URLs fine. Gmail web is the holdout — it strips
+ *      data: image src — but Gmail mobile and Inbox handle it. The
+ *      degraded outcome there is alt text, not a broken-image icon.
+ *   3. We avoid a second roundtrip the client has to authorize.
+ * If the file ever moves or is missing at build time, fall back to the
+ * production URL so the email still has *something* in the logo slot.
+ */
+let logoSrcCache: string | null = null;
+function logoSrc(): string {
+  // In dev, re-read the PNG every call so design iteration on the
+  // logo asset doesn't require a server restart. In production the
+  // cache makes every email send a single in-memory string lookup.
+  if (process.env.NODE_ENV !== "production" && logoSrcCache) {
+    logoSrcCache = null;
+  }
+  if (logoSrcCache) return logoSrcCache;
+  try {
+    const bytes = readFileSync(
+      join(process.cwd(), "public/brand/logo-mark-gold.png")
+    );
+    logoSrcCache = `data:image/png;base64,${bytes.toString("base64")}`;
+  } catch {
+    logoSrcCache = `${SITE_URL}/brand/logo-mark-gold.png`;
+  }
+  return logoSrcCache;
+}
+
 interface OrderContext {
   order_id: string;
   customer: CustomerInfo;
   items: CartItem[];
   subtotal_cents: number;
+  /**
+   * Authoritative amount the customer owes (post-discount). When omitted,
+   * templates fall back to subtotal_cents — but callers should always
+   * thread this through, otherwise discounted orders email an inflated
+   * "Total" and customers may overpay via wire/Zelle. Codex P1 #3.
+   */
+  total_cents?: number;
   payment_method: PaymentMethod;
 }
 
@@ -30,46 +73,142 @@ interface EditorialEmailOpts {
   bodyHtml: string;
   memo: string;
   cta?: { label: string; href: string };
+  /**
+   * Extra `<tr>...</tr>` rows injected between the body and the CTA.
+   * Used by orderConfirmationEmail to slot the memo-emphasis and
+   * payment-instruction cards into the wrapper without nesting them
+   * inside the body cell (which would be invalid HTML).
+   */
+  afterBodyRows?: string;
 }
 
+const SUPPORT_EMAIL = "admin@benchgradepeptides.com";
+const SUPPORT_HOURS = "Mon–Fri · 9am–5pm CT";
+const COMPANY_LEGAL_NAME = "Bench Grade Peptides LLC";
+const COMPANY_ADDRESS_LINE_1 = "8 The Green";
+const COMPANY_ADDRESS_LINE_2 = "Dover, DE 19901";
+
 export function editorialEmailHtml(opts: EditorialEmailOpts): string {
-  const { title, bodyHtml, memo, cta } = opts;
+  const { title, bodyHtml, memo, cta, afterBodyRows } = opts;
   const safeMemo = escapeHtml(memo);
   const safeTitle = escapeHtml(title);
+  const year = new Date().getFullYear();
+
+  // Locked palette (spec §16.1):
+  //   paper #FDFAF1 / paper-soft #F4EBD7 / wine #4A0E1A / gold #B89254
+  //   ink #1A0506 / ink-soft #4A2528 / ink-muted #6B5350 / rule #D4C8A8
+
   const ctaHtml = cta
-    ? `<tr><td align="center" style="padding:8px 32px 32px 32px;">
-        <a href="${escapeHtml(cta.href)}" style="display:inline-block;background:#4A0E1A;color:#FDFAF1;text-decoration:none;font-family:Georgia,'Times New Roman',serif;font-size:15px;letter-spacing:1px;text-transform:uppercase;padding:14px 28px;border:1px solid #4A0E1A;">${escapeHtml(cta.label)}</a>
+    ? `<tr><td align="center" style="padding:8px 40px 36px 40px;">
+        <a href="${escapeHtml(cta.href)}" style="display:inline-block;background:#4A0E1A;color:#FDFAF1;text-decoration:none;font-family:Georgia,'Times New Roman',serif;font-size:14px;letter-spacing:2px;text-transform:uppercase;padding:14px 32px;border:1px solid #4A0E1A;">${escapeHtml(cta.label)}</a>
       </td></tr>`
     : "";
+
   return `<!doctype html>
-<html><body style="margin:0;padding:0;background:#FDFAF1;color:#1A0506;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FDFAF1;"><tr><td align="center" style="padding:32px 16px;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#FDFAF1;">
-      <tr><td align="center" style="padding:8px 32px 16px 32px;">
-        <div style="font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#6B5350;">Made in USA · Verified per lot</div>
-        <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;letter-spacing:4px;text-transform:uppercase;color:#4A0E1A;margin-top:10px;">Bench Grade Peptides</div>
-        <div style="height:1px;background:#B89254;margin:18px auto 0 auto;width:80px;"></div>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${safeTitle}</title></head>
+<body style="margin:0;padding:0;background:#EFEAE1;color:#1A0506;-webkit-font-smoothing:antialiased;">
+  <!-- Preheader (hidden) -->
+  <div style="display:none;font-size:1px;color:#EFEAE1;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">
+    ${safeTitle} — Order ${safeMemo} · Bench Grade Peptides
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#EFEAE1;"><tr><td align="center" style="padding:24px 12px 32px 12px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background:#FDFAF1;border:1px solid #D4C8A8;">
+
+      <!-- Compliance / RUO marker bar (sits flush against the wine logo header below) -->
+      <tr><td align="center" style="padding:9px 32px;background:#4A0E1A;color:#B89254;font-family:Georgia,'Times New Roman',serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;line-height:1.4;border-bottom:1px solid #6B2C36;">
+        Research use only · Not for human or veterinary use
       </td></tr>
 
-      <tr><td style="padding:24px 32px 8px 32px;">
-        <div style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;">Order ${safeMemo}</div>
-        <h1 style="font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:26px;line-height:1.25;color:#1A0506;margin:8px 0 0 0;">${safeTitle}</h1>
+      <!-- Logo header on wine (cartier red) — gold mark on wine, gold rules.
+           Side padding intentionally tight (16px) so the wordmark inside
+           the logo never gets clipped on ~280px-wide preview panes. -->
+      <tr><td align="center" style="padding:34px 16px 28px 16px;background:#4A0E1A;">
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#B89254;margin-bottom:14px;">Made in USA · Verified per lot</div>
+        <img src="${logoSrc()}" width="240" height="146" alt="Bench Grade Peptides" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none;width:240px;max-width:100%;height:auto;" />
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#E8D5A8;margin-top:10px;">Synthetic Peptides for Research</div>
+        <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:20px auto 0 auto;"><tr>
+          <td style="width:60px;height:1px;background:#B89254;line-height:1px;font-size:0;">&nbsp;</td>
+          <td style="padding:0 8px;font-family:Georgia,serif;font-size:10px;color:#B89254;">◆</td>
+          <td style="width:60px;height:1px;background:#B89254;line-height:1px;font-size:0;">&nbsp;</td>
+        </tr></table>
       </td></tr>
 
-      <tr><td style="padding:16px 32px 8px 32px;font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.65;color:#1A0506;">
+      <!-- Order eyebrow + title -->
+      <tr><td style="padding:24px 40px 8px 40px;">
+        <div style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;">Order · ${safeMemo}</div>
+        <h1 style="font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:28px;line-height:1.2;color:#1A0506;margin:10px 0 0 0;">${safeTitle}</h1>
+      </td></tr>
+
+      <!-- Body -->
+      <tr><td style="padding:18px 40px 8px 40px;font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.7;color:#1A0506;">
         ${bodyHtml}
       </td></tr>
 
+      ${afterBodyRows ?? ""}
+
       ${ctaHtml}
 
-      <tr><td style="padding:0 32px;">
-        <div style="height:1px;background:#D4C8A8;margin:8px 0 0 0;"></div>
+      <!-- Decorative divider -->
+      <tr><td style="padding:0 40px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+          <td style="height:1px;background:#D4C8A8;line-height:1px;font-size:0;">&nbsp;</td>
+          <td style="padding:0 10px;font-family:Georgia,serif;font-size:11px;color:#B89254;">◆</td>
+          <td style="height:1px;background:#D4C8A8;line-height:1px;font-size:0;">&nbsp;</td>
+        </tr></table>
       </td></tr>
 
-      <tr><td style="padding:18px 32px 28px 32px;font-family:Helvetica,Arial,sans-serif;font-size:11px;line-height:1.6;color:#6B5350;">
-        ${escapeHtml(RUO_DISCLAIMER)}
-        <div style="margin-top:10px;font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;">Bench Grade Peptides · Made in USA</div>
+      <!-- Support / contact strip -->
+      <tr><td style="padding:22px 40px 6px 40px;font-family:Helvetica,Arial,sans-serif;font-size:12px;line-height:1.65;color:#4A2528;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td valign="top" style="width:50%;padding-right:12px;">
+              <div style="font-family:Georgia,serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;margin-bottom:4px;">Questions</div>
+              <a href="mailto:${SUPPORT_EMAIL}?subject=Order%20${safeMemo}" style="color:#4A0E1A;text-decoration:underline;">${SUPPORT_EMAIL}</a>
+              <div style="color:#6B5350;margin-top:2px;">${SUPPORT_HOURS}</div>
+            </td>
+            <td valign="top" style="width:50%;padding-left:12px;border-left:1px solid #D4C8A8;">
+              <div style="font-family:Georgia,serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;margin-bottom:4px;">Track this order</div>
+              <a href="${escapeHtml(SITE_URL)}/account" style="color:#4A0E1A;text-decoration:underline;">View in your portal</a>
+              <div style="color:#6B5350;margin-top:2px;">Reply directly to this email</div>
+            </td>
+          </tr>
+        </table>
       </td></tr>
+
+      <!-- Footer nav -->
+      <tr><td align="center" style="padding:18px 40px 4px 40px;font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;">
+        <a href="${escapeHtml(SITE_URL)}/catalogue" style="color:#6B5350;text-decoration:none;">Catalogue</a>
+        <span style="color:#D4C8A8;padding:0 8px;">·</span>
+        <a href="${escapeHtml(SITE_URL)}/research" style="color:#6B5350;text-decoration:none;">Research</a>
+        <span style="color:#D4C8A8;padding:0 8px;">·</span>
+        <a href="${escapeHtml(SITE_URL)}/compliance" style="color:#6B5350;text-decoration:none;">Compliance</a>
+        <span style="color:#D4C8A8;padding:0 8px;">·</span>
+        <a href="${escapeHtml(SITE_URL)}/why-no-cards" style="color:#6B5350;text-decoration:none;">Why no cards</a>
+      </td></tr>
+
+      <!-- RUO disclaimer block -->
+      <tr><td style="padding:14px 40px 10px 40px;">
+        <div style="background:#F4EBD7;border-left:3px solid #B89254;padding:14px 16px;font-family:Helvetica,Arial,sans-serif;font-size:11px;line-height:1.6;color:#4A2528;">
+          <strong style="font-family:Georgia,serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#4A0E1A;display:block;margin-bottom:6px;">Compliance notice</strong>
+          ${escapeHtml(RUO_DISCLAIMER)}
+        </div>
+      </td></tr>
+
+      <!-- Address + legal -->
+      <tr><td align="center" style="padding:14px 40px 28px 40px;font-family:Helvetica,Arial,sans-serif;font-size:11px;line-height:1.6;color:#6B5350;">
+        <div style="font-family:Georgia,serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#1A0506;margin-bottom:6px;">${COMPANY_LEGAL_NAME}</div>
+        ${COMPANY_ADDRESS_LINE_1} · ${COMPANY_ADDRESS_LINE_2}<br>
+        <a href="${escapeHtml(SITE_URL)}" style="color:#6B5350;text-decoration:underline;">benchgradepeptides.com</a>
+        <div style="margin-top:10px;color:#9A8580;font-size:10px;">
+          You're receiving this because you placed an order with Bench Grade Peptides.<br>
+          Transactional email — we do not send marketing.
+        </div>
+        <div style="margin-top:6px;color:#9A8580;font-size:10px;">
+          © ${year} ${COMPANY_LEGAL_NAME} · All rights reserved
+        </div>
+      </td></tr>
+
     </table>
   </td></tr></table>
 </body></html>`;
@@ -106,38 +245,64 @@ interface MemoContext {
   memo: string;
 }
 
-function wireInstructionsText(ctx: MemoContext): string {
-  const wireBeneficiary = process.env.WIRE_BENEFICIARY ?? "Bench Grade Peptides LLC";
-  const wireBank = process.env.WIRE_BANK ?? "[Bank name — pending]";
-  const wireRouting = process.env.WIRE_ROUTING ?? "[Routing — pending]";
-  const wireAccount = process.env.WIRE_ACCOUNT ?? "[Account — pending]";
-  return `Wire transfer instructions
---------------------------
-Beneficiary: ${wireBeneficiary}
-Bank: ${wireBank}
-Routing / ABA: ${wireRouting}
-Account: ${wireAccount}
-Memo / reference: ${ctx.memo}
+interface BankBlock {
+  beneficiary: string;
+  beneficiaryAddress: string | null;
+  bank: string;
+  bankAddress: string | null;
+  routing: string;
+  account: string;
+  accountType: "Checking";
+}
 
-Send the wire exactly as listed and include the memo. We ship within
-1-2 business days of funds clearing.`;
+function bankBlock(): BankBlock {
+  return {
+    beneficiary: process.env.WIRE_BENEFICIARY ?? "Bench Grade Peptides LLC",
+    beneficiaryAddress: process.env.WIRE_BENEFICIARY_ADDRESS ?? null,
+    bank: process.env.WIRE_BANK ?? "[Bank name — pending]",
+    bankAddress: process.env.WIRE_BANK_ADDRESS ?? null,
+    routing: process.env.WIRE_ROUTING ?? "[Routing — pending]",
+    account: process.env.WIRE_ACCOUNT ?? "[Account — pending]",
+    accountType: "Checking",
+  };
+}
+
+function wireInstructionsText(ctx: MemoContext): string {
+  const b = bankBlock();
+  const lines = [
+    `Wire transfer instructions`,
+    `--------------------------`,
+    `Beneficiary: ${b.beneficiary}`,
+    ...(b.beneficiaryAddress ? [`Beneficiary address: ${b.beneficiaryAddress}`] : []),
+    `Bank: ${b.bank}`,
+    ...(b.bankAddress ? [`Bank address: ${b.bankAddress}`] : []),
+    `Routing / ABA: ${b.routing}`,
+    `Account: ${b.account}`,
+    `Account type: ${b.accountType}`,
+    `Memo / reference: ${ctx.memo}`,
+    ``,
+    `Send the wire exactly as listed and include the memo. We ship within`,
+    `1-2 business days of funds clearing.`,
+  ];
+  return lines.join("\n");
 }
 
 function achInstructionsText(ctx: MemoContext): string {
-  const wireBeneficiary = process.env.WIRE_BENEFICIARY ?? "Bench Grade Peptides LLC";
-  const wireBank = process.env.WIRE_BANK ?? "[Bank name — pending]";
-  const wireRouting = process.env.WIRE_ROUTING ?? "[Routing — pending]";
-  const wireAccount = process.env.WIRE_ACCOUNT ?? "[Account — pending]";
+  const b = bankBlock();
   return `ACH transfer instructions
 -------------------------
-Beneficiary: ${wireBeneficiary}
-Bank: ${wireBank}
-Routing: ${wireRouting}
-Account: ${wireAccount}
+Beneficiary: ${b.beneficiary}
+Bank: ${b.bank}
+Routing: ${b.routing}
+Account: ${b.account}
+Account type: ${b.accountType}
 Memo / reference: ${ctx.memo}
 
-ACH transfers typically clear in 2-3 business days. Include the memo
-on the transfer. We ship within 1-2 business days of funds clearing.`;
+This is a customer-initiated ACH credit (you push from your bank's
+bill-pay or external-transfer flow). Step-by-step: ${SITE_URL}/payments/ach
+
+ACH typically clears in 1-3 business days. We ship within 1-2 business
+days of funds clearing.`;
 }
 
 function zelleInstructionsText(ctx: MemoContext): string {
@@ -169,38 +334,41 @@ We ship within 1 business day of on-chain confirmation.`;
 }
 
 function wireInstructionsHtml(ctx: MemoContext): string {
-  const wireBeneficiary = process.env.WIRE_BENEFICIARY ?? "Bench Grade Peptides LLC";
-  const wireBank = process.env.WIRE_BANK ?? "[Bank name — pending]";
-  const wireRouting = process.env.WIRE_ROUTING ?? "[Routing — pending]";
-  const wireAccount = process.env.WIRE_ACCOUNT ?? "[Account — pending]";
+  const b = bankBlock();
+  const rows: Array<[string, string, boolean?]> = [
+    ["Beneficiary", b.beneficiary],
+    ...(b.beneficiaryAddress
+      ? ([["Beneficiary address", b.beneficiaryAddress]] as Array<[string, string, boolean?]>)
+      : []),
+    ["Bank", b.bank],
+    ...(b.bankAddress
+      ? ([["Bank address", b.bankAddress]] as Array<[string, string, boolean?]>)
+      : []),
+    ["Routing / ABA", b.routing],
+    ["Account", b.account],
+    ["Account type", b.accountType],
+    ["Memo", ctx.memo, true],
+  ];
   return instructionCardHtml(
     "Wire transfer instructions",
-    [
-      ["Beneficiary", wireBeneficiary],
-      ["Bank", wireBank],
-      ["Routing / ABA", wireRouting],
-      ["Account", wireAccount],
-      ["Memo", ctx.memo, true],
-    ],
+    rows,
     "Include the memo on the wire so we can match it to your order. We ship within 1-2 business days of funds clearing."
   );
 }
 
 function achInstructionsHtml(ctx: MemoContext): string {
-  const wireBeneficiary = process.env.WIRE_BENEFICIARY ?? "Bench Grade Peptides LLC";
-  const wireBank = process.env.WIRE_BANK ?? "[Bank name — pending]";
-  const wireRouting = process.env.WIRE_ROUTING ?? "[Routing — pending]";
-  const wireAccount = process.env.WIRE_ACCOUNT ?? "[Account — pending]";
+  const b = bankBlock();
   return instructionCardHtml(
     "ACH transfer instructions",
     [
-      ["Beneficiary", wireBeneficiary],
-      ["Bank", wireBank],
-      ["Routing", wireRouting],
-      ["Account", wireAccount],
+      ["Beneficiary", b.beneficiary],
+      ["Bank", b.bank],
+      ["Routing", b.routing],
+      ["Account", b.account],
+      ["Account type", b.accountType],
       ["Memo", ctx.memo, true],
     ],
-    "ACH typically clears in 2-3 business days. We ship within 1-2 business days of funds clearing."
+    `Customer-initiated ACH credit (you push from your bank's bill-pay or external-transfer flow). Step-by-step at ${SITE_URL}/payments/ach. Clears in 1-3 business days; we ship within 1-2 business days of funds clearing.`
   );
 }
 
@@ -224,6 +392,50 @@ function cryptoInstructionsHtml(_ctx: MemoContext): string {
     [["Status", "Hosted payment link incoming by email"]],
     "A follow-up email will include a hosted checkout link. BTC, ETH, USDT, USDC, LTC supported — your pay currency, USDC received on our side."
   );
+}
+
+/**
+ * Hard-stop emphasis on the order memo. We have no payment processor —
+ * payment-to-order matching is 100% memo-based, so a forgotten or wrong
+ * memo means manual reconciliation work and a delayed customer ship.
+ *
+ * Rendered three ways: at the very top of every instruction block in
+ * the email (HTML + text), and as a standalone block in the order-
+ * confirmation summary. The visual treatment is intentionally loud —
+ * wine border, gold accent rule, oversized monospace memo — because
+ * "use this memo" is the single most-important instruction in the
+ * whole email.
+ */
+function memoEmphasisHtml(memo: string): string {
+  return `<tr><td style="padding:0 28px 18px 28px;">
+    <div style="border:2px solid #4A0E1A;background:#FDFAF1;padding:18px 18px 16px 18px;text-align:center;">
+      <div style="font-family:Georgia,serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#4A0E1A;font-weight:700;">⚑ Required on your payment</div>
+      <div style="height:1px;background:#B89254;width:36px;margin:10px auto 12px auto;line-height:1px;font-size:0;">&nbsp;</div>
+      <div style="font-family:Georgia,'Times New Roman',serif;font-size:13px;line-height:1.55;color:#1A0506;margin:0 0 12px 0;">
+        Type this code into the <strong>memo</strong> / <strong>note</strong> / <strong>reference</strong>
+        field when you send your payment. It is the only way we can match your transfer
+        to your order.
+      </div>
+      <div style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:30px;font-weight:700;letter-spacing:4px;color:#4A0E1A;background:#F4EBD7;border:1px solid #D4C8A8;padding:14px 18px;display:inline-block;margin:2px 0 6px 0;">${escapeHtml(memo)}</div>
+      <div style="font-family:Helvetica,Arial,sans-serif;font-size:11px;color:#6B5350;font-style:italic;line-height:1.55;margin-top:10px;">
+        Temporary — until our card-network merchant account is approved, this
+        reference code is how we connect a payment to a customer.
+        <strong style="color:#4A0E1A;font-style:normal;">Skip it and your order will sit in queue until we email to confirm.</strong>
+      </div>
+    </div>
+  </td></tr>`;
+}
+
+function memoEmphasisText(memo: string): string {
+  return `>>> REQUIRED ON YOUR PAYMENT <<<
+
+  Memo / reference / note field:    ${memo}
+
+  Type this exactly. Temporary — until our card-network merchant
+  account is approved, the memo is the only way we can match a
+  payment to your order. Without it, your order waits until we
+  email you to confirm.
+`;
 }
 
 function instructionCardHtml(
@@ -252,13 +464,16 @@ function instructionCardHtml(
 
 function instructionsText(method: PaymentMethod, memo: string): string {
   const ctx = { memo };
+  // Crypto skips memo emphasis — the hosted payment link encodes the
+  // order id, so there's no manual memo to enter.
+  const head = method === "crypto" ? "" : memoEmphasisText(memo);
   switch (method) {
     case "wire":
-      return wireInstructionsText(ctx);
+      return head + wireInstructionsText(ctx);
     case "ach":
-      return achInstructionsText(ctx);
+      return head + achInstructionsText(ctx);
     case "zelle":
-      return zelleInstructionsText(ctx);
+      return head + zelleInstructionsText(ctx);
     case "crypto":
       return cryptoInstructionsText(ctx);
   }
@@ -266,13 +481,15 @@ function instructionsText(method: PaymentMethod, memo: string): string {
 
 function instructionsHtml(method: PaymentMethod, memo: string): string {
   const ctx = { memo };
+  // Crypto: hosted-link flow encodes the order id, so no memo needed.
+  const head = method === "crypto" ? "" : memoEmphasisHtml(memo);
   switch (method) {
     case "wire":
-      return wireInstructionsHtml(ctx);
+      return head + wireInstructionsHtml(ctx);
     case "ach":
-      return achInstructionsHtml(ctx);
+      return head + achInstructionsHtml(ctx);
     case "zelle":
-      return zelleInstructionsHtml(ctx);
+      return head + zelleInstructionsHtml(ctx);
     case "crypto":
       return cryptoInstructionsHtml(ctx);
   }
@@ -286,7 +503,10 @@ export function orderConfirmationEmail(ctx: OrderContext): {
   html: string;
 } {
   const lines = ctx.items.map(lineText).join("\n");
-  const total = formatPrice(ctx.subtotal_cents);
+  const subtotal = formatPrice(ctx.subtotal_cents);
+  const totalCents = ctx.total_cents ?? ctx.subtotal_cents;
+  const total = formatPrice(totalCents);
+  const hasDiscount = ctx.total_cents !== undefined && ctx.total_cents !== ctx.subtotal_cents;
   const ref = ctx.order_id.slice(0, 8);
   const memo = `BGP-${ref}`;
   const methodName = paymentMethodLabel(ctx.payment_method);
@@ -302,14 +522,14 @@ Items
 -----
 ${lines}
 
-Total: ${total}
+${hasDiscount ? `Subtotal: ${subtotal}\n` : ""}Total: ${total}
 Shipping: calculated after payment clears
 
 ${instructionsText(ctx.payment_method, memo)}
 
-Why no cards? RUO peptides face heavy merchant scrutiny. We're building the
-reputation to unlock card processing — your order helps us get there. Read
-more at ${SITE_URL}/why-no-cards
+No card processor yet. RUO peptides face heavy merchant scrutiny — every
+purchase gets us closer to premium merchant approval. Read our full note
+at ${SITE_URL}/why-no-cards
 
 Ship-to
 -------
@@ -324,68 +544,59 @@ Questions: reply to this email.
 ${SITE_URL}
 `;
 
-  const itemRows = ctx.items
-    .map(
-      (i) => `
-    <tr>
-      <td style="padding:10px 0;border-bottom:1px solid #d7d1c4;">
-        <div style="font-family:Geist,system-ui,sans-serif;font-size:15px;color:#1A1A1A;">${escapeHtml(i.name)}</div>
-        <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#5a5a5a;">
-          ${i.pack_size}-vial pack · ${i.size_mg}mg ea. · ${escapeHtml(i.sku)} × ${i.quantity}
-        </div>
-      </td>
-      <td style="padding:10px 0;border-bottom:1px solid #d7d1c4;text-align:right;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:14px;color:#1A1A1A;white-space:nowrap;">
-        ${formatPrice(i.unit_price * i.quantity * 100)}
-      </td>
-    </tr>`
-    )
-    .join("");
+  // Body lives inside the editorial wrapper's body cell. Items table +
+  // total + a friendly opener. The memo emphasis + payment instructions
+  // + ship-to are injected via afterBodyRows so they sit between the
+  // body and the View-order CTA without nesting tables in a `<td>`.
+  const customerName = escapeHtml(ctx.customer.name);
+  const portalUrl = `${SITE_URL}/account/orders/${ctx.order_id}`;
 
-  const html = `<!doctype html>
-<html><body style="margin:0;background:#F7F4EE;font-family:Inter,system-ui,sans-serif;color:#1A1A1A;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:32px 16px;">
-    <table role="presentation" width="100%" style="max-width:560px;background:#fff;border:1px solid #d7d1c4;">
-      <tr><td style="padding:28px 28px 18px 28px;border-bottom:1px solid #d7d1c4;">
-        <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#5a5a5a;">Bench Grade Peptides</div>
-        <div style="font-family:Geist,system-ui,sans-serif;font-size:28px;margin-top:8px;">Order received</div>
-        <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;color:#5a5a5a;margin-top:4px;">${escapeHtml(memo)} · ${escapeHtml(methodName)}</div>
-      </td></tr>
+  const bodyHtml = `
+    <p style="margin:0 0 14px 0;">${customerName} —</p>
+    <p style="margin:0 0 18px 0;">Your order is in. Here's what we received and how to send payment so we can ship.</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:6px;border-top:1px solid #1A0506;">
+      ${itemRowsHtmlEditorial(ctx.items)}
+      ${hasDiscount ? `<tr>
+        <td style="padding-top:14px;font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;">Subtotal</td>
+        <td style="padding-top:14px;text-align:right;font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;color:#6B5350;">${subtotal}</td>
+      </tr>` : ""}
+      <tr>
+        <td style="padding-top:${hasDiscount ? 4 : 14}px;font-family:Georgia,'Times New Roman',serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;">Total</td>
+        <td style="padding-top:${hasDiscount ? 4 : 14}px;text-align:right;font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:18px;font-weight:700;color:#1A0506;">${total}</td>
+      </tr>
+      <tr>
+        <td colspan="2" style="padding-top:6px;font-family:Helvetica,Arial,sans-serif;font-size:11px;color:#6B5350;text-align:right;">Shipping calculated after payment clears.</td>
+      </tr>
+    </table>`;
 
-      <tr><td style="padding:20px 28px;">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${itemRows}</table>
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;">
-          <tr>
-            <td style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#5a5a5a;">Total</td>
-            <td style="text-align:right;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:18px;">${total}</td>
-          </tr>
-        </table>
-      </td></tr>
+  const shipBlockHtml = `<tr><td style="padding:0 40px 22px 40px;">
+    <div style="border:1px solid #D4C8A8;background:#F4EBD7;padding:16px 18px;">
+      <div style="font-family:Georgia,serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;margin-bottom:6px;">Ship to</div>
+      <div style="font-family:Helvetica,Arial,sans-serif;font-size:14px;color:#1A0506;line-height:1.55;">
+        ${customerName}<br>
+        ${escapeHtml(ctx.customer.ship_address_1)}${ctx.customer.ship_address_2 ? "<br>" + escapeHtml(ctx.customer.ship_address_2) : ""}<br>
+        ${escapeHtml(ctx.customer.ship_city)}, ${escapeHtml(ctx.customer.ship_state)} ${escapeHtml(ctx.customer.ship_zip)}
+      </div>
+    </div>
+  </td></tr>`;
 
-      ${instructionsHtml(ctx.payment_method, memo)}
+  const noCardBlurbHtml = `<tr><td style="padding:0 40px 18px 40px;">
+    <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:13px;line-height:1.6;color:#6B5350;font-style:italic;">
+      No card processor yet. RUO peptides face heavy merchant scrutiny — every purchase gets us closer to premium merchant approval.
+      <a href="${escapeHtml(SITE_URL)}/why-no-cards" style="color:#B89254;text-decoration:underline;font-style:normal;">Read our note &rarr;</a>
+    </p>
+  </td></tr>`;
 
-      <tr><td style="padding:0 28px 18px 28px;">
-        <p style="margin:0;font-size:13px;line-height:1.6;color:#5a5a5a;font-style:italic;">
-          Why no cards? RUO peptides face heavy merchant scrutiny. We're building the reputation to unlock card processing — your order helps us get there.
-          <a href="${escapeHtml(SITE_URL)}/why-no-cards" style="color:#8A6B3B;text-decoration:underline;">Read more</a>.
-        </p>
-      </td></tr>
+  const afterBodyRows =
+    instructionsHtml(ctx.payment_method, memo) + shipBlockHtml + noCardBlurbHtml;
 
-      <tr><td style="padding:0 28px 28px 28px;">
-        <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#5a5a5a;margin-bottom:6px;">Ship-to</div>
-        <div style="font-size:14px;color:#1A1A1A;line-height:1.5;">
-          ${escapeHtml(ctx.customer.name)}<br>
-          ${escapeHtml(ctx.customer.ship_address_1)}${ctx.customer.ship_address_2 ? "<br>" + escapeHtml(ctx.customer.ship_address_2) : ""}<br>
-          ${escapeHtml(ctx.customer.ship_city)}, ${escapeHtml(ctx.customer.ship_state)} ${escapeHtml(ctx.customer.ship_zip)}
-        </div>
-      </td></tr>
-
-      <tr><td style="padding:16px 28px;border-top:1px solid #d7d1c4;background:#EFEAE1;font-size:11px;color:#5a5a5a;line-height:1.6;">
-        All products sold for laboratory research purposes only. Not for human or veterinary use.
-        Reply to this email with any questions.
-      </td></tr>
-    </table>
-  </td></tr></table>
-</body></html>`;
+  const html = editorialEmailHtml({
+    title: `Order received — ${methodName}.`,
+    bodyHtml,
+    memo,
+    afterBodyRows,
+    cta: { label: "View order", href: portalUrl },
+  });
 
   return { subject, text, html };
 }
@@ -396,7 +607,7 @@ export function adminOrderNotification(ctx: OrderContext): {
   html: string;
 } {
   const lines = ctx.items.map(lineText).join("\n");
-  const total = formatPrice(ctx.subtotal_cents);
+  const total = formatPrice(ctx.total_cents ?? ctx.subtotal_cents);
   const subject = `[BGP] New order — ${ctx.customer.name} · ${total} · ${paymentMethodLabel(ctx.payment_method)}`;
   const adminLink = `${SITE_URL}/admin/orders/${ctx.order_id}`;
   const methodName = paymentMethodLabel(ctx.payment_method);
@@ -457,7 +668,7 @@ export function paymentConfirmedEmail(ctx: OrderContext): {
   const subject = `Payment received — your order is being prepared · ${memo}`;
   const customerName = escapeHtml(ctx.customer.name);
   const itemsText = ctx.items.map(lineText).join("\n");
-  const total = formatPrice(ctx.subtotal_cents);
+  const total = formatPrice(ctx.total_cents ?? ctx.subtotal_cents);
   const portalUrl = `${SITE_URL}/account/orders/${ctx.order_id}`;
 
   const text = [
@@ -1411,6 +1622,97 @@ export function affiliatePayoutSentEmail(
     memo,
     cta: { label: "View affiliate dashboard", href: dashboardUrl },
   });
+
+  return { subject, text, html };
+}
+
+// ---------- AgeRecode fulfillment handoff ----------
+// Plain-text-first handoff. Sent on `funded` transition (admin click or
+// crypto IPN). The fulfillment partner reads this off the inbox; keep
+// it scannable, no editorial chrome. Re-sending is safe — recipient
+// matches by order id (memo) and we only fire on actual transition.
+
+export function agerecodeFulfillmentEmail(ctx: OrderContext): {
+  subject: string;
+  text: string;
+  html: string;
+} {
+  const ref = ctx.order_id.slice(0, 8);
+  const memo = `BGP-${ref}`;
+  const total = formatPrice(ctx.total_cents ?? ctx.subtotal_cents);
+  const c = ctx.customer;
+
+  const skuLines = ctx.items
+    .map(
+      (i) =>
+        `  ${i.sku}  ${i.name} — ${i.pack_size}-vial · ${i.size_mg}mg ea. × ${i.quantity}`
+    )
+    .join("\n");
+
+  const shipBlock = [
+    c.name,
+    c.ship_address_1,
+    c.ship_address_2 || null,
+    `${c.ship_city}, ${c.ship_state} ${c.ship_zip}`,
+    c.phone ? `Phone: ${c.phone}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const subject = `[BGP fulfillment] ${memo} — ${ctx.items.length} line item${
+    ctx.items.length === 1 ? "" : "s"
+  } · ${total}`;
+
+  const text = `Bench Grade Peptides — fulfillment handoff
+============================================
+
+Order memo: ${memo}
+Order id:   ${ctx.order_id}
+Status:     FUNDED — ready to ship
+Total:      ${total}
+
+Ship to
+-------
+${shipBlock}
+
+Items
+-----
+${skuLines}
+
+Notes from customer
+-------------------
+${c.notes ? c.notes : "(none)"}
+
+Please reference order memo ${memo} on the outgoing label / packing
+slip so we can match the shipment back to the customer order.
+
+— Bench Grade Peptides
+${SITE_URL}
+`;
+
+  const html = `<!doctype html><html><body style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#1A0506;background:#fff;padding:24px;">
+  <div style="max-width:640px;margin:0 auto;">
+    <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;">Bench Grade Peptides — fulfillment handoff</div>
+    <h1 style="font-family:Georgia,serif;font-weight:400;font-size:22px;margin:6px 0 18px 0;">${escapeHtml(memo)} · ${escapeHtml(total)} · FUNDED</h1>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;border:1px solid #D4C8A8;background:#F4EBD7;padding:14px;margin-bottom:18px;">
+      <tr><td style="width:130px;color:#6B5350;padding:2px 0;">Order memo</td><td><strong>${escapeHtml(memo)}</strong></td></tr>
+      <tr><td style="width:130px;color:#6B5350;padding:2px 0;">Order id</td><td>${escapeHtml(ctx.order_id)}</td></tr>
+      <tr><td style="width:130px;color:#6B5350;padding:2px 0;">Total</td><td>${escapeHtml(total)}</td></tr>
+    </table>
+
+    <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;margin-bottom:6px;">Ship to</div>
+    <pre style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:#F7F4EE;border:1px solid #D4C8A8;padding:14px;margin:0 0 18px 0;white-space:pre-wrap;">${escapeHtml(shipBlock)}</pre>
+
+    <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;margin-bottom:6px;">Items</div>
+    <pre style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:#F7F4EE;border:1px solid #D4C8A8;padding:14px;margin:0 0 18px 0;white-space:pre-wrap;">${escapeHtml(skuLines)}</pre>
+
+    ${c.notes ? `<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;margin-bottom:6px;">Customer notes</div>
+    <pre style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:#F7F4EE;border:1px solid #D4C8A8;padding:14px;margin:0 0 18px 0;white-space:pre-wrap;">${escapeHtml(c.notes)}</pre>` : ""}
+
+    <p style="font-size:13px;color:#4A2528;line-height:1.6;">Please reference order memo <strong>${escapeHtml(memo)}</strong> on the outgoing label / packing slip so we can match the shipment back to the customer order.</p>
+  </div>
+</body></html>`;
 
   return { subject, text, html };
 }

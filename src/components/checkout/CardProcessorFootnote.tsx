@@ -9,8 +9,8 @@ import Link from "next/link";
 export function CardProcessorFootnote() {
   return (
     <p className="text-xs italic text-ink-muted leading-relaxed">
-      Card processing coming soon &mdash; every order strengthens our case
-      for premium merchant approval.{" "}
+      No card processor yet &mdash; every purchase gets us closer to
+      premium merchant approval.{" "}
       <Link
         href="/why-no-cards"
         className="text-gold-dark hover:text-gold underline-offset-2 hover:underline not-italic"

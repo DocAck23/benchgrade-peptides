@@ -18,6 +18,7 @@ import {
   paymentConfirmedEmail,
   orderShippedEmail,
   accountClaimEmail,
+  agerecodeFulfillmentEmail,
   type ShippedContext,
 } from "@/lib/email/templates";
 import type { OrderRow } from "@/lib/supabase/types";
@@ -69,6 +70,7 @@ function rowToOrderContext(row: OrderRow) {
     customer: rowCustomer(row),
     items: rowItems(row),
     subtotal_cents: row.subtotal_cents,
+    total_cents: row.total_cents,
     payment_method,
   };
 }
@@ -168,6 +170,52 @@ export async function sendAccountClaim(
     return { ok: true };
   } catch (err) {
     console.error("[sendAccountClaim] failed:", err);
+    return { ok: false };
+  }
+}
+
+/**
+ * Fulfillment handoff to AgeRecode. Fired on the `awaiting_payment` →
+ * `funded` transition (admin click for wire/ACH/Zelle, NOWPayments IPN
+ * for crypto). Routed to AGERECODE_ORDER_EMAIL with the customer email
+ * BCC'd never — the partner should see ship-to + SKUs only, not who
+ * the buyer is, and the buyer should not see the partner email at all.
+ *
+ * Like every order-email helper, this is best-effort: a failure here
+ * MUST NOT roll back the funded transition that already landed in
+ * Postgres. Caller should `try/catch` and continue.
+ */
+export async function sendAgerecodeFulfillment(row: OrderRow): Promise<SendResult> {
+  const to = process.env.AGERECODE_ORDER_EMAIL;
+  if (!to) {
+    console.error(
+      "[sendAgerecodeFulfillment] AGERECODE_ORDER_EMAIL not set; skipping for",
+      row.order_id
+    );
+    return { ok: false, reason: "agerecode-email-unconfigured" };
+  }
+  const resend = getResend();
+  if (!resend) {
+    console.error(
+      "[sendAgerecodeFulfillment] Resend not configured; skipping for",
+      row.order_id
+    );
+    return { ok: false, reason: "resend-unconfigured" };
+  }
+  const e = agerecodeFulfillmentEmail(rowToOrderContext(row));
+  try {
+    await resend.emails.send({
+      from: EMAIL_FROM,
+      to,
+      cc: process.env.AGERECODE_CC_EMAIL ? [process.env.AGERECODE_CC_EMAIL] : undefined,
+      subject: e.subject,
+      text: e.text,
+      html: e.html,
+      replyTo: process.env.ADMIN_NOTIFICATION_EMAIL,
+    });
+    return { ok: true };
+  } catch (err) {
+    console.error("[sendAgerecodeFulfillment] failed:", err);
     return { ok: false };
   }
 }

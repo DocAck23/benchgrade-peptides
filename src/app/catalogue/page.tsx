@@ -74,7 +74,7 @@ export default function CatalogPage() {
               <p className="text-xs sm:text-sm text-ink-soft mb-4 sm:mb-8 max-w-2xl leading-snug sm:leading-relaxed line-clamp-2 sm:line-clamp-none">
                 {category.description}
               </p>
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
+              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
                 {products.map((product) => (
                   <ProductCard key={product.slug} product={product} categorySlug={category.slug} />
                 ))}

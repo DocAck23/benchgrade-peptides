@@ -1,11 +1,21 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 
 export const runtime = "nodejs";
 export const contentType = "image/png";
 export const size = { width: 1200, height: 630 };
 export const alt = "Bench Grade Peptides — research-grade synthetic peptides";
 
+async function logoDataUrl() {
+  const bytes = await readFile(
+    path.join(process.cwd(), "public/brand/logo-mark-gold.png")
+  );
+  return `data:image/png;base64,${bytes.toString("base64")}`;
+}
+
 export default async function Image() {
+  const logo = await logoDataUrl();
   return new ImageResponse(
     (
       <div
@@ -14,52 +24,76 @@ export default async function Image() {
           height: "100%",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "space-between",
-          padding: 72,
-          background: "#F7F4EE",
-          color: "#1A1A1A",
-          fontFamily: "system-ui",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 80,
+          background: "#4A0E1A",
+          color: "#FDFAF1",
+          fontFamily: "system-ui, serif",
         }}
       >
         <div
           style={{
-            fontSize: 22,
-            letterSpacing: 4,
+            fontSize: 18,
+            letterSpacing: 6,
             textTransform: "uppercase",
-            color: "#4a4a4a",
+            color: "#B89254",
+            marginBottom: 28,
           }}
         >
-          Bench Grade Peptides
+          Made in USA · Verified per lot
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-          <div
-            style={{
-              fontSize: 130,
-              fontWeight: 700,
-              lineHeight: 1.0,
-              letterSpacing: -3,
-              maxWidth: 1050,
-            }}
-          >
-            Research-grade synthetic peptides.
-          </div>
-          <div style={{ fontSize: 34, color: "#4a4a4a", maxWidth: 900 }}>
-            HPLC-verified. COA per lot. Cold-chain shipped. For laboratory research use only.
-          </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={logo}
+          width={300}
+          height={300}
+          alt=""
+          style={{ display: "block", marginBottom: 28 }}
+        />
+
+        <div
+          style={{
+            fontSize: 56,
+            color: "#FDFAF1",
+            letterSpacing: -1,
+            textAlign: "center",
+            maxWidth: 980,
+            lineHeight: 1.15,
+            marginBottom: 18,
+          }}
+        >
+          Research-grade synthetic peptides.
+        </div>
+        <div
+          style={{
+            fontSize: 24,
+            color: "#D4C8A8",
+            letterSpacing: 1,
+            textAlign: "center",
+            maxWidth: 880,
+            lineHeight: 1.4,
+          }}
+        >
+          HPLC-verified · COA per lot · Cold-chain shipped
         </div>
 
         <div
           style={{
+            position: "absolute",
+            bottom: 36,
             display: "flex",
-            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 18,
             fontFamily: "ui-monospace, monospace",
-            fontSize: 24,
-            color: "#0A5C7D",
+            fontSize: 18,
+            color: "#B89254",
+            letterSpacing: 4,
+            textTransform: "uppercase",
           }}
         >
-          <span>benchgradepeptides.com</span>
-          <span>56 compounds · ≥99% purity</span>
+          benchgradepeptides.com
         </div>
       </div>
     ),

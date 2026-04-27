@@ -35,32 +35,62 @@ export function PopularStacksHeroGrid() {
         bundle to your cart.
       </p>
 
-      <ul className="space-y-3 sm:space-y-4">
+      {/* Mobile: 3-column compact grid (image + name + price only).
+          sm+: rich vertical list with description + add-to-cart button. */}
+      <ul className="grid grid-cols-3 gap-2 sm:flex sm:flex-col sm:gap-4">
         {featured.map((r) => (
           <li
             key={r.stack.slug}
             className="border border-rule bg-paper-soft hover:border-gold-dark transition-colors duration-200"
           >
+            {/* Mobile compact card */}
             <Link
               href={`/catalogue/stacks/${r.stack.slug}`}
-              className="group flex gap-3 sm:gap-4 px-3 sm:px-4 pt-3 pb-2.5 focus-visible:outline-none"
+              className="sm:hidden flex flex-col p-2 gap-1.5 hover:bg-paper transition-colors"
+            >
+              <div className="-mx-2 -mt-2 mb-1 bg-paper border-b border-rule">
+                <img
+                  src={r.stack.image}
+                  alt=""
+                  loading="lazy"
+                  className="w-full aspect-square object-contain"
+                />
+              </div>
+              <div className="label-eyebrow text-gold-dark text-[8px]">
+                {r.lines.length}-vial
+              </div>
+              <h3 className="font-display text-[12px] text-ink leading-tight line-clamp-2 min-h-[2.4em]">
+                {r.stack.name}
+              </h3>
+              <div className="mt-auto pt-1 border-t border-rule flex items-baseline justify-between gap-1">
+                <span className="text-[8px] uppercase tracking-[0.05em] text-ink-muted font-display">Total</span>
+                <span className="font-mono-data text-[11px] text-ink font-semibold whitespace-nowrap">
+                  {formatPrice(r.retail_total_cents)}
+                </span>
+              </div>
+            </Link>
+
+            {/* sm+ rich card */}
+            <Link
+              href={`/catalogue/stacks/${r.stack.slug}`}
+              className="hidden sm:flex group gap-4 px-4 pt-3 pb-2.5 focus-visible:outline-none"
             >
               <img
                 src={r.stack.image}
                 alt={`${r.stack.name} — ${r.lines.length} vials`}
                 loading="lazy"
-                className="w-16 h-16 sm:w-20 sm:h-20 flex-none object-contain bg-paper border border-rule"
+                className="w-20 h-20 flex-none object-contain bg-paper border border-rule"
               />
               <div className="flex-1 min-w-0 flex flex-col">
                 <div className="flex items-baseline justify-between gap-2 mb-1">
-                  <h3 className="font-display text-base sm:text-[17px] text-ink leading-tight truncate">
+                  <h3 className="font-display text-[17px] text-ink leading-tight truncate">
                     {r.stack.name}
                   </h3>
                   <span className="font-mono-data text-[11px] text-ink-muted whitespace-nowrap">
                     {r.lines.length} vials
                   </span>
                 </div>
-                <p className="text-[12px] sm:text-[12.5px] text-ink-soft leading-snug line-clamp-2 mb-1.5">
+                <p className="text-[12.5px] text-ink-soft leading-snug line-clamp-2 mb-1.5">
                   {r.stack.tagline}
                 </p>
                 <div className="mt-auto flex items-center justify-between gap-3 pt-1.5 border-t border-rule">
@@ -73,7 +103,7 @@ export function PopularStacksHeroGrid() {
                 </div>
               </div>
             </Link>
-            <div className="px-3 sm:px-4 pb-3">
+            <div className="hidden sm:block px-4 pb-3">
               <AddStackToCartButton resolved={r} />
             </div>
           </li>

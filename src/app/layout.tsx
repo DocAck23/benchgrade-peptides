@@ -67,6 +67,13 @@ export const metadata: Metadata = {
     description: "Research-grade synthetic peptides for laboratory use.",
     type: "website",
     siteName: "Bench Grade Peptides",
+    locale: "en_US",
+    url: SITE_URL,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Bench Grade Peptides",
+    description: "Research-grade synthetic peptides for laboratory use.",
   },
 };
 

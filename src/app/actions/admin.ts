@@ -12,6 +12,7 @@ import type { OrderRow } from "@/lib/supabase/types";
 import {
   sendPaymentConfirmed,
   sendOrderShipped,
+  sendAgerecodeFulfillment,
   lookupCoaUrls,
 } from "@/lib/email/notifications/send-order-emails";
 import { sendMessageNotification } from "@/lib/email/notifications/send-messaging-emails";
@@ -99,6 +100,14 @@ export async function markOrderFunded(
   }
   // Best-effort. A Resend outage must not flip our success result.
   await sendPaymentConfirmed(data[0] as OrderRow);
+  // Best-effort fulfillment handoff to AgeRecode. Failures here MUST NOT
+  // roll back the funded transition that already landed in Postgres —
+  // admin can resend the handoff from the dashboard if needed.
+  try {
+    await sendAgerecodeFulfillment(data[0] as OrderRow);
+  } catch (err) {
+    console.error("[markOrderFunded] sendAgerecodeFulfillment failed:", err);
+  }
   // Best-effort: fire affiliate commission ledger hook. Failures here MUST
   // NOT roll back the funded transition that already landed in Postgres.
   try {

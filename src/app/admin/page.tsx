@@ -16,6 +16,8 @@ interface OrderRow {
   order_id: string;
   customer: { name: string; email: string };
   subtotal_cents: number;
+  /** Server-computed amount owed (post-discount). Null on legacy rows. */
+  total_cents: number | null;
   status: string;
   /** Null only on legacy rows from before payment_method was first-class. */
   payment_method: string | null;
@@ -32,6 +34,7 @@ function safeNarrow(row: unknown): OrderRow | null {
   const r = row as Record<string, unknown>;
   if (typeof r.order_id !== "string") return null;
   if (typeof r.subtotal_cents !== "number") return null;
+  const totalCents = typeof r.total_cents === "number" ? r.total_cents : null;
   if (typeof r.status !== "string") return null;
   if (typeof r.created_at !== "string") return null;
   const customer = r.customer as Record<string, unknown> | null;
@@ -60,6 +63,7 @@ function safeNarrow(row: unknown): OrderRow | null {
     order_id: r.order_id,
     customer: { name: customer.name, email: customer.email },
     subtotal_cents: r.subtotal_cents,
+    total_cents: totalCents,
     status: r.status,
     payment_method: paymentMethod,
     created_at: r.created_at,
@@ -102,16 +106,20 @@ export default async function AdminPage({
   } else {
     let query = supa
       .from("orders")
-      .select("order_id, customer, subtotal_cents, status, payment_method, created_at, items")
+      .select("order_id, customer, subtotal_cents, total_cents, status, payment_method, created_at, items")
       .order("created_at", { ascending: false })
       .limit(100);
     if (status) query = query.eq("status", status);
     const { data, error } = await query;
     if (error) loadError = error.message;
     else {
-      orders = (Array.isArray(data) ? data : [])
-        .map(safeNarrow)
-        .filter((o): o is OrderRow => o !== null);
+      const raw = Array.isArray(data) ? data : [];
+      orders = raw.map(safeNarrow).filter((o): o is OrderRow => o !== null);
+      const skipped = raw.length - orders.length;
+      if (skipped > 0) {
+        // Codex P1 #11 — surface schema drift instead of silently undercounting.
+        loadError = `${skipped} row${skipped === 1 ? "" : "s"} hidden due to schema drift (malformed JSONB or unknown payment method).`;
+      }
     }
   }
 
@@ -123,6 +131,9 @@ export default async function AdminPage({
           <h1 className="font-display text-3xl text-ink">Orders</h1>
         </div>
         <div className="flex items-baseline gap-4">
+          <Link href="/admin/reconciliation" className="text-xs text-teal hover:underline">
+            Reconciliation →
+          </Link>
           <Link href="/admin/briefs" className="text-xs text-teal hover:underline">
             Briefs →
           </Link>
@@ -190,7 +201,7 @@ export default async function AdminPage({
                     </Td>
                     <Td>
                       <span className="font-mono-data text-ink">
-                        {formatPrice(o.subtotal_cents)}
+                        {formatPrice(o.total_cents ?? o.subtotal_cents)}
                       </span>
                     </Td>
                     <Td>

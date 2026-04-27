@@ -46,16 +46,54 @@ export function PopularStacks() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
+      <div className="grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-5 lg:gap-6">
         {resolved.map((r) => (
           <article
             key={r.stack.slug}
-            className="border border-rule bg-paper-soft p-3 sm:p-5 lg:p-6 flex flex-col gap-3"
+            className="border border-rule bg-paper-soft p-2 sm:p-5 lg:p-6 flex flex-col gap-2 sm:gap-3"
             aria-labelledby={`stack-${r.stack.slug}`}
           >
+            {/* Mobile: whole card is a single link to the stack page,
+                so the cramped 3-per-row layout always has one clear tap
+                target. From sm up we keep the image + content separate
+                links so the items inside the list can deep-link to
+                individual products. */}
             <Link
               href={`/catalogue/stacks/${r.stack.slug}`}
-              className="-mx-3 sm:-mx-5 lg:-mx-6 -mt-3 sm:-mt-5 lg:-mt-6 mb-1 block bg-paper border-b border-rule"
+              className="sm:hidden -m-2 p-2 flex flex-col gap-2 hover:bg-paper transition-colors"
+              aria-labelledby={`stack-${r.stack.slug}`}
+            >
+              <div className="-mx-2 -mt-2 mb-1 bg-paper border-b border-rule">
+                <img
+                  src={r.stack.image}
+                  alt=""
+                  loading="lazy"
+                  className="w-full aspect-square object-contain"
+                />
+              </div>
+              <div className="label-eyebrow text-gold-dark text-[8px] mb-0.5">
+                {r.lines.length}-vial
+              </div>
+              <h3
+                id={`stack-${r.stack.slug}`}
+                className="font-display text-[12px] text-ink leading-tight line-clamp-2 min-h-[2.4em]"
+              >
+                {r.stack.name}
+              </h3>
+              <div className="mt-auto pt-1.5 border-t border-rule flex items-baseline justify-between gap-1">
+                <span className="text-[8px] uppercase tracking-[0.05em] text-ink-muted font-display">
+                  Total
+                </span>
+                <span className="font-mono-data text-[11px] text-ink font-semibold whitespace-nowrap">
+                  {formatPrice(r.retail_total_cents)}
+                </span>
+              </div>
+            </Link>
+
+            {/* Tablet & desktop card — full content, AddStackToCart CTA */}
+            <Link
+              href={`/catalogue/stacks/${r.stack.slug}`}
+              className="hidden sm:block -mx-3 sm:-mx-5 lg:-mx-6 -mt-3 sm:-mt-5 lg:-mt-6 mb-1 bg-paper border-b border-rule"
               aria-hidden="true"
               tabIndex={-1}
             >
@@ -66,12 +104,11 @@ export function PopularStacks() {
                 className="w-full aspect-[4/5] object-contain"
               />
             </Link>
-            <header>
+            <header className="hidden sm:block">
               <div className="label-eyebrow text-gold-dark text-[10px] sm:text-xs mb-1.5">
                 {r.lines.length}-vial stack
               </div>
               <h3
-                id={`stack-${r.stack.slug}`}
                 className="font-display text-lg sm:text-xl lg:text-2xl text-ink leading-tight mb-2"
               >
                 {r.stack.name}
@@ -83,7 +120,7 @@ export function PopularStacks() {
               </p>
             </header>
 
-            <ul className="border-t border-rule pt-3 space-y-2 text-[13px] sm:text-sm">
+            <ul className="hidden sm:block border-t border-rule pt-3 space-y-2 text-[13px] sm:text-sm">
               {r.lines.map(({ product, variant, line }) => (
                 <li
                   key={variant.sku}
@@ -102,11 +139,11 @@ export function PopularStacks() {
               ))}
             </ul>
 
-            <p className="text-[12.5px] sm:text-[13px] italic text-ink-soft leading-relaxed pt-1 border-t border-rule/60" style={{ fontFamily: "var(--font-editorial)" }}>
+            <p className="hidden sm:block text-[12.5px] sm:text-[13px] italic text-ink-soft leading-relaxed pt-1 border-t border-rule/60" style={{ fontFamily: "var(--font-editorial)" }}>
               {r.stack.why}
             </p>
 
-            <div className="mt-auto pt-3 border-t border-rule flex flex-col gap-2">
+            <div className="hidden sm:flex mt-auto pt-3 border-t border-rule flex-col gap-2">
               <div className="flex items-baseline justify-between">
                 <div className="text-[10px] uppercase tracking-[0.1em] text-ink-muted font-display">
                   Retail total

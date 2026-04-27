@@ -64,7 +64,9 @@ const WIDTH_CLASSES: Record<LogoSize, string> = {
   sm: "w-16",
   md: "w-28",
   lg: "w-40",
-  xl: "w-44 md:w-60 lg:w-[280px]",
+  // Mobile: small enough that cart + hamburger have breathing room.
+  // sm+ steps back up to the editorial-sized mark.
+  xl: "w-28 sm:w-44 md:w-60 lg:w-[280px]",
 };
 
 function srcFor(variant: LogoVariant, surface: LogoSurface): string {

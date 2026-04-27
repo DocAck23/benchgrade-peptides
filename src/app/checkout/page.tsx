@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { CheckoutPageClient } from "./CheckoutPageClient";
-import { enabledPaymentMethods } from "@/lib/payments/methods";
+import {
+  enabledPaymentMethods,
+  getPaymentMethodDetails,
+} from "@/lib/payments/methods";
 import { getMyAffiliateState } from "@/app/actions/affiliate";
 import type { AffiliateTier } from "@/lib/affiliate/tiers";
 
@@ -15,6 +18,7 @@ export default async function CheckoutPage() {
   // selector. This isolates the env-var check to server code and keeps
   // the client bundle free of process.env references.
   const methods = enabledPaymentMethods();
+  const paymentDetails = getPaymentMethodDetails();
 
   // Sprint 4 Wave C — pass affiliate state down so CheckoutPageClient can
   // render the personal-discount preview. This is COSMETIC; submitOrder
@@ -31,6 +35,10 @@ export default async function CheckoutPage() {
   }
 
   return (
-    <CheckoutPageClient availableMethods={methods} affiliate={affiliate} />
+    <CheckoutPageClient
+      availableMethods={methods}
+      paymentDetails={paymentDetails}
+      affiliate={affiliate}
+    />
   );
 }

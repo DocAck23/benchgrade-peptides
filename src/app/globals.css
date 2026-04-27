@@ -212,6 +212,15 @@ body {
     animation: none;
   }
 }
+/* On mobile the marquee is replaced by a swipeable horizontal scroll
+   (`overflow-x-auto` on the viewport). Disabling the animation here
+   means the user controls the position and isn't fighting a transform
+   that keeps shifting the children left under their finger. */
+@media (max-width: 767px) {
+  .marquee-track {
+    animation: none;
+  }
+}
 
 /* Rendered-markdown readable prose for the /admin/briefs pages.
    Scoped under `.brief-prose` so it doesn't leak into product copy. */

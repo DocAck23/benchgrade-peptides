@@ -1,8 +1,14 @@
 import { ImageResponse } from "next/og";
 
-export const size = { width: 32, height: 32 };
+export const size = { width: 64, height: 64 };
 export const contentType = "image/png";
 
+/**
+ * Favicon — at 32px the laurel mark from the full logo is illegible,
+ * so we use a simplified BG monogram in brand gold on a wine field.
+ * Visible against both the dark Safari/Chrome tab bar and the cream
+ * pinned-tab tray.
+ */
 export default function Icon() {
   return new ImageResponse(
     (
@@ -13,12 +19,13 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#1A1A1A",
-          color: "#00A5B8",
-          fontSize: 22,
+          background: "#4A0E1A",
+          color: "#B89254",
+          fontSize: 38,
           fontWeight: 700,
-          fontFamily: "system-ui",
+          fontFamily: "Georgia, 'Times New Roman', serif",
           letterSpacing: -1,
+          lineHeight: 1,
         }}
       >
         B

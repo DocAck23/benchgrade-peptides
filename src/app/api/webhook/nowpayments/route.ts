@@ -6,7 +6,10 @@ import {
 } from "@/lib/payments/nowpayments/webhook";
 import type { OrderStatus } from "@/lib/orders/status";
 import type { OrderRow } from "@/lib/supabase/types";
-import { sendPaymentConfirmed } from "@/lib/email/notifications/send-order-emails";
+import {
+  sendPaymentConfirmed,
+  sendAgerecodeFulfillment,
+} from "@/lib/email/notifications/send-order-emails";
 import {
   awardCommissionForOrder,
   clawbackCommissionForOrder,
@@ -110,7 +113,7 @@ export async function POST(req: Request) {
   // whose UUID happened to match.
   const { data: existing, error: selectError } = await supa
     .from("orders")
-    .select("status, payment_method")
+    .select("status, payment_method, subtotal_cents, total_cents")
     .eq("order_id", orderId)
     .maybeSingle();
   if (selectError) {
@@ -130,6 +133,46 @@ export async function POST(req: Request) {
       },
       { status: 409 }
     );
+  }
+
+  // Codex P1 #1 — partial-payment guard. NOWPayments can mark `finished`
+  // on under-payment (e.g. customer sent 0.9 BTC instead of 1.0). Refuse
+  // to fund unless `actually_paid` covers the full `price_amount`.
+  // Codex P1 #2 (partial mitigation) — we don't yet store the NOWPayments
+  // `payment_id` at order creation, so we can't bind by invoice. As a
+  // best-effort cross-check, require `price_amount` to match the order's
+  // expected total. A forged-but-signed IPN replayed onto a different
+  // order with a different amount will fail this assertion.
+  if (target === "funded") {
+    const expectedDollars =
+      ((typeof existing.total_cents === "number" ? existing.total_cents : existing.subtotal_cents) ?? 0) / 100;
+    const priceAmount = typeof parsed.price_amount === "number" ? parsed.price_amount : null;
+    const actuallyPaid = typeof parsed.actually_paid === "number" ? parsed.actually_paid : null;
+    if (priceAmount === null || actuallyPaid === null) {
+      return NextResponse.json(
+        { ok: false, error: "IPN missing price_amount or actually_paid for funded transition." },
+        { status: 400 }
+      );
+    }
+    // 1¢ tolerance for FX/precision. Crypto rates are quoted in fiat by NP.
+    if (Math.abs(priceAmount - expectedDollars) > 0.01) {
+      console.error(
+        `[nowpayments webhook] price_amount mismatch order=${orderId} expected=${expectedDollars} got=${priceAmount}`
+      );
+      return NextResponse.json(
+        { ok: false, error: "IPN price_amount does not match order total." },
+        { status: 409 }
+      );
+    }
+    if (actuallyPaid + 0.01 < priceAmount) {
+      console.error(
+        `[nowpayments webhook] under-payment order=${orderId} expected=${priceAmount} got=${actuallyPaid}`
+      );
+      return NextResponse.json(
+        { ok: false, error: "Under-payment; order remains awaiting_payment." },
+        { status: 409 }
+      );
+    }
   }
 
   // Atomic conditional update: only succeeds if current.status is in
@@ -160,6 +203,13 @@ export async function POST(req: Request) {
   // back the funded transition that already landed in Postgres.
   if (applied && target === "funded" && updated && updated[0]) {
     await sendPaymentConfirmed(updated[0] as OrderRow);
+    // Fulfillment handoff to AgeRecode. Best-effort — a downstream
+    // failure here MUST NOT roll back the funded transition.
+    try {
+      await sendAgerecodeFulfillment(updated[0] as OrderRow);
+    } catch (err) {
+      console.error("[nowpayments webhook] sendAgerecodeFulfillment failed:", err);
+    }
     // Best-effort affiliate commission ledger hook. Like the email above,
     // a downstream failure here MUST NOT roll back the funded transition.
     try {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Callout, DataRow } from "@/components/ui";
 
 export const metadata: Metadata = {
@@ -35,7 +36,11 @@ export default function PaymentsPage() {
           After you complete checkout, we email payment instructions for the method you selected.
           We do not store any banking credentials on this site, and we do not process cards.
           Once payment clears, your order enters processing and ships within the timeframe listed
-          on the Shipping page.
+          on the Shipping page. Detailed step-by-step for ACH:{" "}
+          <Link href="/payments/ach" className="text-teal underline">
+            adding Bench Grade Peptides as an ACH recipient
+          </Link>
+          .
         </Callout>
 
         <section>
