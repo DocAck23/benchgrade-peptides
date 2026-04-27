@@ -858,6 +858,75 @@ export function accountClaimEmail(ctx: ClaimContext): {
   return { subject, text, html };
 }
 
+// ---------- Crypto hosted-payment-link email ----------
+
+export interface CryptoLinkContext extends OrderContext {
+  invoice_url: string;
+}
+
+/**
+ * Sent immediately after a crypto-method order submits successfully and
+ * NOWPayments returns an invoice URL. The email is short and CTA-led:
+ * the customer is one click away from the hosted page where they pick a
+ * pay currency and see the deposit address. No memo emphasis (the URL
+ * encodes the order id).
+ */
+export function cryptoPaymentLinkEmail(ctx: CryptoLinkContext): {
+  subject: string;
+  text: string;
+  html: string;
+} {
+  const ref = ctx.order_id.slice(0, 8);
+  const memo = `BGP-${ref}`;
+  const total = formatPrice(ctx.total_cents ?? ctx.subtotal_cents);
+  const subject = `Pay your order in crypto — ${memo}`;
+  const customerName = escapeHtml(ctx.customer.name);
+  const safeUrl = escapeHtml(ctx.invoice_url);
+
+  const text = [
+    `${ctx.customer.name} —`,
+    ``,
+    `Your hosted crypto payment page is ready. One click → pick your token (BTC, ETH, USDT, USDC, LTC, or 40+ more) → send to the deposit address shown on the page.`,
+    ``,
+    `Pay now:`,
+    ctx.invoice_url,
+    ``,
+    `Amount due: ${total}`,
+    `Order: ${memo}`,
+    ``,
+    `The transaction auto-confirms on-chain (10–60 minutes depending on network). As soon as we see the confirmation, your order moves to packing and ships within 1 business day.`,
+    ``,
+    `If you'd rather pay another way, sign in at ${SITE_URL}/account and switch the method on your order.`,
+    ``,
+    RUO_DISCLAIMER,
+    ``,
+    `— Bench Grade Peptides`,
+    SITE_URL,
+  ].join("\n");
+
+  const bodyHtml = `
+    <p style="margin:0 0 14px 0;">${customerName} —</p>
+    <p style="margin:0 0 18px 0;">Your hosted crypto payment page is ready. Pick a token, scan the QR or copy the address, and send.</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:6px;border-top:1px solid #1A0506;">
+      <tr>
+        <td style="padding-top:14px;font-family:Georgia,'Times New Roman',serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;">Amount due</td>
+        <td style="padding-top:14px;text-align:right;font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:18px;font-weight:700;color:#1A0506;">${total}</td>
+      </tr>
+    </table>
+    <p style="margin:18px 0 0 0;font-family:Georgia,'Times New Roman',serif;font-size:13px;line-height:1.6;color:#6B5350;font-style:italic;">
+      Auto-confirms on-chain in 10–60 minutes. Ships within 1 business day of confirmation.
+    </p>`;
+
+  const html = editorialEmailHtml({
+    title: "Pay in crypto — hosted link.",
+    bodyHtml,
+    memo,
+    cta: { label: "Open payment page", href: safeUrl },
+  });
+
+  return { subject, text, html };
+}
+
 // ---------- Sprint 2 Wave A3: subscription lifecycle emails ----------
 // Design choice: Wave A2 (`@/lib/subscriptions/cycles`) ships the
 // `billPayInstructions` helper. Rather than create a hard import

@@ -6,7 +6,9 @@ import { createServerSupabase } from "@/lib/supabase/client";
 import { isValidUuid, type OrderStatus } from "@/lib/orders/status";
 import { OrderTimeline, type OrderTimelineEvent } from "@/components/account/OrderTimeline";
 import { OrderStatusPill } from "@/components/account/OrderStatusPill";
+import { PendingPaymentPanel } from "@/components/account/PendingPaymentPanel";
 import { formatPrice } from "@/lib/utils";
+import { isPaymentMethod, enabledPaymentMethods, getPaymentMethodDetails, type PaymentMethod } from "@/lib/payments/methods";
 
 export const metadata: Metadata = {
   title: "Order detail",
@@ -39,6 +41,8 @@ interface OrderDetail {
   shipped_at: string | null;
   created_at: string;
   updated_at: string;
+  payment_method: PaymentMethod | null;
+  nowpayments_invoice_url: string | null;
 }
 
 const VALID_CARRIERS: readonly Carrier[] = ["USPS", "UPS", "FedEx", "DHL"];
@@ -109,6 +113,12 @@ function narrow(row: unknown): OrderDetail | null {
     shipped_at: typeof r.shipped_at === "string" ? r.shipped_at : null,
     created_at: r.created_at,
     updated_at: r.updated_at,
+    payment_method:
+      typeof r.payment_method === "string" && isPaymentMethod(r.payment_method)
+        ? r.payment_method
+        : null,
+    nowpayments_invoice_url:
+      typeof r.nowpayments_invoice_url === "string" ? r.nowpayments_invoice_url : null,
   };
 }
 
@@ -183,7 +193,7 @@ export default async function CustomerOrderDetailPage({
   const { data, error } = await supa
     .from("orders")
     .select(
-      "order_id, status, items, subtotal_cents, discount_cents, total_cents, free_vial_entitlement, tracking_number, tracking_carrier, shipped_at, created_at, updated_at"
+      "order_id, status, items, subtotal_cents, discount_cents, total_cents, free_vial_entitlement, tracking_number, tracking_carrier, shipped_at, created_at, updated_at, payment_method, nowpayments_invoice_url"
     )
     .eq("order_id", id)
     .maybeSingle();
@@ -223,6 +233,18 @@ export default async function CustomerOrderDetailPage({
           <OrderStatusPill status={order.status} />
         </div>
       </header>
+
+      {(order.status === "awaiting_payment" || order.status === "awaiting_wire") && (
+        <PendingPaymentPanel
+          orderId={order.order_id}
+          memo={`BGP-${order.order_id.slice(0, 8).toUpperCase()}`}
+          amountCents={total}
+          currentMethod={order.payment_method}
+          availableMethods={enabledPaymentMethods()}
+          details={getPaymentMethodDetails()}
+          invoiceUrl={order.nowpayments_invoice_url}
+        />
+      )}
 
       {order.free_vial_entitlement && (
         <section className="border rule bg-gold/10 border-gold-dark p-5 flex items-start gap-4">

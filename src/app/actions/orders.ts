@@ -31,6 +31,9 @@ import {
 } from "@/lib/subscriptions/discounts";
 import { createSubscription } from "@/app/actions/subscriptions";
 import { parseReferralCookie } from "@/lib/referrals/cookie";
+import { createNowpaymentsInvoice } from "@/lib/payments/nowpayments/invoice";
+import { sendCryptoPaymentLink } from "@/lib/email/notifications/send-order-emails";
+import type { OrderRow } from "@/lib/supabase/types";
 import { claimReferralOnOrder } from "@/app/actions/referrals";
 import { createServerSupabase } from "@/lib/supabase/client";
 import {
@@ -637,6 +640,49 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
     } catch (err) {
       console.error("[submitOrder] account-claim email failed:", err);
       // Best-effort: do NOT fail the order on email/auth-admin error.
+    }
+
+    // Crypto branch — create the NOWPayments hosted invoice and email
+    // the link in a follow-up. Best-effort: if NP is down or the API
+    // key is missing, the order is still durable; the customer can
+    // switch to a manual method from /account/orders/[id] or an admin
+    // can regenerate the invoice later.
+    if (payment_method === "crypto") {
+      try {
+        const orderItems = resolved.items as { name: string; quantity: number }[];
+        const description =
+          orderItems
+            .slice(0, 3)
+            .map((i) => `${i.name} ×${i.quantity}`)
+            .join(", ") || `Order ${order_id.slice(0, 8)}`;
+        const inv = await createNowpaymentsInvoice({
+          order_id,
+          order_description: description,
+          amount_usd: finalTotalCents / 100,
+        });
+        if (inv.ok) {
+          await supa
+            .from("orders")
+            .update({
+              nowpayments_invoice_id: inv.invoice_id,
+              nowpayments_invoice_url: inv.invoice_url,
+            })
+            .eq("order_id", order_id);
+          // Email the hosted link as a follow-up so the customer has
+          // it in their inbox alongside the order confirmation.
+          await sendCryptoPaymentLink(
+            { ...row, total_cents: finalTotalCents } as unknown as OrderRow,
+            inv.invoice_url,
+          );
+        } else {
+          console.error(
+            "[submitOrder] NOWPayments invoice creation failed:",
+            inv.reason,
+          );
+        }
+      } catch (err) {
+        console.error("[submitOrder] NOWPayments path threw:", err);
+      }
     }
   }
 

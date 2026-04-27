@@ -19,6 +19,7 @@ import {
   orderShippedEmail,
   accountClaimEmail,
   agerecodeFulfillmentEmail,
+  cryptoPaymentLinkEmail,
   type ShippedContext,
 } from "@/lib/email/templates";
 import type { OrderRow } from "@/lib/supabase/types";
@@ -216,6 +217,40 @@ export async function sendAgerecodeFulfillment(row: OrderRow): Promise<SendResul
     return { ok: true };
   } catch (err) {
     console.error("[sendAgerecodeFulfillment] failed:", err);
+    return { ok: false };
+  }
+}
+
+/**
+ * Send the hosted NOWPayments link for a crypto-method order. Fired
+ * after `createNowpaymentsInvoice` succeeds (in submitOrder OR when the
+ * customer switches an existing order's method to crypto from the
+ * account dashboard). Best-effort; logs on failure.
+ */
+export async function sendCryptoPaymentLink(
+  row: OrderRow,
+  invoiceUrl: string,
+): Promise<SendResult> {
+  const resend = getResend();
+  if (!resend) {
+    console.error("[sendCryptoPaymentLink] Resend not configured; skipping email for", row.order_id);
+    return { ok: false, reason: "resend-unconfigured" };
+  }
+  const e = cryptoPaymentLinkEmail({
+    ...rowToOrderContext(row),
+    invoice_url: invoiceUrl,
+  });
+  try {
+    await resend.emails.send({
+      from: EMAIL_FROM,
+      to: row.customer.email,
+      subject: e.subject,
+      text: e.text,
+      html: e.html,
+    });
+    return { ok: true };
+  } catch (err) {
+    console.error("[sendCryptoPaymentLink] failed:", err);
     return { ok: false };
   }
 }
