@@ -66,3 +66,91 @@ export async function requestMagicLink(formData: FormData): Promise<RequestMagic
     return { ok: false, error: "Could not send sign-in link. Please try again." };
   }
 }
+
+const PasswordSchema = z.string().min(10).max(128);
+
+/**
+ * Set or update the password on the currently-signed-in user. Requires
+ * an active Supabase session — the cookie-scoped client looks up the
+ * user from the request, so an unauthenticated caller is rejected.
+ *
+ * Password rule: minimum 10 chars, maximum 128. We avoid prescribing
+ * complexity classes (NIST 800-63B guidance) — length is the dominant
+ * factor and arbitrary character requirements push users toward
+ * predictable patterns.
+ */
+export async function setAccountPassword(
+  formData: FormData,
+): Promise<{ ok: boolean; error?: string }> {
+  const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+
+  const parsed = PasswordSchema.safeParse(password);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: "Password must be at least 10 characters and at most 128.",
+    };
+  }
+  if (password !== confirm) {
+    return { ok: false, error: "Passwords do not match." };
+  }
+
+  const supa = await createServerSupabase();
+  const {
+    data: { user },
+  } = await supa.auth.getUser();
+  if (!user) {
+    return { ok: false, error: "You must be signed in to set a password." };
+  }
+
+  const { error } = await supa.auth.updateUser({ password });
+  if (error) {
+    // Generic copy — Supabase's internal error strings may leak whether
+    // a password policy is in place (they aren't, but defense-in-depth).
+    return { ok: false, error: "Could not save password. Please try again." };
+  }
+  return { ok: true };
+}
+
+/**
+ * Sign in with an email + password. Used as the password-toggle path
+ * on /login alongside the magic-link primary flow. Returns generic
+ * copy on every failure (rate-limit, wrong password, no account) so
+ * the action can't be used for user enumeration.
+ */
+export async function signInWithPasswordAction(
+  formData: FormData,
+): Promise<{ ok: boolean; error?: string }> {
+  const rawEmail = String(formData.get("email") ?? "");
+  const password = String(formData.get("password") ?? "");
+  const parsedEmail = EmailSchema.safeParse(rawEmail);
+  if (!parsedEmail.success) {
+    return { ok: false, error: "Please enter a valid email address." };
+  }
+  if (!password || password.length < 1 || password.length > 128) {
+    return { ok: false, error: "Please enter your password." };
+  }
+
+  const h = await headers();
+  const ip = resolveClientIp(h, { isProduction: process.env.NODE_ENV === "production" });
+  if (!ip.ok) {
+    return { ok: false, error: ip.reason };
+  }
+  // Reuse the magic-link rate limiter — same threat model (credential
+  // stuffing / enumeration) and same per-IP quota is appropriate.
+  const limited = await enforceMagicLinkRateLimit(ip.ip);
+  if (!limited.allowed) {
+    return { ok: false, error: limited.error };
+  }
+
+  const supa = await createServerSupabase();
+  const { error } = await supa.auth.signInWithPassword({
+    email: parsedEmail.data,
+    password,
+  });
+  if (error) {
+    return { ok: false, error: "Email or password is incorrect." };
+  }
+  return { ok: true };
+}

@@ -30,7 +30,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           Sign in to your account.
         </h1>
         <p className="text-sm text-ink-soft leading-relaxed mb-8">
-          Enter your email and we&rsquo;ll send a one-time sign-in link. No password to remember.
+          Sign in with a one-time magic link or your password — both work for the same
+          account. Set a password under Account → Security once you&rsquo;re in.
         </p>
         <LoginForm initialError={errorMessage} next={next} />
       </article>
