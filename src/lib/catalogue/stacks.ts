@@ -49,7 +49,7 @@ export const POPULAR_STACKS: PopularStack[] = [
   {
     slug: "wolverine-stack",
     name: "Wolverine Stack",
-    tagline: "BPC-157 + TB-500 — the bench standard healing pair.",
+    tagline: "BPC-157 + TB-500 — the bench standard tissue-repair pair.",
     why: "BPC-157 and TB-500 are the two most-cited compounds in tissue-repair research. Studied together for synergistic effects on angiogenesis and ECM remodeling assays.",
     items: [
       { sku: "BGP-BPC-5", quantity: 1 },
@@ -103,7 +103,7 @@ export const POPULAR_STACKS: PopularStack[] = [
   },
   {
     slug: "mega-recovery-stack",
-    name: "Mega Recovery Stack",
+    name: "Mega Multi-Pathway Stack",
     tagline: "GLP-3 R + Sermorelin + BPC-157 + TB-500 — four-vial cross-axis study set.",
     why: "Four-compound combination spanning incretin, GH-axis, and tissue-repair research arms. Designed for researchers running multi-pathway protocols who want a single bundled order.",
     items: [

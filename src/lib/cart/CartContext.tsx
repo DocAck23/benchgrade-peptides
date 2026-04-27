@@ -11,6 +11,7 @@ import {
 import type { CatalogProduct, CatalogVariant } from "@/lib/catalogue/data";
 import { SUPPLIES, requiresReconstitution } from "@/lib/catalogue/data";
 import type { CartApi, CartItem, SubscriptionMode } from "./types";
+import { sendAnalyticsEvent } from "@/lib/analytics/client";
 import {
   computeCartTotals,
   computeCartTotalsForCheckout,
@@ -173,6 +174,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addItem = useCallback(
     (product: CatalogProduct, variant: CatalogVariant, quantity: number) => {
+      // First-party analytics — direct import so it works even before
+      // the AnalyticsBeacon component mounts and installs window.bgpTrack.
+      sendAnalyticsEvent("add_to_cart", {
+        properties: {
+          sku: variant.sku,
+          product_slug: product.slug,
+          quantity,
+          unit_price_cents: Math.round(variant.retail_price * 100),
+        },
+      });
       setItems((prev) => {
         // Step 1: add (or top-up) the requested line.
         const existing = prev.find((i) => i.sku === variant.sku);
@@ -270,6 +281,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
 
   const removeItem = useCallback((sku: string) => {
+    sendAnalyticsEvent("remove_from_cart", { properties: { sku } });
     setItems((prev) => prev.filter((i) => i.sku !== sku));
   }, []);
 

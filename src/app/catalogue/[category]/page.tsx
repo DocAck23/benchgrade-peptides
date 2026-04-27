@@ -27,6 +27,21 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       url: canonical,
       type: "website",
     },
+    // Same compliance posture as PDPs: indexable but no auto-snippets
+    // and no image previews — keeps SERP cards from auto-extracting
+    // therapeutic-claim-adjacent text from product cards on the page.
+    robots: {
+      index: true,
+      follow: true,
+      nosnippet: true,
+      noimageindex: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        nosnippet: true,
+        noimageindex: true,
+      },
+    },
   };
 }
 

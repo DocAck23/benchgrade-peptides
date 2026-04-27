@@ -1,5 +1,6 @@
 import { createServerSupabase } from "@/lib/supabase/client";
 import { ReferralLinkCopy } from "@/components/account/ReferralLinkCopy";
+import { generateMyReferralCode } from "@/app/actions/referrals";
 import type {
   ReferralCodeRow,
   ReferralRow,
@@ -90,7 +91,22 @@ export async function ReferralCard({ siteUrl }: ReferralCardProps = {}) {
       .eq("status", "available"),
   ]);
 
-  const code = (codeRes.data ?? null) as ReferralCodeRow | null;
+  // Auto-generate the customer's referral code on first card render.
+  // generateMyReferralCode is idempotent — a returning user with an
+  // existing row just gets it handed back without a new insert.
+  let code = (codeRes.data ?? null) as ReferralCodeRow | null;
+  if (!code) {
+    const created = await generateMyReferralCode();
+    if (created.ok && created.code) {
+      // Reconstruct just the columns we need; the underlying row was
+      // inserted by the action and exists in the DB. Defaults for the
+      // rest of the schema columns are filled by Postgres.
+      code = {
+        code: created.code,
+        owner_user_id: user.id,
+      } as ReferralCodeRow;
+    }
+  }
   const referralRows = (referralsRes.data ?? []) as Array<
     Pick<ReferralRow, "id" | "status">
   >;
@@ -137,24 +153,26 @@ export async function ReferralCard({ siteUrl }: ReferralCardProps = {}) {
           <ReferralLinkCopy code={code.code} url={url} />
         </div>
       ) : (
-        <form
-          action="/account/referrals"
-          method="post"
+        // Fallback when auto-generation fails (rare — DB unavailable,
+        // service-role missing, etc). We surface a non-fatal note
+        // rather than a button so the customer doesn't think the
+        // page itself is broken.
+        <div
           className="border rule bg-paper-soft p-4"
           data-testid="referral-create-form"
         >
-          <p className="text-sm text-ink-soft mb-3">
-            You don&apos;t have a referral code yet. Create one to start
-            sharing.
+          <p className="text-sm text-ink-soft">
+            We couldn&apos;t generate your referral link right now. Refresh
+            in a moment, or email{" "}
+            <a
+              href="mailto:admin@benchgradepeptides.com"
+              className="text-teal underline"
+            >
+              admin@benchgradepeptides.com
+            </a>{" "}
+            and we&apos;ll set you up.
           </p>
-          <button
-            type="submit"
-            formAction="/account/referrals"
-            className="inline-flex items-center justify-center h-11 px-6 bg-wine text-paper font-display uppercase text-[12px] tracking-[0.14em] hover:bg-wine-deep transition-colors duration-200 ease-out"
-          >
-            Create my code
-          </button>
-        </form>
+        </div>
       )}
 
       <div

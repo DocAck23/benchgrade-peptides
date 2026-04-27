@@ -54,9 +54,9 @@ const SECTIONS: Array<{ title: string; items: QA[] }> = [
             <a href="mailto:admin@benchgradepeptides.com" className="text-teal underline">
               admin@benchgradepeptides.com
             </a>{" "}
-            with your order memo and the SKU and we&rsquo;ll send the COA PDF for your
-            specific lot. (We&rsquo;re building a self-serve COA download into the
-            customer portal — for now it&rsquo;s email-on-request.)
+            for any other COA-related question. The per-lot Certificate of
+            Analysis itself is published on each product page and a printed copy
+            ships inside every order — no need to email for a routine COA.
           </>
         ),
       },
@@ -196,7 +196,7 @@ const SECTIONS: Array<{ title: string; items: QA[] }> = [
         q: "Refund policy?",
         a: (
           <>
-            Unopened, unshipped orders can be cancelled by the customer at any time before
+            Unopened, unshipped orders can be cancelled by the researcher at any time before
             payment lands; once funded, we&rsquo;ll refund on request through the same
             payment rail (wire/ACH/Zelle credit, or on-chain refund for crypto). Once
             shipped, we replace damaged or mis-shipped product but cannot accept

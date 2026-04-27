@@ -1,7 +1,50 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/site";
 
-const PRIVATE_PATHS = ["/admin", "/admin/", "/checkout", "/checkout/", "/cart", "/api/"];
+// Private + consumer-facing paths that must not be indexed. The cart,
+// checkout, account, affiliate, login, and auth surfaces all surface
+// purchase-flow language ("dose", "stack", "subscribe") that risks
+// drug-claim association in search snippets. Blog/news is also blocked
+// pre-launch until copy is reviewed for B2B/researcher framing.
+const PRIVATE_PATHS = [
+  "/admin",
+  "/admin/",
+  "/checkout",
+  "/checkout/",
+  "/cart",
+  "/cart/",
+  "/account",
+  "/account/",
+  "/affiliate",
+  "/affiliate/",
+  "/login",
+  "/login/",
+  "/auth",
+  "/auth/",
+  "/api/",
+  "/news",
+  "/news/",
+  "/coa",
+  "/coa/",
+];
+
+// Search-engine crawlers we explicitly tighten further. Googlebot and
+// AdsBot can index the public catalogue + research/about/contact pages,
+// but must be kept off the consumer-facing purchase paths even via
+// referer-based discovery, since AdsBot in particular fetches landing
+// URLs for ad-policy review.
+const SEARCH_CRAWLERS = [
+  "Googlebot",
+  "Googlebot-Image",
+  "Googlebot-News",
+  "Googlebot-Video",
+  "AdsBot-Google",
+  "AdsBot-Google-Mobile",
+  "Mediapartners-Google",
+  "Bingbot",
+  "AdIdxBot",
+  "msnbot",
+];
 
 // Training-only crawlers: scrape content to feed future model training. No
 // upside for us — they don't surface us to users in real time. Block fully.
@@ -48,10 +91,19 @@ const RETRIEVAL_CRAWLERS = [
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
-      // Default rule: search engines (Googlebot, Bingbot, etc.) and anything
-      // not explicitly named below.
+      // Default rule: search engines and anything not explicitly named
+      // below. Catalogue + product pages remain crawlable; consumer
+      // purchase-flow paths and the news/blog are walled off.
       {
         userAgent: "*",
+        allow: "/",
+        disallow: PRIVATE_PATHS,
+      },
+      // Hard-block Googlebot + AdsBot from purchase-flow + consumer
+      // surfaces to avoid drug-claim trigger words showing up in search
+      // snippets or ad-landing-page reviews.
+      {
+        userAgent: SEARCH_CRAWLERS,
         allow: "/",
         disallow: PRIVATE_PATHS,
       },

@@ -22,7 +22,7 @@ import { paymentMethodLabel } from "@/lib/payments/methods";
  * production URL so the email still has *something* in the logo slot.
  */
 let logoSrcCache: string | null = null;
-function logoSrc(): string {
+export function logoSrc(): string {
   // In dev, re-read the PNG every call so design iteration on the
   // logo asset doesn't require a server restart. In production the
   // cache makes every email send a single in-memory string lookup.

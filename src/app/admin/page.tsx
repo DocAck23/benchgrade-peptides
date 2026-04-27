@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin/auth";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/utils";
-import { LogoutButton } from "./LogoutButton";
 import { isPaymentMethod } from "@/lib/payments/methods";
 
 export const metadata: Metadata = {
@@ -131,13 +130,7 @@ export default async function AdminPage({
           <h1 className="font-display text-3xl text-ink">Orders</h1>
         </div>
         <div className="flex items-baseline gap-4">
-          <Link href="/admin/reconciliation" className="text-xs text-teal hover:underline">
-            Reconciliation →
-          </Link>
-          <Link href="/admin/briefs" className="text-xs text-teal hover:underline">
-            Briefs →
-          </Link>
-          <LogoutButton />
+          {/* Section nav + logout live in the admin layout. */}
         </div>
       </div>
 

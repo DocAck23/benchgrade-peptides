@@ -384,11 +384,9 @@ export default async function CustomerOrderDetailPage({
       <section className="border rule bg-paper-soft p-6">
         <div className="label-eyebrow text-ink-muted mb-2">Certificate of Analysis</div>
         <p className="text-sm text-ink-soft">
-          Per-lot COA available — coming when storage backend lands. Reach out via{" "}
-          <Link href="/contact" className="text-gold-dark hover:text-ink underline">
-            contact
-          </Link>{" "}
-          if you need a copy now.
+          Per-lot Certificate of Analysis is published on each product page and
+          a printed copy ships inside every order. The vial itself carries a QR
+          code that resolves to the exact lot record.
         </p>
       </section>
     </article>

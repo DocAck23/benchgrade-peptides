@@ -42,25 +42,58 @@ export function ProductCarousel() {
     const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (mql.matches) return;
 
+    // Force a clean starting position. If the browser restored a
+    // prior scroll offset from history (back-button restore can do
+    // this, even for non-`overflow:auto` boxes that get later
+    // upgraded), the carousel could appear "stuck" at an arbitrary
+    // mid-position when in fact it was already mid-loop.
+    viewport.scrollLeft = 0;
+
     let hovered = false;
     let lastInteraction = 0;
+    let visible = true;
     const RESUME_DELAY_MS = 2500;
+
+    // Pause when the section scrolls off-screen (tab off, footer
+    // viewport, etc) so we're not burning rAF on invisible paint.
+    let observer: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver !== "undefined") {
+      observer = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) visible = e.isIntersecting;
+        },
+        { threshold: 0 },
+      );
+      observer.observe(viewport);
+    }
 
     let raf = 0;
     let last = performance.now();
+    // Subpixel accumulator. `viewport.scrollLeft` is rounded by the
+    // browser, so a per-frame increment under 1px (e.g. 28 px/sec ×
+    // 0.016 s = 0.45) gets rounded back to 0 every frame and the
+    // carousel never moves. Track the fractional remainder here and
+    // only apply integer deltas to scrollLeft.
+    let pendingScroll = 0;
     const tick = (now: number) => {
       const dt = (now - last) / 1000;
       last = now;
-      if (!hovered && now - lastInteraction > RESUME_DELAY_MS) {
-        // Slightly slower on mobile (cards are smaller; same px/sec
-        // would feel rushed); a touch faster on desktop where the
-        // viewport is wide.
-        const speed = window.innerWidth < 768 ? 28 : 50;
+      if (!hovered && visible && now - lastInteraction > RESUME_DELAY_MS) {
+        // Speed tuned so motion is perceptible at first glance —
+        // 28/50 read as "static" because a single card sweep takes
+        // ~10s. 60/90 sweeps a card every ~3-4s, which the eye picks
+        // up immediately without feeling rushed.
+        const speed = window.innerWidth < 768 ? 60 : 90;
         const half = track.scrollWidth / 2;
         if (half > viewport.clientWidth) {
-          viewport.scrollLeft += speed * dt;
-          if (viewport.scrollLeft >= half) {
-            viewport.scrollLeft -= half;
+          pendingScroll += speed * dt;
+          const whole = Math.floor(pendingScroll);
+          if (whole > 0) {
+            viewport.scrollLeft += whole;
+            pendingScroll -= whole;
+            if (viewport.scrollLeft >= half) {
+              viewport.scrollLeft -= half;
+            }
           }
         }
       }
@@ -84,6 +117,7 @@ export function ProductCarousel() {
 
     return () => {
       cancelAnimationFrame(raf);
+      observer?.disconnect();
       viewport.removeEventListener("mouseenter", onEnter);
       viewport.removeEventListener("mouseleave", onLeave);
       viewport.removeEventListener("focusin", onEnter);

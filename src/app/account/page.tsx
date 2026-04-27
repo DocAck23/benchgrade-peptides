@@ -299,7 +299,7 @@ function MessagesCard({ unreadCount }: { unreadCount: number }) {
       <p className="mt-3 text-sm text-ink-soft flex-1">
         {hasUnread
           ? "Read what the lab sent over and keep the thread moving."
-          : "Order questions, COA requests, lab notes — we typically reply within one business day."}
+          : "Order questions or lab notes — we typically reply within one business day."}
       </p>
       <Link
         href="/account/messages"

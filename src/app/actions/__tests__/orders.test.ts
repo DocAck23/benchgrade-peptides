@@ -15,6 +15,12 @@ vi.mock("next/headers", () => ({
       "x-forwarded-for": "127.0.0.1",
       "user-agent": "vitest",
     }),
+  // submitOrder reads bgp_sess from cookies for session_id
+  // attribution; the test path doesn't exercise it, so we stub a
+  // get() that returns undefined.
+  cookies: async () => ({
+    get: () => undefined,
+  }),
 }));
 
 // In-memory capture for orders.insert(row).

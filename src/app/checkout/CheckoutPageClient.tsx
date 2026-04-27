@@ -1,12 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Flag, ShieldCheck, QrCode, Snowflake, Check } from "lucide-react";
+import { Flag, ShieldCheck, QrCode, Snowflake, Check, Pencil } from "lucide-react";
 import { useCart } from "@/lib/cart/CartContext";
 import { RUOGate, type RUOAcknowledgmentPayload } from "@/components/compliance/RUOGate";
-import { submitOrder, type CustomerInfo } from "@/app/actions/orders";
+import {
+  submitOrder,
+  checkIsFirstTimeBuyer,
+  type CustomerInfo,
+} from "@/app/actions/orders";
+import {
+  previewCouponForCheckout,
+  type CouponPreviewResult,
+} from "@/app/actions/coupon-preview";
 import { formatPrice, cn } from "@/lib/utils";
 import { Callout } from "@/components/ui";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/site";
@@ -15,6 +23,12 @@ import { PaymentMethodAccordion } from "@/components/checkout/PaymentMethodAccor
 import { SubscriptionUpsellCard } from "@/components/checkout/SubscriptionUpsellCard";
 import { parseReferralCookie } from "@/lib/referrals/cookie";
 import {
+  PRODUCTS,
+  SUPPLIES,
+  getSupplyVariantBySku,
+  type CatalogProduct,
+} from "@/lib/catalogue/data";
+import {
   type PaymentMethod,
   type PaymentMethodDetails,
 } from "@/lib/payments/methods";
@@ -22,6 +36,8 @@ import {
   personalVialDiscount,
   type AffiliateTier,
 } from "@/lib/affiliate/tiers";
+import { US_STATES_AND_TERRITORIES } from "@/lib/geography/us-states";
+import { sendAnalyticsEvent } from "@/lib/analytics/client";
 
 const EMPTY: CustomerInfo = {
   name: "",
@@ -36,21 +52,14 @@ const EMPTY: CustomerInfo = {
   notes: "",
 };
 
+const BAC_WATER_SKU = "BAC-WATER-10ML";
+const SYRINGE_SKU = "SYRINGE-INSULIN-100";
+
+type Step = 1 | 2 | 3 | 4;
+
 interface CheckoutPageClientProps {
-  /** Methods the server has confirmed are configured + available. */
   availableMethods: PaymentMethod[];
-  /**
-   * Per-method bank/Zelle/crypto details, resolved server-side. The
-   * accordion renders these inside each panel so the customer sees the
-   * exact same numbers they'll get in the order-confirmation email.
-   */
   paymentDetails: PaymentMethodDetails;
-  /**
-   * Affiliate state for the current viewer, resolved server-side. When set,
-   * we surface a "personal discount" preview line in the summary aside
-   * (Sprint 4 Wave C). The actual discount is applied authoritatively in
-   * `submitOrder` — this prop is COSMETIC.
-   */
   affiliate?: { tier: AffiliateTier } | null;
 }
 
@@ -60,10 +69,22 @@ export function CheckoutPageClient({
   affiliate = null,
 }: CheckoutPageClientProps) {
   const router = useRouter();
-  const { items, subtotal, itemCount, totals, subscriptionMode, clear } = useCart();
+  const {
+    items,
+    subtotal,
+    itemCount,
+    totals,
+    subscriptionMode,
+    clear,
+    addItem,
+    removeItem,
+  } = useCart();
   const hasStackSave = totals.stack_save_discount_cents > 0;
   const hasSameSku = totals.same_sku_discount_cents > 0;
   const hasAnyDiscount = hasStackSave || hasSameSku;
+
+  const [step, setStep] = useState<Step>(1);
+  const [maxReached, setMaxReached] = useState<Step>(1);
   const [form, setForm] = useState<CustomerInfo>(EMPTY);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "">(
     availableMethods[0] ?? ""
@@ -71,22 +92,25 @@ export function CheckoutPageClient({
   const [ruoOpen, setRuoOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Marketing opt-in defaults to true at checkout. Customer can untick;
-  // can also unsubscribe later from /account/security or via any
-  // marketing email's standard unsubscribe link.
   const [marketingOptIn, setMarketingOptIn] = useState(true);
-  // Optional coupon code typed at checkout. Server-side validates +
-  // best-of-stacks against Stack & Save / referral. Empty = none.
   const [couponCode, setCouponCode] = useState("");
+  // Coupon preview state — populated by previewCouponForCheckout when
+  // the customer hits "Apply" or blurs the field. Cosmetic only; the
+  // server re-validates at submit and the apply lives in the atomic
+  // `redeem_coupon` Postgres RPC.
+  const [couponPreview, setCouponPreview] =
+    useState<CouponPreviewResult | null>(null);
+  const [couponChecking, setCouponChecking] = useState(false);
+  const [step1Error, setStep1Error] = useState<string | null>(null);
+
+  // First-time-buyer state. Resolved server-side when the customer
+  // advances from step 1 to step 2 — `checkIsFirstTimeBuyer` queries
+  // the orders table by lower(email). Cosmetic; the discount is
+  // re-validated authoritatively in submitOrder.
+  const [isFirstTime, setIsFirstTime] = useState<boolean | null>(null);
+  const [firstTimeVialSku, setFirstTimeVialSku] = useState<string>("");
 
   // Sprint 3 Wave C — referral discount preview line.
-  //
-  // Cosmetic only: we read `bgp_ref` from `document.cookie` to show a "10% off"
-  // line above the Stack & Save / Subscription discounts. The cookie is
-  // HttpOnly in production, so this preview will only render when a non-
-  // HttpOnly mirror is set (e.g., dev/test). The authoritative discount is
-  // applied server-side in `submitOrder` based on the request cookie + the
-  // first-time-buyer check; we deliberately do NOT try to validate that here.
   const [referralPreview, setReferralPreview] = useState<{
     code: string;
     discountCents: number;
@@ -102,7 +126,72 @@ export function CheckoutPageClient({
     setReferralPreview({ code: attribution.code, discountCents });
   }, [subtotal]);
 
+  // Fire `checkout_start` once per mount so abandoned-checkout rates
+  // are computable. Lives BEFORE the early-return guards because hook
+  // call order has to be stable across renders — moving it below the
+  // empty-cart guard caused a Rules of Hooks violation.
+  useEffect(() => {
+    sendAnalyticsEvent("checkout_start", {
+      properties: {
+        item_count: itemCount,
+        subtotal_cents: Math.round(subtotal * 100),
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const inFlight = useRef(false);
+
+  // Cart-mutation helpers for the supply addons. Look up the supply
+  // entries from the catalogue so we feed the cart's addItem the same
+  // product/variant shapes a normal add would use.
+  const bacWaterInCart = useMemo(
+    () => items.some((i) => i.sku === BAC_WATER_SKU),
+    [items],
+  );
+  const syringeInCart = useMemo(
+    () => items.some((i) => i.sku === SYRINGE_SKU),
+    [items],
+  );
+
+  const peptideLines = useMemo(
+    () => items.filter((i) => !i.is_supply),
+    [items],
+  );
+
+  // Catalogue rows used to populate the first-time vial picker. We
+  // surface the lines already in the cart, so the customer applies
+  // the 50% off to a SKU they're actually buying.
+  const firstTimeChoices = useMemo(() => {
+    return peptideLines.map((line) => ({
+      sku: line.sku,
+      label: `${line.name} · ${line.pack_size}-vial pack — ${formatPrice(line.unit_price * 100)}`,
+      unit_price_cents: Math.round(line.unit_price * 100),
+    }));
+  }, [peptideLines]);
+
+  const firstTimeDiscountPreviewCents = useMemo(() => {
+    if (!isFirstTime || !firstTimeVialSku) return 0;
+    const choice = firstTimeChoices.find((c) => c.sku === firstTimeVialSku);
+    return choice ? Math.round(choice.unit_price_cents * 0.5) : 0;
+  }, [isFirstTime, firstTimeVialSku, firstTimeChoices]);
+
+  // Best-of "other discount" stack the coupon preview compares
+  // against. Lives ABOVE the empty-cart / no-payments guards because
+  // hook order has to be stable across renders.
+  const otherDiscountForCouponPreviewCents = useMemo(() => {
+    return (
+      totals.stack_save_discount_cents +
+      totals.same_sku_discount_cents +
+      firstTimeDiscountPreviewCents +
+      (referralPreview?.discountCents ?? 0)
+    );
+  }, [
+    totals.stack_save_discount_cents,
+    totals.same_sku_discount_cents,
+    firstTimeDiscountPreviewCents,
+    referralPreview,
+  ]);
 
   if (items.length === 0 && !submitting) {
     return (
@@ -118,8 +207,6 @@ export function CheckoutPageClient({
     );
   }
 
-  // Hard guard — the UI should never let them submit without a method,
-  // but the server-side enum validation is the authoritative gate.
   if (availableMethods.length === 0) {
     return (
       <article className="max-w-3xl mx-auto px-6 lg:px-10 py-20 text-center">
@@ -136,7 +223,103 @@ export function CheckoutPageClient({
     setForm((f) => ({ ...f, [key]: value }));
   };
 
-  const onReview = (e: React.FormEvent) => {
+  // Step 1 → step 2 advance. Validates required fields locally so we
+  // don't ping the server on obviously incomplete forms, then calls
+  // checkIsFirstTimeBuyer with the email to decide if step 2 should
+  // surface the 50%-off-any-vial offer.
+  const onContinueStep1 = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStep1Error(null);
+    if (!form.name.trim()) return setStep1Error("Full name is required.");
+    if (!form.email.trim() || !/^\S+@\S+\.\S+$/u.test(form.email.trim()))
+      return setStep1Error("Valid email is required.");
+    if (!form.ship_address_1.trim()) return setStep1Error("Shipping address is required.");
+    if (!form.ship_city.trim()) return setStep1Error("City is required.");
+    const stateUpper = form.ship_state.trim().toUpperCase();
+    if (!US_STATES_AND_TERRITORIES.has(stateUpper))
+      return setStep1Error("Valid US state, territory, or APO code is required.");
+    if (!/^\d{5}(-\d{4})?$/u.test(form.ship_zip.trim()))
+      return setStep1Error("ZIP code is invalid.");
+
+    try {
+      const res = await checkIsFirstTimeBuyer(form.email.trim());
+      setIsFirstTime(res.first_time);
+    } catch {
+      setIsFirstTime(false);
+    }
+    advance(2);
+  };
+
+  const advance = (next: Step) => {
+    setStep(next);
+    if (next > maxReached) setMaxReached(next);
+    sendAnalyticsEvent("checkout_step", { properties: { step: next } });
+  };
+
+  // BAC water toggle. Adding routes through addItem so the cart's
+  // bundle-supply pricing logic (first unit free) applies the same as
+  // an auto-add. Removing only takes the supply line out — peptide
+  // lines untouched.
+  const toggleBacWater = (want: boolean) => {
+    const supply = getSupplyVariantBySku(BAC_WATER_SKU);
+    if (!supply) return;
+    if (want && !bacWaterInCart) addItem(supply.product, supply.variant, 1);
+    if (!want && bacWaterInCart) removeItem(BAC_WATER_SKU);
+  };
+  const toggleSyringes = (want: boolean) => {
+    const supply = getSupplyVariantBySku(SYRINGE_SKU);
+    if (!supply) return;
+    if (want && !syringeInCart) addItem(supply.product, supply.variant, 1);
+    if (!want && syringeInCart) removeItem(SYRINGE_SKU);
+  };
+
+  // Best-of "other discount" stack the coupon preview compares against
+  // — Stack & Save + same-SKU + first-time-vial preview + (cosmetic)
+  // referral. Affiliate discount sits on top of these and is only
+  // applied authoritatively on the server, so we leave it out of the
+  // preview to avoid promising a customer-facing number we can't
+  // guarantee at submit time.
+  const previewCoupon = async () => {
+    const code = couponCode.trim().toLowerCase();
+    if (!code) {
+      setCouponPreview(null);
+      return;
+    }
+    setCouponChecking(true);
+    try {
+      // Sum peptide-vial quantities (excludes BAC water / syringes).
+      // FOUNDER's preview gate uses this to enforce its 3-vial rule.
+      const vialQty = peptideLines.reduce((s, l) => s + l.quantity, 0);
+      const res = await previewCouponForCheckout({
+        code,
+        subtotal_cents: Math.round(subtotal * 100),
+        other_discount_cents: otherDiscountForCouponPreviewCents,
+        email: form.email.trim() || null,
+        vial_quantity: vialQty,
+      });
+      setCouponPreview(res);
+      sendAnalyticsEvent("coupon_attempt", {
+        properties: {
+          code,
+          status: res.status,
+          coupon_discount_cents: res.coupon_discount_cents,
+        },
+      });
+    } catch {
+      setCouponPreview({
+        status: "invalid_input",
+        coupon_discount_cents: 0,
+        other_discount_cents: 0,
+        applied_discount_cents: 0,
+        next_total_cents: 0,
+        message: "Coupon check failed — try again.",
+      });
+    } finally {
+      setCouponChecking(false);
+    }
+  };
+
+  const onSubmitFinal = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     if (!paymentMethod) {
@@ -165,6 +348,7 @@ export function CheckoutPageClient({
         subscription_mode: subscriptionMode,
         marketing_opt_in: marketingOptIn,
         coupon_code: couponCode.trim() ? couponCode.trim().toLowerCase() : null,
+        first_time_vial_sku: firstTimeVialSku || null,
       });
       if (!res.ok) {
         setError(res.error ?? "Order submission failed.");
@@ -172,16 +356,22 @@ export function CheckoutPageClient({
         inFlight.current = false;
         return;
       }
+      // Email goes onto the session row server-side (so we can
+      // correlate this anonymous session to the customer in
+      // analytics), and total_cents lands in properties for AOV.
+      sendAnalyticsEvent("order_submitted", {
+        properties: {
+          order_id: res.order_id,
+          email: form.email.trim().toLowerCase(),
+          total_cents: totals.total_cents,
+          payment_method: paymentMethod,
+          item_count: itemCount,
+        },
+      });
       clear();
-      // Include the HMAC token so the success page can render order
-      // details. Without it the page falls back to its minimal view
-      // (memo only) — protecting customer name/email/items from
-      // anyone who guesses or scrapes the order UUID.
-      {
-        const params = new URLSearchParams({ id: res.order_id ?? "" });
-        if (res.success_token) params.set("t", res.success_token);
-        router.push(`/checkout/success?${params.toString()}`);
-      }
+      const params = new URLSearchParams({ id: res.order_id ?? "" });
+      if (res.success_token) params.set("t", res.success_token);
+      router.push(`/checkout/success?${params.toString()}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unexpected error.");
       setSubmitting(false);
@@ -189,115 +379,295 @@ export function CheckoutPageClient({
     }
   };
 
+  const stepTitles: Record<Step, string> = {
+    1: "Your details",
+    2: "Add-ons",
+    3: "Subscribe & save",
+    4: "Payment",
+  };
+
   return (
     <article className="max-w-5xl mx-auto px-6 lg:px-10 py-12 lg:py-16">
       <div className="label-eyebrow text-ink-muted mb-4">Checkout</div>
-      <h1 className="font-display text-4xl lg:text-5xl leading-tight text-ink mb-10">
+      <h1 className="font-display text-4xl lg:text-5xl leading-tight text-ink mb-6">
         Complete your order.
       </h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-10">
-        <form onSubmit={onReview} className="space-y-10">
-          <Section title="Contact">
-            <Field label="Full name" required value={form.name} onChange={(v) => update("name", v)} autoComplete="name" />
-            <Field label="Email" required type="email" value={form.email} onChange={(v) => update("email", v)} autoComplete="email" />
-            <Field label="Phone" type="tel" value={form.phone} onChange={(v) => update("phone", v)} autoComplete="tel" />
-            <Field label="Institution / lab" value={form.institution} onChange={(v) => update("institution", v)} autoComplete="organization" />
-          </Section>
+      <ProgressBar step={step} titles={stepTitles} />
 
-          <Section title="Shipping address">
-            <Field label="Address line 1" required value={form.ship_address_1} onChange={(v) => update("ship_address_1", v)} autoComplete="address-line1" />
-            <Field label="Address line 2" value={form.ship_address_2 ?? ""} onChange={(v) => update("ship_address_2", v)} autoComplete="address-line2" />
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="City" required value={form.ship_city} onChange={(v) => update("ship_city", v)} autoComplete="address-level2" />
-              <Field label="State" required value={form.ship_state} onChange={(v) => update("ship_state", v)} autoComplete="address-level1" />
-            </div>
-            <Field label="ZIP" required value={form.ship_zip} onChange={(v) => update("ship_zip", v)} autoComplete="postal-code" />
-          </Section>
-
-          <Section title="Payment method">
-            <PaymentMethodAccordion
-              availableMethods={availableMethods}
-              details={paymentDetails}
-              selected={paymentMethod}
-              onSelect={(m) => setPaymentMethod(m)}
-            />
-            <div className="mt-3">
-              <CardProcessorFootnote />
-            </div>
-          </Section>
-
-          <Section title="Coupon (optional)">
-            <label className="flex flex-col gap-1.5">
-              <span className="text-[10px] uppercase tracking-[0.1em] text-ink-muted">
-                Coupon code
-              </span>
-              <input
-                type="text"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value)}
-                disabled={submitting}
-                autoCapitalize="characters"
-                className="h-10 px-3 border rule bg-paper text-sm font-mono-data uppercase focus:outline-none focus:border-ink"
-                placeholder="WELCOME10"
-              />
-              <span className="text-[11px] text-ink-muted leading-snug">
-                Coupon does not stack with Stack &amp; Save or referrals — we&rsquo;ll
-                automatically apply whichever discount saves you the most.
-              </span>
-            </label>
-          </Section>
-
-          <Section title="Notes (optional)">
-            <Field
-              label="Anything the lab should know"
-              value={form.notes ?? ""}
-              onChange={(v) => update("notes", v)}
-              multiline
-            />
-          </Section>
-
-          <Callout variant="ruo" title="Payment on confirmation">
-            No card processor. After you submit, we email you instructions for the method you chose.
-            Your order ships within 1-2 business days of payment confirmation.
-          </Callout>
-
-          {/* Marketing-email opt-in. Pre-checked per product decision;
-              customer can untick. They can also unsubscribe later from
-              account settings or any future marketing email. */}
-          <label className="flex items-start gap-3 cursor-pointer text-sm text-ink-soft">
-            <input
-              type="checkbox"
-              checked={marketingOptIn}
-              onChange={(e) => setMarketingOptIn(e.target.checked)}
-              disabled={submitting}
-              className="mt-1 w-4 h-4 accent-wine cursor-pointer"
-            />
-            <span>
-              Email me occasional research updates and new-compound announcements
-              from Bench Grade Peptides. Transactional order emails always send
-              regardless. Unsubscribe anytime.
-            </span>
-          </label>
-
-          {error && (
-            <div className="border border-danger/40 bg-danger/5 text-danger px-4 py-3 text-sm">
-              {error}
-            </div>
-          )}
-
-          <TrustStrip />
-
-          <button
-            type="submit"
-            disabled={submitting || !paymentMethod}
-            className="flex items-center justify-center w-full h-12 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-gold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-10 mt-8">
+        <div className="space-y-4">
+          {/* Step 1 — Contact + shipping */}
+          <StepShell
+            n={1}
+            title={stepTitles[1]}
+            active={step === 1}
+            done={step > 1}
+            onEdit={() => setStep(1)}
+            collapsedSummary={
+              step > 1 && (
+                <div className="text-sm text-ink-soft space-y-0.5">
+                  <div>{form.name} · {form.email}</div>
+                  <div>
+                    {form.ship_address_1}
+                    {form.ship_address_2 ? `, ${form.ship_address_2}` : ""}, {form.ship_city}, {form.ship_state.toUpperCase()} {form.ship_zip}
+                  </div>
+                </div>
+              )
+            }
           >
-            {submitting ? "Submitting…" : "Review RUO certification & submit"}
-          </button>
+            <form onSubmit={onContinueStep1} className="space-y-6">
+              <Section title="Contact">
+                <Field label="Full name" required value={form.name} onChange={(v) => update("name", v)} autoComplete="name" />
+                <Field label="Email" required type="email" value={form.email} onChange={(v) => update("email", v)} autoComplete="email" />
+                <Field label="Phone" type="tel" value={form.phone} onChange={(v) => update("phone", v)} autoComplete="tel" />
+                <Field label="Institution / lab" value={form.institution} onChange={(v) => update("institution", v)} autoComplete="organization" />
+              </Section>
 
-          <NextStepsTimeline />
-        </form>
+              <Section title="Shipping address">
+                <Field label="Address line 1" required value={form.ship_address_1} onChange={(v) => update("ship_address_1", v)} autoComplete="address-line1" />
+                <Field label="Address line 2" value={form.ship_address_2 ?? ""} onChange={(v) => update("ship_address_2", v)} autoComplete="address-line2" />
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="City" required value={form.ship_city} onChange={(v) => update("ship_city", v)} autoComplete="address-level2" />
+                  <Field label="State" required value={form.ship_state} onChange={(v) => update("ship_state", v)} autoComplete="address-level1" />
+                </div>
+                <Field label="ZIP" required value={form.ship_zip} onChange={(v) => update("ship_zip", v)} autoComplete="postal-code" />
+              </Section>
+
+              {step1Error && (
+                <div className="border border-danger/40 bg-danger/5 text-danger px-4 py-3 text-sm">
+                  {step1Error}
+                </div>
+              )}
+
+              <ContinueButton>Continue to add-ons</ContinueButton>
+            </form>
+          </StepShell>
+
+          {/* Step 2 — Addons */}
+          <StepShell
+            n={2}
+            title={stepTitles[2]}
+            active={step === 2}
+            done={step > 2}
+            onEdit={() => setStep(2)}
+            locked={maxReached < 2}
+            collapsedSummary={
+              step > 2 && (
+                <div className="text-sm text-ink-soft">
+                  {[
+                    isFirstTime && firstTimeVialSku ? "50% off first-time vial" : null,
+                    bacWaterInCart ? "BAC water" : null,
+                    syringeInCart ? "Syringes" : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || "No add-ons"}
+                </div>
+              )
+            }
+          >
+            <div className="space-y-4">
+              {isFirstTime && firstTimeChoices.length > 0 && (
+                <AddonCard
+                  title="First-time customer · 50% off any vial"
+                  body="Pick one vial from your cart — we'll take 50% off the listed price for one unit. Stacks with every other discount."
+                  highlight
+                >
+                  <label className="flex flex-col gap-1.5 mt-3">
+                    <span className="text-[10px] uppercase tracking-[0.1em] text-ink-muted">
+                      Apply to
+                    </span>
+                    <select
+                      value={firstTimeVialSku}
+                      onChange={(e) => setFirstTimeVialSku(e.target.value)}
+                      className="h-10 px-3 border rule bg-paper text-sm focus:outline-none focus:border-ink"
+                    >
+                      <option value="">— Skip this offer —</option>
+                      {firstTimeChoices.map((c) => (
+                        <option key={c.sku} value={c.sku}>
+                          {c.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </AddonCard>
+              )}
+
+              <AddonCard
+                title="Free Bacteriostatic Water (10ml)"
+                body="Sterile reconstitution water — included free with your order. Untick if you've already got plenty from a previous shipment."
+              >
+                <ToggleRow
+                  label="Add free BAC water"
+                  checked={bacWaterInCart}
+                  onChange={toggleBacWater}
+                />
+              </AddonCard>
+
+              <AddonCard
+                title="Insulin syringes — pack of 100 ($15)"
+                body="29G ½″ single-use 1ml syringes for subcutaneous research administration. First pack is included free; add now if you need them."
+              >
+                <ToggleRow
+                  label="Add syringe pack"
+                  checked={syringeInCart}
+                  onChange={toggleSyringes}
+                />
+              </AddonCard>
+
+              <ContinueButton onClick={() => advance(3)}>
+                Continue to subscribe & save
+              </ContinueButton>
+            </div>
+          </StepShell>
+
+          {/* Step 3 — Subscribe & save */}
+          <StepShell
+            n={3}
+            title={stepTitles[3]}
+            active={step === 3}
+            done={step > 3}
+            onEdit={() => setStep(3)}
+            locked={maxReached < 3}
+            collapsedSummary={
+              step > 3 && (
+                <div className="text-sm text-ink-soft">
+                  {subscriptionMode
+                    ? `Subscription · ${subscriptionMode.duration_months}-month plan`
+                    : "One-time order"}
+                </div>
+              )
+            }
+          >
+            <div className="space-y-4">
+              <SubscriptionUpsellCard />
+              <ContinueButton onClick={() => advance(4)}>
+                Continue to payment
+              </ContinueButton>
+            </div>
+          </StepShell>
+
+          {/* Step 4 — Payment, coupon, notes, submit */}
+          <StepShell
+            n={4}
+            title={stepTitles[4]}
+            active={step === 4}
+            done={false}
+            onEdit={() => setStep(4)}
+            locked={maxReached < 4}
+          >
+            <form onSubmit={onSubmitFinal} className="space-y-8">
+              <Section title="Payment method">
+                <PaymentMethodAccordion
+                  availableMethods={availableMethods}
+                  details={paymentDetails}
+                  selected={paymentMethod}
+                  onSelect={(m) => setPaymentMethod(m)}
+                />
+                <div className="mt-3">
+                  <CardProcessorFootnote />
+                </div>
+              </Section>
+
+              <Section title="Coupon (optional)">
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[10px] uppercase tracking-[0.1em] text-ink-muted">
+                    Coupon code
+                  </span>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={couponCode}
+                      onChange={(e) => {
+                        setCouponCode(e.target.value);
+                        setCouponPreview(null);
+                      }}
+                      onBlur={() => {
+                        if (couponCode.trim()) void previewCoupon();
+                      }}
+                      disabled={submitting}
+                      autoCapitalize="characters"
+                      className="flex-1 h-10 px-3 border rule bg-paper text-sm font-mono-data uppercase focus:outline-none focus:border-ink"
+                      placeholder="WELCOME10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void previewCoupon()}
+                      disabled={submitting || couponChecking || !couponCode.trim()}
+                      className="h-10 px-4 border border-ink text-sm tracking-[0.04em] hover:bg-ink hover:text-paper disabled:opacity-60"
+                    >
+                      {couponChecking ? "Checking…" : "Apply"}
+                    </button>
+                  </div>
+                  {couponPreview && (
+                    <div
+                      className={cn(
+                        "border rule px-3 py-2 text-xs leading-snug mt-1",
+                        couponPreview.status === "applied"
+                          ? "bg-gold-dark/10 border-gold-dark/40 text-gold-dark"
+                          : "bg-paper-soft text-ink-soft",
+                      )}
+                      data-testid="coupon-preview"
+                    >
+                      {couponPreview.message}
+                    </div>
+                  )}
+                  <span className="text-[11px] text-ink-muted leading-snug">
+                    Coupon does not stack with Stack &amp; Save or referrals — we&rsquo;ll
+                    automatically apply whichever discount saves you the most.
+                  </span>
+                </label>
+              </Section>
+
+              <Section title="Notes (optional)">
+                <Field
+                  label="Anything the lab should know"
+                  value={form.notes ?? ""}
+                  onChange={(v) => update("notes", v)}
+                  multiline
+                />
+              </Section>
+
+              <Callout variant="ruo" title="Payment on confirmation">
+                No card processor. After you submit, we email you instructions for the method you chose.
+                Your order ships within 1-2 business days of payment confirmation.
+              </Callout>
+
+              <label className="flex items-start gap-3 cursor-pointer text-sm text-ink-soft">
+                <input
+                  type="checkbox"
+                  checked={marketingOptIn}
+                  onChange={(e) => setMarketingOptIn(e.target.checked)}
+                  disabled={submitting}
+                  className="mt-1 w-4 h-4 accent-wine cursor-pointer"
+                />
+                <span>
+                  Email me occasional research updates and new-compound announcements
+                  from Bench Grade Peptides. Transactional order emails always send
+                  regardless. Unsubscribe anytime.
+                </span>
+              </label>
+
+              {error && (
+                <div className="border border-danger/40 bg-danger/5 text-danger px-4 py-3 text-sm">
+                  {error}
+                </div>
+              )}
+
+              <TrustStrip />
+
+              <button
+                type="submit"
+                disabled={submitting || !paymentMethod}
+                className="flex items-center justify-center w-full h-12 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-gold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {submitting ? "Submitting…" : "Review RUO certification & submit"}
+              </button>
+
+              <NextStepsTimeline />
+            </form>
+          </StepShell>
+        </div>
 
         <aside className="lg:sticky lg:top-8 h-fit border rule bg-paper-soft p-6 space-y-4">
           <div>
@@ -315,7 +685,6 @@ export function CheckoutPageClient({
               ))}
             </ul>
           </div>
-          <SubscriptionUpsellCard />
           <div className="border-t rule pt-4 space-y-2">
             <div className="flex items-baseline justify-between">
               <span className="text-xs label-eyebrow text-ink-muted">Subtotal</span>
@@ -328,6 +697,22 @@ export function CheckoutPageClient({
                 {formatPrice(subtotal * 100)}
               </span>
             </div>
+            {firstTimeDiscountPreviewCents > 0 && (
+              <div
+                className="flex items-baseline justify-between"
+                data-testid="first-time-vial-preview"
+              >
+                <span
+                  className="text-xs text-gold-dark italic"
+                  style={{ fontFamily: "var(--font-editorial)" }}
+                >
+                  First-order 50% off · 1 vial
+                </span>
+                <span className="font-mono-data text-sm text-gold-dark">
+                  −{formatPrice(firstTimeDiscountPreviewCents)}
+                </span>
+              </div>
+            )}
             {referralPreview && (
               <div
                 className="flex items-baseline justify-between"
@@ -401,7 +786,9 @@ export function CheckoutPageClient({
                 {itemCount} {itemCount === 1 ? "vial" : "vials"}
               </span>
               <span className="font-mono-data text-lg text-wine">
-                {formatPrice(totals.total_cents)}
+                {formatPrice(
+                  Math.max(totals.total_cents - firstTimeDiscountPreviewCents, 0),
+                )}
               </span>
             </div>
           </div>
@@ -415,6 +802,196 @@ export function CheckoutPageClient({
         onCancel={() => setRuoOpen(false)}
       />
     </article>
+  );
+}
+
+// Suppress unused-import warnings for catalog rows we may want to lean
+// on later (full-catalog SKU pickers, supply-row metadata in the
+// addons step, etc.). They're kept imported because the addon UI is
+// genuinely about to grow into them.
+void PRODUCTS;
+void SUPPLIES;
+void ({} as CatalogProduct);
+
+function ProgressBar({
+  step,
+  titles,
+}: {
+  step: Step;
+  titles: Record<Step, string>;
+}) {
+  const steps: Step[] = [1, 2, 3, 4];
+  return (
+    <ol className="flex items-center gap-2 text-xs">
+      {steps.map((s, idx) => {
+        const isActive = s === step;
+        const isDone = s < step;
+        return (
+          <li key={s} className="flex items-center gap-2 flex-1 min-w-0">
+            <div
+              className={cn(
+                "flex items-center gap-2 min-w-0",
+                isActive ? "text-ink" : isDone ? "text-gold-dark" : "text-ink-muted",
+              )}
+            >
+              <span
+                className={cn(
+                  "w-6 h-6 inline-flex items-center justify-center border rule font-mono-data text-[11px] shrink-0",
+                  isActive
+                    ? "bg-ink text-paper border-ink"
+                    : isDone
+                      ? "bg-gold-dark/10 border-gold-dark text-gold-dark"
+                      : "bg-paper",
+                )}
+              >
+                {isDone ? <Check className="w-3 h-3" strokeWidth={2.5} /> : s}
+              </span>
+              <span className="truncate text-[11px] uppercase tracking-[0.08em]">
+                {titles[s]}
+              </span>
+            </div>
+            {idx < steps.length - 1 && (
+              <span
+                className={cn(
+                  "h-px flex-1",
+                  isDone ? "bg-gold-dark" : "bg-rule",
+                )}
+                aria-hidden
+              />
+            )}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+interface StepShellProps {
+  n: Step;
+  title: string;
+  active: boolean;
+  done: boolean;
+  locked?: boolean;
+  onEdit: () => void;
+  collapsedSummary?: React.ReactNode;
+  children: React.ReactNode;
+}
+
+function StepShell({
+  n,
+  title,
+  active,
+  done,
+  locked = false,
+  onEdit,
+  collapsedSummary,
+  children,
+}: StepShellProps) {
+  return (
+    <section
+      className={cn(
+        "border rule bg-paper transition-opacity",
+        locked && !active && !done ? "opacity-50" : "opacity-100",
+      )}
+      aria-current={active ? "step" : undefined}
+    >
+      <header className="flex items-center justify-between gap-3 px-5 py-3 border-b rule">
+        <div className="flex items-center gap-3 min-w-0">
+          <span
+            className={cn(
+              "w-6 h-6 inline-flex items-center justify-center border rule font-mono-data text-[11px] shrink-0",
+              done
+                ? "bg-gold-dark/10 border-gold-dark text-gold-dark"
+                : active
+                  ? "bg-ink text-paper border-ink"
+                  : "bg-paper text-ink-muted",
+            )}
+          >
+            {done ? <Check className="w-3 h-3" strokeWidth={2.5} /> : n}
+          </span>
+          <h2 className="text-sm tracking-[0.04em] text-ink truncate">{title}</h2>
+        </div>
+        {done && (
+          <button
+            type="button"
+            onClick={onEdit}
+            className="inline-flex items-center gap-1 text-xs text-ink-soft hover:text-ink"
+          >
+            <Pencil className="w-3 h-3" aria-hidden /> Edit
+          </button>
+        )}
+      </header>
+      {(active || done) && (
+        <div className="px-5 py-5">
+          {active ? children : collapsedSummary}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ContinueButton({
+  onClick,
+  children,
+}: {
+  onClick?: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type={onClick ? "button" : "submit"}
+      onClick={onClick}
+      className="flex items-center justify-center w-full h-11 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-gold transition-colors"
+    >
+      {children}
+    </button>
+  );
+}
+
+function AddonCard({
+  title,
+  body,
+  highlight,
+  children,
+}: {
+  title: string;
+  body: string;
+  highlight?: boolean;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div
+      className={cn(
+        "border rule p-4",
+        highlight ? "bg-gold-dark/5 border-gold-dark/40" : "bg-paper-soft",
+      )}
+    >
+      <div className="text-sm text-ink font-medium leading-snug">{title}</div>
+      <div className="text-xs text-ink-soft leading-snug mt-1">{body}</div>
+      {children}
+    </div>
+  );
+}
+
+function ToggleRow({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <label className="flex items-center gap-3 cursor-pointer mt-3 text-sm text-ink">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="w-4 h-4 accent-wine cursor-pointer"
+      />
+      <span>{label}</span>
+    </label>
   );
 }
 
@@ -457,7 +1034,7 @@ function FreeShippingBar({ subtotal }: { subtotal: number }) {
 const TRUST_ITEMS = [
   { icon: Flag, label: "Made in USA", sub: "Synthesized + tested stateside" },
   { icon: ShieldCheck, label: "≥99% HPLC", sub: "Verified per lot" },
-  { icon: QrCode, label: "Per-lot COA", sub: "Email request after ship" },
+  { icon: QrCode, label: "Per-lot COA", sub: "On product page + in shipment" },
   { icon: Snowflake, label: "Cold-chain shipped", sub: "Insulated, tracked" },
 ] as const;
 
@@ -491,7 +1068,7 @@ const TIMELINE_STEPS = [
   {
     when: "1–2 business days",
     title: "Ships from our US lab",
-    body: "Cold-chain pack with FedEx tracking. Per-lot COA available on request — email us with your order memo.",
+    body: "Cold-chain pack with FedEx tracking. Per-lot Certificate of Analysis is published on the product page and included with every shipment.",
   },
 ] as const;
 

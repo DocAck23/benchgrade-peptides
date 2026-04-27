@@ -6,6 +6,8 @@ import {
   orderShippedEmail,
   agerecodeFulfillmentEmail,
 } from "@/lib/email/templates";
+import { prelaunchWelcomeEmail } from "@/lib/email/templates/prelaunch";
+import { subscriptionLifecycleEmail } from "@/lib/email/templates/subscription-lifecycle";
 import type { CartItem } from "@/lib/cart/types";
 import type { CustomerInfo } from "@/app/actions/orders";
 
@@ -94,6 +96,35 @@ export async function GET(req: Request) {
       break;
     case "agerecode-fulfillment":
       html = agerecodeFulfillmentEmail(ctxFor("wire")).html;
+      break;
+    case "prelaunch-welcome":
+      html = prelaunchWelcomeEmail().html;
+      break;
+    case "subscription-paused":
+      html = subscriptionLifecycleEmail({
+        kind: "paused",
+        display_id: "BGP-SUB-1a2b3c4d",
+      }).html;
+      break;
+    case "subscription-resumed":
+      html = subscriptionLifecycleEmail({
+        kind: "resumed",
+        display_id: "BGP-SUB-1a2b3c4d",
+        next_ship_date: new Date(Date.now() + 30 * 86400_000).toISOString(),
+      }).html;
+      break;
+    case "subscription-cancelled":
+      html = subscriptionLifecycleEmail({
+        kind: "cancelled",
+        display_id: "BGP-SUB-1a2b3c4d",
+      }).html;
+      break;
+    case "subscription-skipped":
+      html = subscriptionLifecycleEmail({
+        kind: "skipped",
+        display_id: "BGP-SUB-1a2b3c4d",
+        next_ship_date: new Date(Date.now() + 60 * 86400_000).toISOString(),
+      }).html;
       break;
     case "payment-confirmed":
     default:

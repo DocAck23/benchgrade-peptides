@@ -13,6 +13,10 @@ import { HeaderAccountSlot } from "@/components/layout/HeaderAccountSlot";
 import { Footer } from "@/components/layout/Footer";
 import { CartProvider } from "@/lib/cart/CartContext";
 import { CartDrawer } from "@/components/cart/CartDrawer";
+import { AnalyticsBeacon } from "@/components/analytics/AnalyticsBeacon";
+import { PrelaunchPopup } from "@/components/prelaunch/PrelaunchPopup";
+import { Suspense } from "react";
+import { headers } from "next/headers";
 import { SITE_URL } from "@/lib/site";
 
 /** Cinzel — Roman-cap display face. Used for the wordmark, hero headlines,
@@ -77,11 +81,27 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+// Bot/crawler UA classifier used to suppress the pre-launch popup
+// before the page renders. Pattern set lifted from
+// classifyDevice() in src/app/api/analytics/route.ts (we keep them
+// in sync — anything that gets dropped from analytics shouldn't see
+// the marketing popup either).
+const BOT_RE =
+  /bot|crawl|spider|slurp|preview|fetch|duckduck|facebookexternalhit|whatsapp|linkedin|twitter|skype|slack|telegrambot|discordbot|embedly|google-inspectiontool|adsbot/i;
+
+function looksLikeBot(ua: string | null | undefined): boolean {
+  if (!ua) return true;
+  return BOT_RE.test(ua);
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headerBag = await headers();
+  const ua = headerBag.get("user-agent");
+  const isBot = looksLikeBot(ua);
   return (
     <html
       lang="en"
@@ -130,6 +150,16 @@ export default function RootLayout({
           <Footer />
           <CartDrawer />
         </CartProvider>
+        {/* First-party analytics beacon. Wrapped in Suspense because
+            useSearchParams suspends during prerender; the actual work
+            is client-only and never blocks render. */}
+        <Suspense fallback={null}>
+          <AnalyticsBeacon />
+        </Suspense>
+        {/* Pre-launch waitlist popup — suppressed for bots/crawlers
+            via server-side UA scan (so Google doesn't see "first
+            100 orders" promotional copy in indexed page text). */}
+        <PrelaunchPopup suppressed={isBot} />
       </body>
     </html>
   );

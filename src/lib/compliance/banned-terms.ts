@@ -116,6 +116,24 @@ export const BANNED_TERMS: BannedTerm[] = [
     category: "outcome_claim",
     rationale: "Outcome imagery language.",
   },
+  // "healing pair", "recovery stack", "anti-aging blend" — standalone
+  // outcome noun in product / category labels. Linter previously
+  // required a verb context, which let outcome nouns slip through in
+  // titles + taglines that read like marketing claims when pulled
+  // into a SERP card.
+  {
+    pattern: /\b(healing|recovery|anti[\s-]?aging|fat[\s-]?burn(?:ing|er)?|slim(?:ming)?|wrinkle)\s+(pair|stack|blend|combination|combo|product|protocol|formula|kit|bundle)\b/i,
+    category: "outcome_claim",
+    rationale: "Standalone outcome noun in product name/tagline/category — marketing-framing claim context even without a verb.",
+  },
+  // Outcome noun directly modifying "compound" / "peptide" / "vial" —
+  // drug-claim-adjacent product positioning ("healing compound",
+  // "recovery peptide").
+  {
+    pattern: /\b(healing|recovery|anti[\s-]?aging|fat[\s-]?burn(?:ing)?|slimming|wrinkle)\s+(compound|peptide|vial|item|line|series|category|class)\b/i,
+    category: "outcome_claim",
+    rationale: "Outcome noun positioning the SKU itself — drug-claim-adjacent product framing.",
+  },
 
   // --- Dosing language (subject administration instruction) ---
   // "2 mg/kg body weight"

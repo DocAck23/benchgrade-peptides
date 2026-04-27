@@ -21,6 +21,7 @@
 import { z } from "zod";
 import { createServerSupabase } from "@/lib/supabase/client";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { escapeLikePattern } from "@/lib/text/like-escape";
 import { generateReferralCode, validateReferralCode } from "@/lib/referrals/codes";
 import { PRODUCTS } from "@/lib/catalogue/data";
 import { sendReferralEarned } from "@/lib/email/notifications/send-referral-emails";
@@ -145,10 +146,12 @@ export async function claimReferralOnOrder(
   // email and every checkout failed the first-time-buyer gate. We exclude
   // the current order_id from the count.
   const refereeEmailLower = input.customer_email.trim().toLowerCase();
+  // Escape ILIKE metacharacters so an email like a_b@example.com
+  // doesn't wildcard-match unrelated customers — codex review #1.
   const { data: priorOrders } = await service
     .from("orders")
     .select("order_id")
-    .ilike("customer->>email", refereeEmailLower)
+    .ilike("customer->>email", escapeLikePattern(refereeEmailLower))
     .neq("order_id", input.order_id);
   if (Array.isArray(priorOrders) && priorOrders.length > 0) {
     return { ok: true, ten_percent_off_applied: false };

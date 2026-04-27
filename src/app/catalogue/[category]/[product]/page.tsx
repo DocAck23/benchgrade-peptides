@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Breadcrumb, Callout } from "@/components/ui";
 import { MolecularDataPanel } from "@/components/catalogue/MolecularDataPanel";
 import { VariantPicker } from "@/components/catalogue/VariantPicker";
+import { ProductViewBeacon } from "@/components/analytics/ProductViewBeacon";
 import {
   CATEGORIES,
   PRODUCTS,
@@ -50,6 +51,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: `${product.name} · Bench Grade Peptides`,
       description,
     },
+    // Compliance hardening: keep PDPs indexable (researchers do find
+    // us through search), but suppress Google's auto-extracted
+    // snippets and image previews. Both can pull therapeutic-claim-
+    // adjacent language out of the page body (mechanism notes,
+    // research context) and surface it on the SERP next to a vial
+    // photo — exactly the optic the FDA uses to argue "intended use."
+    // The description meta we set above drives the result-card text;
+    // everything else is suppressed.
+    robots: {
+      index: true,
+      follow: true,
+      nosnippet: true,
+      noimageindex: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        nosnippet: true,
+        noimageindex: true,
+      },
+    },
   };
 }
 
@@ -90,6 +111,11 @@ export default async function ProductPage({ params }: PageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <ProductViewBeacon
+        sku={product.variants[0]?.sku ?? product.slug}
+        productSlug={product.slug}
+        categorySlug={product.category_slug}
       />
       <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-12 lg:py-16">
         <Breadcrumb
@@ -158,8 +184,8 @@ export default async function ProductPage({ params }: PageProps) {
 
             <div className="border-t rule pt-6 space-y-2">
               <p className="text-xs text-ink-muted leading-relaxed">
-                Each lot ships with a Certificate of Analysis (HPLC + MS). COA link provided by
-                email after dispatch and available in your order record.
+                Per-lot Certificate of Analysis (HPLC + MS) is published on this page
+                and a printed copy ships inside every shipment.
               </p>
               <p className="text-xs text-ink-muted leading-relaxed">
                 Cold-chain packed, US-domestic shipping only. Free ground shipping on orders over $200.

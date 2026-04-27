@@ -7,6 +7,7 @@ import {
   pauseSubscription,
   resumeSubscription,
   cancelSubscription,
+  skipNextCycle,
 } from "@/app/actions/subscriptions";
 import type { SubscriptionRow } from "@/lib/supabase/types";
 import { cn } from "@/lib/utils";
@@ -24,7 +25,7 @@ interface SubscriptionActionsProps {
   sub: SubscriptionRow;
 }
 
-type Pending = "pause" | "resume" | "cancel" | null;
+type Pending = "pause" | "resume" | "cancel" | "skip" | null;
 
 const primaryBtn =
   "inline-flex items-center justify-center h-11 px-6 bg-wine text-paper font-display uppercase text-[12px] tracking-[0.14em] hover:bg-wine-deep transition-colors duration-200 ease-out disabled:opacity-60 disabled:cursor-not-allowed";
@@ -39,7 +40,9 @@ export function SubscriptionActions({ sub }: SubscriptionActionsProps) {
   const router = useRouter();
   const [pending, setPending] = useState<Pending>(null);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [skipNotice, setSkipNotice] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   const status = sub.status;
@@ -78,6 +81,34 @@ export function SubscriptionActions({ sub }: SubscriptionActionsProps) {
   return (
     <div className="mt-6 space-y-4">
       <div className="flex flex-wrap items-center gap-3">
+        {status === "active" && (
+          <button
+            type="button"
+            disabled={pending !== null}
+            onClick={async () => {
+              setError(null);
+              setSkipNotice(null);
+              setPending("skip");
+              const res = await skipNextCycle(sub.id);
+              setPending(null);
+              if (!res.ok) {
+                setError(res.error ?? "Could not skip the next cycle.");
+                return;
+              }
+              if (res.nextShipDate) {
+                const formatted = new Date(res.nextShipDate).toLocaleDateString(
+                  undefined,
+                  { month: "long", day: "numeric", year: "numeric" },
+                );
+                setSkipNotice(`Skipped — next shipment now ${formatted}.`);
+              }
+              startTransition(() => router.refresh());
+            }}
+            className={secondaryBtn}
+          >
+            {pending === "skip" ? "Skipping…" : "Skip next cycle"}
+          </button>
+        )}
         {status === "active" && (
           <button
             type="button"
@@ -134,12 +165,27 @@ export function SubscriptionActions({ sub }: SubscriptionActionsProps) {
             You&apos;ll lose your locked-in {sub.discount_percent}% discount.
             Future cycles won&apos;t ship and won&apos;t be charged.
           </p>
+          <label className="block mb-4">
+            <span className="block text-[11px] uppercase tracking-[0.1em] text-ink-muted mb-1">
+              What changed? (optional)
+            </span>
+            <textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              maxLength={1000}
+              rows={3}
+              placeholder="A note for our team — research wrapped, switching plans, found a better option, etc."
+              className="w-full px-3 py-2 border rule bg-paper text-sm text-ink placeholder:text-ink-muted focus-visible:outline-none focus-visible:border-ink"
+            />
+          </label>
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
               disabled={pending !== null}
               onClick={() =>
-                run("cancel", () => cancelSubscription(sub.id))
+                run("cancel", () =>
+                  cancelSubscription(sub.id, cancelReason.trim() || undefined),
+                )
               }
               className={primaryBtn}
             >
@@ -148,13 +194,25 @@ export function SubscriptionActions({ sub }: SubscriptionActionsProps) {
             <button
               type="button"
               disabled={pending !== null}
-              onClick={() => setConfirmingCancel(false)}
+              onClick={() => {
+                setConfirmingCancel(false);
+                setCancelReason("");
+              }}
               className={secondaryBtn}
             >
               Keep subscription
             </button>
           </div>
         </div>
+      )}
+
+      {skipNotice && !error && (
+        <p
+          role="status"
+          className="text-sm text-ink-soft border rule bg-paper-soft p-3"
+        >
+          {skipNotice}
+        </p>
       )}
 
       {error && (

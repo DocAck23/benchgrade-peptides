@@ -6,12 +6,15 @@ import {
   orderShippedEmail,
   agerecodeFulfillmentEmail,
 } from "@/lib/email/templates";
+import { prelaunchWelcomeEmail } from "@/lib/email/templates/prelaunch";
+import { subscriptionLifecycleEmail } from "@/lib/email/templates/subscription-lifecycle";
 import type { CartItem } from "@/lib/cart/types";
 import type { CustomerInfo } from "@/app/actions/orders";
 
 export const dynamic = "force-dynamic";
 
 const TEMPLATES = [
+  { id: "prelaunch-welcome", label: "Pre-launch waitlist welcome" },
   { id: "order-confirmation-wire", label: "Order confirmation · Wire" },
   { id: "order-confirmation-ach", label: "Order confirmation · ACH" },
   { id: "order-confirmation-zelle", label: "Order confirmation · Zelle" },
@@ -19,6 +22,10 @@ const TEMPLATES = [
   { id: "payment-confirmed", label: "Payment confirmed" },
   { id: "order-shipped", label: "Order shipped" },
   { id: "agerecode-fulfillment", label: "AgeRecode fulfillment handoff" },
+  { id: "subscription-paused", label: "Subscription paused" },
+  { id: "subscription-resumed", label: "Subscription resumed" },
+  { id: "subscription-cancelled", label: "Subscription cancelled" },
+  { id: "subscription-skipped", label: "Subscription cycle skipped" },
 ] as const;
 type TemplateId = (typeof TEMPLATES)[number]["id"];
 
@@ -96,6 +103,30 @@ function render(id: TemplateId): { subject: string; html: string } {
       });
     case "agerecode-fulfillment":
       return agerecodeFulfillmentEmail(ctxFor("wire"));
+    case "prelaunch-welcome":
+      return prelaunchWelcomeEmail();
+    case "subscription-paused":
+      return subscriptionLifecycleEmail({
+        kind: "paused",
+        display_id: "BGP-SUB-1a2b3c4d",
+      });
+    case "subscription-resumed":
+      return subscriptionLifecycleEmail({
+        kind: "resumed",
+        display_id: "BGP-SUB-1a2b3c4d",
+        next_ship_date: new Date(Date.now() + 30 * 86400_000).toISOString(),
+      });
+    case "subscription-cancelled":
+      return subscriptionLifecycleEmail({
+        kind: "cancelled",
+        display_id: "BGP-SUB-1a2b3c4d",
+      });
+    case "subscription-skipped":
+      return subscriptionLifecycleEmail({
+        kind: "skipped",
+        display_id: "BGP-SUB-1a2b3c4d",
+        next_ship_date: new Date(Date.now() + 60 * 86400_000).toISOString(),
+      });
   }
 }
 

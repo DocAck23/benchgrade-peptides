@@ -43,8 +43,8 @@ export default async function MessagesPage() {
           How can we help?
         </h1>
         <p className="text-sm text-ink-soft max-w-prose">
-          Order questions, lab notes, or COA requests — we typically reply
-          within one business day.
+          Order questions or lab notes — we typically reply within one
+          business day.
         </p>
       </header>
 

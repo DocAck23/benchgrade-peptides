@@ -29,6 +29,22 @@ export async function generateMetadata({ params }: RouteParams): Promise<Metadat
       url: `/catalogue/stacks/${stack.slug}`,
       type: "website",
     },
+    // Stacks pages combine multiple compounds in a single description —
+    // exactly the surface most likely to surface bundling/protocol
+    // language in a SERP snippet. Index the page so researchers can
+    // find it, but suppress auto-snippets + image previews.
+    robots: {
+      index: true,
+      follow: true,
+      nosnippet: true,
+      noimageindex: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        nosnippet: true,
+        noimageindex: true,
+      },
+    },
   };
 }
 

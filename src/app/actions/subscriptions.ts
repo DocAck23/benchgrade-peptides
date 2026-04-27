@@ -10,6 +10,7 @@ import { nextCycleDate } from "@/lib/subscriptions/cycles";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { createServerSupabase } from "@/lib/supabase/client";
 import { sendSubscriptionStarted } from "@/lib/email/notifications/send-subscription-emails";
+import { sendSubscriptionLifecycle } from "@/lib/email/notifications/send-subscription-lifecycle";
 import type { SubscriptionRow } from "@/lib/supabase/types";
 
 export interface CreateSubscriptionInput {
@@ -173,6 +174,14 @@ export async function pauseSubscription(
   if (!data || data.length === 0) {
     return { ok: false, error: "Subscription not in expected state." };
   }
+  // Best-effort confirmation email. Failure does NOT roll back the pause.
+  if (user.email) {
+    await sendSubscriptionLifecycle({
+      to: user.email,
+      kind: "paused",
+      display_id: `BGP-SUB-${subscriptionId.slice(0, 8)}`,
+    });
+  }
   return { ok: true };
 }
 
@@ -219,11 +228,20 @@ export async function resumeSubscription(
   if (!data || data.length === 0) {
     return { ok: false, error: "Subscription not in expected state." };
   }
+  if (user.email) {
+    await sendSubscriptionLifecycle({
+      to: user.email,
+      kind: "resumed",
+      display_id: `BGP-SUB-${subscriptionId.slice(0, 8)}`,
+      next_ship_date: next ? next.toISOString() : null,
+    });
+  }
   return { ok: true };
 }
 
 export async function cancelSubscription(
-  subscriptionId: string
+  subscriptionId: string,
+  reason?: string,
 ): Promise<{ ok: boolean; error?: string }> {
   const cookie = await createServerSupabase();
   const {
@@ -235,9 +253,16 @@ export async function cancelSubscription(
   if (!service) return { ok: false, error: "Database unavailable." };
 
   const cancelledAt = new Date().toISOString();
+  // Optional capture for retention analytics. Trimmed + length-capped
+  // so a hostile client can't bloat the row.
+  const trimmedReason = reason?.trim().slice(0, 1000) ?? null;
   const { data, error } = await service
     .from("subscriptions")
-    .update({ status: "cancelled", cancelled_at: cancelledAt })
+    .update({
+      status: "cancelled",
+      cancelled_at: cancelledAt,
+      ...(trimmedReason ? { cancellation_reason: trimmedReason } : {}),
+    })
     .eq("id", subscriptionId)
     .eq("customer_user_id", user.id)
     .in("status", ["active", "paused"])
@@ -246,5 +271,81 @@ export async function cancelSubscription(
   if (!data || data.length === 0) {
     return { ok: false, error: "Subscription not in expected state." };
   }
+  if (user.email) {
+    await sendSubscriptionLifecycle({
+      to: user.email,
+      kind: "cancelled",
+      display_id: `BGP-SUB-${subscriptionId.slice(0, 8)}`,
+    });
+  }
   return { ok: true };
+}
+
+/**
+ * Skip the next scheduled cycle WITHOUT pausing the subscription.
+ * Bumps `next_ship_date` forward by one cadence period and increments
+ * `skipped_cycle_count` for analytics. Only works on active
+ * subscriptions — paused ones can't skip (the cycle clock isn't
+ * running, so "skip" wouldn't have a defined meaning).
+ */
+export async function skipNextCycle(
+  subscriptionId: string,
+): Promise<{ ok: boolean; error?: string; nextShipDate?: string }> {
+  const cookie = await createServerSupabase();
+  const {
+    data: { user },
+  } = await cookie.auth.getUser();
+  if (!user) return { ok: false, error: "Please sign in." };
+
+  const service = getSupabaseServer();
+  if (!service) return { ok: false, error: "Database unavailable." };
+
+  const { data: row, error: readError } = await service
+    .from("subscriptions")
+    .select("id, ship_cadence, next_ship_date, skipped_cycle_count")
+    .eq("id", subscriptionId)
+    .eq("customer_user_id", user.id)
+    .single();
+  if (readError || !row) {
+    return { ok: false, error: "Subscription not in expected state." };
+  }
+  const cadence = row.ship_cadence as
+    | "monthly"
+    | "quarterly"
+    | "once"
+    | undefined;
+  if (!cadence || cadence === "once") {
+    return { ok: false, error: "This plan doesn't have recurring cycles to skip." };
+  }
+  const baseDate = row.next_ship_date ? new Date(row.next_ship_date) : new Date();
+  const nextDate = nextCycleDate(baseDate, cadence);
+  if (!nextDate) {
+    return { ok: false, error: "Could not compute the next cycle date." };
+  }
+
+  const skippedCount =
+    typeof row.skipped_cycle_count === "number" ? row.skipped_cycle_count : 0;
+  const { data, error } = await service
+    .from("subscriptions")
+    .update({
+      next_ship_date: nextDate.toISOString(),
+      skipped_cycle_count: skippedCount + 1,
+    })
+    .eq("id", subscriptionId)
+    .eq("customer_user_id", user.id)
+    .in("status", ["active"])
+    .select();
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) {
+    return { ok: false, error: "Subscription not in expected state." };
+  }
+  if (user.email) {
+    await sendSubscriptionLifecycle({
+      to: user.email,
+      kind: "skipped",
+      display_id: `BGP-SUB-${subscriptionId.slice(0, 8)}`,
+      next_ship_date: nextDate.toISOString(),
+    });
+  }
+  return { ok: true, nextShipDate: nextDate.toISOString() };
 }

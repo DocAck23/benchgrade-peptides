@@ -84,7 +84,7 @@ export function Footer() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <p className="text-sm sm:text-[15px] max-w-3xl leading-relaxed opacity-95 font-medium">
             {RUO_STATEMENTS.banner} Products are not drugs, supplements, or medical devices and are not
-            approved by the FDA for any use other than laboratory research. By purchasing, customer certifies
+            approved by the FDA for any use other than laboratory research. By purchasing, the researcher certifies
             research use per our{" "}
             <Link
               href="/terms"

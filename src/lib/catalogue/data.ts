@@ -96,10 +96,10 @@ export const CATEGORIES: readonly CatalogCategory[] = [
   },
   {
     slug: "tissue-repair",
-    name: "Tissue Repair & Healing",
+    name: "Tissue Repair & Remodeling",
     taxonomy_label: "ECM / tissue-repair research",
     description:
-      "Compounds investigated in tissue-remodeling, extracellular-matrix, and wound-healing research models.",
+      "Compounds investigated in tissue-remodeling, extracellular-matrix, angiogenesis, and wound-closure research models.",
     sort_order: 4,
   },
   {
@@ -600,7 +600,7 @@ export const PRODUCTS: readonly CatalogProduct[] = [
     molecular_weight: 2867.21,
     sequence: "C-terminal Ec exon splice variant of IGF-1",
     summary:
-      "Mechano-Growth Factor — splice variant of IGF-1 studied in muscle-repair research.",
+      "Mechano-Growth Factor — splice variant of IGF-1 studied in myocyte-growth and ECM-remodeling research.",
     research_context:
       "Goldspink, Curr Opin Clin Nutr Metab Care (2007).",
     vial_image: vialPath("mgf-2mg", "vial-3ml"),
