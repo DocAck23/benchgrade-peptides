@@ -44,7 +44,7 @@ export function Header({ accountSlot }: { accountSlot?: ReactNode }) {
     "relative after:absolute after:left-0 after:right-0 after:-bottom-1 after:h-px after:bg-gold after:scale-x-0 after:origin-left after:transition-transform after:duration-200 after:ease-out hover:text-paper hover:after:scale-x-100";
 
   return (
-    <header data-surface="wine" className="border-b border-rule-wine bg-wine text-paper relative">
+    <header data-surface="wine" className="sticky top-0 z-30 border-b border-rule-wine bg-wine text-paper shadow-[0_2px_4px_rgba(74,14,26,0.15)]">
       {/*
         3-column CSS grid:
           [auto]  logo hugs the true left edge
