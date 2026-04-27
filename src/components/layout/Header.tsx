@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { CartButton } from "@/components/cart/CartButton";
@@ -35,6 +35,31 @@ const PRIMARY_NAV = [
  */
 export function Header({ accountSlot }: { accountSlot?: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  // Scroll-direction hide. Tracks the previous scrollY so we can flip
+  // a transform when the user starts scrolling DOWN, and flip it back
+  // the moment they start scrolling UP. Hide is suppressed near the
+  // top so a tiny rubber-band scroll on mobile doesn't nuke the
+  // header before the page even loaded.
+  const [hidden, setHidden] = useState(false);
+  const lastY = useRef(0);
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      const delta = y - lastY.current;
+      // Threshold (8px) keeps tiny scroll jitter from toggling.
+      if (Math.abs(delta) < 8) return;
+      if (y < 80) {
+        setHidden(false);
+      } else if (delta > 0) {
+        setHidden(true);
+      } else {
+        setHidden(false);
+      }
+      lastY.current = y;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // Cinzel UI nav class — shared across desktop + mobile lists so the
   // typographic system is consistent. 13px, uppercase, tracked.
@@ -44,15 +69,27 @@ export function Header({ accountSlot }: { accountSlot?: ReactNode }) {
     "relative after:absolute after:left-0 after:right-0 after:-bottom-1 after:h-px after:bg-gold after:scale-x-0 after:origin-left after:transition-transform after:duration-200 after:ease-out hover:text-paper hover:after:scale-x-100";
 
   return (
-    <header data-surface="wine" className="sticky top-0 z-30 border-b border-rule-wine bg-wine text-paper shadow-[0_2px_4px_rgba(74,14,26,0.15)]">
+    <header
+      data-surface="wine"
+      className={cn(
+        "sticky top-0 z-30 border-b border-rule-wine bg-wine text-paper shadow-[0_2px_4px_rgba(74,14,26,0.15)] transition-transform duration-200 ease-out",
+        hidden && "-translate-y-full",
+      )}
+    >
       {/*
         3-column CSS grid:
           [auto]  logo hugs the true left edge
           [1fr]   nav centers in the remaining space, independent of logo width
           [auto]  Account + Cart hug the true right edge
       */}
-      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4 md:gap-8 pl-3 pr-3 lg:pl-5 lg:pr-5 py-2 md:py-2.5">
-        <Logo variant="mark" surface="wine" size="xl" priority />
+      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4 md:gap-8 pl-3 pr-3 lg:pl-5 lg:pr-5 py-1 md:py-1.5">
+        <Logo
+          variant="mark"
+          surface="wine"
+          size="md"
+          priority
+          className="!w-20 sm:!w-24 md:!w-24 lg:!w-28"
+        />
 
         <nav
           className="hidden md:flex items-center justify-center gap-7 lg:gap-9"

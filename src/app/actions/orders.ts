@@ -526,8 +526,13 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
           }
         }
         if (isFirstTime) {
+          // 25% off (down from 50% — too aggressive for launch).
+          // The customer-facing framing is "25% off an additional
+          // vial" — internally we still discount one unit of the
+          // SKU they picked, and the picker UI makes the tradeoff
+          // clear to the researcher.
           firstTimeVialDiscountCents = Math.round(
-            targetLine.unit_price * 100 * 0.5,
+            targetLine.unit_price * 100 * 0.25,
           );
           firstTimeVialSkuApplied = targetSku;
         }
@@ -992,30 +997,38 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
     couponApplied !== null &&
     validInput.coupon_code?.toLowerCase() === "first250";
   if (isFirst250) {
-    // Resolve the highest-applicable tier percent. Subscription
-    // prepay tiers REPLACE the cart-size tier (per the launch spec
-    // — they're a different reward axis).
+    // Subscription prepay tiers REPLACE the cart-size tier — they're
+    // a separate reward axis, applied flat to the whole subtotal.
     const subPrepayMonths =
       validInput.subscription_mode?.payment_cadence === "prepay"
         ? validInput.subscription_mode?.duration_months
         : null;
-    let tierPercent = 10;
-    if (subPrepayMonths === 6) tierPercent = 25;
-    else if (subPrepayMonths === 3) tierPercent = 18;
-    else if (totals.subtotal_cents >= FIRST_250_HIGH_TIER_THRESHOLD_CENTS)
-      tierPercent = 30;
 
-    // The base coupon already deducted 10% via the redeem_coupon RPC.
-    // If the resolved tier is higher, we need to deduct the extra
-    // percent from the order total directly. We compute the delta
-    // off of the pre-coupon subtotal so the math is independent of
-    // any other discount stack.
+    // The base coupon already deducted 10% via the redeem_coupon
+    // RPC. We layer the additional discount on top depending on
+    // which tier the order qualifies for.
     let firstFiftyExtraDiscountCents = 0;
-    if (tierPercent > 10) {
-      const extraPct = tierPercent - 10;
+    if (subPrepayMonths === 6) {
+      // 25% flat replaces the 10% baseline → +15% delta on whole
+      // subtotal.
       firstFiftyExtraDiscountCents = Math.round(
-        (totals.subtotal_cents * extraPct) / 100,
+        (totals.subtotal_cents * 15) / 100,
       );
+    } else if (subPrepayMonths === 3) {
+      // 18% flat → +8% delta on whole subtotal.
+      firstFiftyExtraDiscountCents = Math.round(
+        (totals.subtotal_cents * 8) / 100,
+      );
+    } else if (totals.subtotal_cents >= FIRST_250_HIGH_TIER_THRESHOLD_CENTS) {
+      // PROGRESSIVE tier: the 30% off only applies to spend ABOVE
+      // $250, NOT to the whole cart. The first $250 stays at the
+      // baseline 10%; the portion past $250 gets the extra 20%
+      // (10% → 30%) layered on. This matches the launch directive
+      // "thresholds apply to additional items, not the items
+      // already in cart."
+      const overThreshold =
+        totals.subtotal_cents - FIRST_250_HIGH_TIER_THRESHOLD_CENTS;
+      firstFiftyExtraDiscountCents = Math.round((overThreshold * 20) / 100);
     }
 
     const adjustedTotal = Math.max(

@@ -46,11 +46,11 @@ export function PopularStacks() {
         </p>
       </div>
 
-      <div className="grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-5 lg:gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
         {resolved.map((r) => (
           <article
             key={r.stack.slug}
-            className="border border-rule bg-paper-soft p-2 sm:p-5 lg:p-6 flex flex-col gap-2 sm:gap-3"
+            className="border border-rule bg-paper-soft p-2 sm:p-3 lg:p-4 flex flex-col gap-2 sm:gap-3"
             aria-labelledby={`stack-${r.stack.slug}`}
           >
             {/* Mobile: whole card is a single link to the stack page,

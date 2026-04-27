@@ -3,9 +3,12 @@
 import { z } from "zod";
 import { headers } from "next/headers";
 import { createServerSupabase } from "@/lib/supabase/client";
+import { getSupabaseServer } from "@/lib/supabase/server";
 import { resolveClientIp } from "@/lib/ratelimit/ip";
 import { enforceMagicLinkRateLimit } from "@/lib/auth/rate-limit";
 import { SITE_URL } from "@/lib/site";
+import { getResend, EMAIL_FROM } from "@/lib/email/client";
+import { magicLinkEmail } from "@/lib/email/templates/magic-link";
 
 const EmailSchema = z.string().trim().toLowerCase().email().max(200);
 
@@ -50,16 +53,53 @@ export async function requestMagicLink(formData: FormData): Promise<RequestMagic
     ? `${SITE_URL}/auth/callback?next=${encodeURIComponent(next)}`
     : `${SITE_URL}/auth/callback`;
 
+  // Branded send path: mint the magic-link URL via the admin API so
+  // Supabase doesn't auto-send its default unbranded template, then
+  // dispatch our wine-and-gold email through Resend. Any failure
+  // collapses to the same generic error so the action can never be
+  // used for user enumeration.
   try {
-    const supa = await createServerSupabase();
-    const { error } = await supa.auth.signInWithOtp({
+    const service = getSupabaseServer();
+    if (!service) {
+      return { ok: false, error: "Could not send sign-in link. Please try again." };
+    }
+    const { data, error } = await service.auth.admin.generateLink({
+      type: "magiclink",
       email,
-      options: { emailRedirectTo: callbackUrl },
+      options: { redirectTo: callbackUrl },
     });
     if (error) {
-      // Generic copy on every Supabase failure path. Do NOT echo the
-      // upstream message — it can leak whether an account exists.
       return { ok: false, error: "Could not send sign-in link. Please try again." };
+    }
+    const actionLink = data?.properties?.action_link;
+    // Defense-in-depth: insist on https before letting the URL into
+    // an email template. If the link isn't usable we still return ok
+    // (don't leak that the link wasn't sent), but log so we notice.
+    if (!actionLink || !actionLink.startsWith("https://")) {
+      console.error("[requestMagicLink] invalid action_link from generateLink");
+      return { ok: true };
+    }
+    const resend = getResend();
+    if (!resend) {
+      // No mailer configured (dev). Log the link and return ok so the
+      // UI shows the same success state as production.
+      console.info(
+        `[requestMagicLink] Resend not configured; magic link for ${email}: ${actionLink}`,
+      );
+      return { ok: true };
+    }
+    try {
+      const { subject, html, text } = magicLinkEmail({ link: actionLink });
+      await resend.emails.send({
+        from: EMAIL_FROM,
+        to: email,
+        subject,
+        html,
+        text,
+      });
+    } catch (sendErr) {
+      console.error("[requestMagicLink] resend send failed:", sendErr);
+      // Generic ok — don't disclose send failures.
     }
     return { ok: true };
   } catch {

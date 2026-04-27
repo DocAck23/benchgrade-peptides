@@ -75,6 +75,7 @@ export function CheckoutPageClient({
     itemCount,
     totals,
     subscriptionMode,
+    setSubscriptionMode,
     clear,
     addItem,
     removeItem,
@@ -173,7 +174,7 @@ export function CheckoutPageClient({
   const firstTimeDiscountPreviewCents = useMemo(() => {
     if (!isFirstTime || !firstTimeVialSku) return 0;
     const choice = firstTimeChoices.find((c) => c.sku === firstTimeVialSku);
-    return choice ? Math.round(choice.unit_price_cents * 0.5) : 0;
+    return choice ? Math.round(choice.unit_price_cents * 0.25) : 0;
   }, [isFirstTime, firstTimeVialSku, firstTimeChoices]);
 
   // Best-of "other discount" stack the coupon preview compares
@@ -469,8 +470,8 @@ export function CheckoutPageClient({
             <div className="space-y-4">
               {isFirstTime && firstTimeChoices.length > 0 && (
                 <AddonCard
-                  title="First-time customer · 50% off any vial"
-                  body="Pick one vial from your cart — we'll take 50% off the listed price for one unit. Stacks with every other discount."
+                  title="First-time researcher · 25% off an additional vial"
+                  body="Pick a vial as your first-order bonus — 25% off one additional unit on top of your cart. Stacks with every other discount."
                   highlight
                 >
                   <label className="flex flex-col gap-1.5 mt-3">
@@ -521,7 +522,7 @@ export function CheckoutPageClient({
             </div>
           </StepShell>
 
-          {/* Step 3 — Subscribe & save */}
+          {/* Step 3 — Explicit Subscribe-OR-OneTime choice */}
           <StepShell
             n={3}
             title={stepTitles[3]}
@@ -539,12 +540,14 @@ export function CheckoutPageClient({
               )
             }
           >
-            <div className="space-y-4">
-              <SubscriptionUpsellCard />
-              <ContinueButton onClick={() => advance(4)}>
-                Continue to payment
-              </ContinueButton>
-            </div>
+            <SubscribeChoiceStep
+              hasSubscription={subscriptionMode !== null}
+              onPickOneTime={() => {
+                setSubscriptionMode(null);
+                advance(4);
+              }}
+              onContinue={() => advance(4)}
+            />
           </StepShell>
 
           {/* Step 4 — Payment, coupon, notes, submit */}
@@ -706,7 +709,7 @@ export function CheckoutPageClient({
                   className="text-xs text-gold-dark italic"
                   style={{ fontFamily: "var(--font-editorial)" }}
                 >
-                  First-order 50% off · 1 vial
+                  First-order 25% off · 1 vial
                 </span>
                 <span className="font-mono-data text-sm text-gold-dark">
                   −{formatPrice(firstTimeDiscountPreviewCents)}
@@ -812,6 +815,70 @@ export function CheckoutPageClient({
 void PRODUCTS;
 void SUPPLIES;
 void ({} as CatalogProduct);
+
+/**
+ * Step-3 inner UI. Forces an explicit "subscribe & save" vs.
+ * "one-time purchase" decision before the customer can advance to
+ * payment. The subscription form lives behind the "Subscribe & save"
+ * button so a researcher buying once doesn't get pulled into a
+ * configurator they didn't ask for.
+ */
+function SubscribeChoiceStep({
+  hasSubscription,
+  onPickOneTime,
+  onContinue,
+}: {
+  hasSubscription: boolean;
+  onPickOneTime: () => void;
+  onContinue: () => void;
+}) {
+  const [showSub, setShowSub] = useState(hasSubscription);
+
+  if (!showSub) {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-ink-soft">
+          Add a subscription for a locked-in discount, or continue with a
+          one-time purchase.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setShowSub(true)}
+            className="h-12 px-5 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-gold transition-colors"
+          >
+            Subscribe &amp; save
+          </button>
+          <button
+            type="button"
+            onClick={onPickOneTime}
+            className="h-12 px-5 border border-ink text-ink text-sm tracking-[0.04em] hover:bg-ink hover:text-paper transition-colors"
+          >
+            Continue with one-time
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <SubscriptionUpsellCard />
+      <div className="flex flex-wrap gap-3">
+        <ContinueButton onClick={onContinue}>
+          Continue to payment
+        </ContinueButton>
+        <button
+          type="button"
+          onClick={() => setShowSub(false)}
+          className="h-11 px-4 text-sm text-ink-soft hover:text-ink"
+        >
+          ← Back
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function ProgressBar({
   step,

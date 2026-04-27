@@ -8,6 +8,7 @@ import {
 } from "@/lib/email/templates";
 import { prelaunchWelcomeEmail } from "@/lib/email/templates/prelaunch";
 import { subscriptionLifecycleEmail } from "@/lib/email/templates/subscription-lifecycle";
+import { magicLinkEmail } from "@/lib/email/templates/magic-link";
 import type { CartItem } from "@/lib/cart/types";
 import type { CustomerInfo } from "@/app/actions/orders";
 
@@ -99,6 +100,11 @@ export async function GET(req: Request) {
       break;
     case "prelaunch-welcome":
       html = prelaunchWelcomeEmail().html;
+      break;
+    case "magic-link":
+      html = magicLinkEmail({
+        link: "https://benchgradepeptides.com/auth/callback?token_hash=demo-only-token",
+      }).html;
       break;
     case "subscription-paused":
       html = subscriptionLifecycleEmail({

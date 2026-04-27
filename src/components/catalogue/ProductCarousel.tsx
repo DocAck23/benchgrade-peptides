@@ -155,8 +155,8 @@ export function ProductCarousel() {
       >
         {/* Edge fades — desktop only; on mobile they get in the way of
             the swipe-to-end visual cue. */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-16 lg:w-32 bg-gradient-to-r from-wine to-transparent z-10 hidden md:block" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-16 lg:w-32 bg-gradient-to-l from-wine to-transparent z-10 hidden md:block" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-6 lg:w-10 bg-gradient-to-r from-wine to-transparent z-10 hidden md:block" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-6 lg:w-10 bg-gradient-to-l from-wine to-transparent z-10 hidden md:block" />
 
         <div
           ref={trackRef}

@@ -16,7 +16,7 @@ export function RUOBanner() {
       data-surface="wine"
       role="note"
       aria-label="Research use only statement"
-      className="font-display text-center py-3 sm:py-3.5 px-4 text-[13px] sm:text-[15px] font-semibold tracking-[0.16em] uppercase"
+      className="font-display text-center py-1.5 sm:py-2 px-4 text-[10px] sm:text-[11px] font-semibold tracking-[0.18em] uppercase"
     >
       {RUO_STATEMENTS.banner}
     </div>

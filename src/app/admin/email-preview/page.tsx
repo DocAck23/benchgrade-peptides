@@ -8,6 +8,7 @@ import {
 } from "@/lib/email/templates";
 import { prelaunchWelcomeEmail } from "@/lib/email/templates/prelaunch";
 import { subscriptionLifecycleEmail } from "@/lib/email/templates/subscription-lifecycle";
+import { magicLinkEmail } from "@/lib/email/templates/magic-link";
 import type { CartItem } from "@/lib/cart/types";
 import type { CustomerInfo } from "@/app/actions/orders";
 
@@ -15,6 +16,7 @@ export const dynamic = "force-dynamic";
 
 const TEMPLATES = [
   { id: "prelaunch-welcome", label: "Pre-launch waitlist welcome" },
+  { id: "magic-link", label: "Sign-in magic link" },
   { id: "order-confirmation-wire", label: "Order confirmation · Wire" },
   { id: "order-confirmation-ach", label: "Order confirmation · ACH" },
   { id: "order-confirmation-zelle", label: "Order confirmation · Zelle" },
@@ -105,6 +107,10 @@ function render(id: TemplateId): { subject: string; html: string } {
       return agerecodeFulfillmentEmail(ctxFor("wire"));
     case "prelaunch-welcome":
       return prelaunchWelcomeEmail();
+    case "magic-link":
+      return magicLinkEmail({
+        link: "https://benchgradepeptides.com/auth/callback?token_hash=demo-only-token",
+      });
     case "subscription-paused":
       return subscriptionLifecycleEmail({
         kind: "paused",
