@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getMyAffiliateState } from "@/app/actions/affiliate";
+import {
+  getMyAffiliateOnboarding,
+  getAffiliateW9SignedUrlForMe,
+} from "@/app/actions/affiliate-portal";
 import { TierBadge } from "@/components/affiliate/TierBadge";
 import { TierProgressBar } from "@/components/affiliate/TierProgressBar";
 import { CommissionLedgerTable } from "@/components/affiliate/CommissionLedgerTable";
@@ -61,6 +65,15 @@ export default async function AffiliateDashboardPage() {
   const ledger = state.recent_ledger ?? [];
   const payouts = state.recent_payouts ?? [];
 
+  // W6 — read-only Documents section. Best-effort: any failure here just
+  // hides the section rather than breaking the whole dashboard.
+  const onboarding = await getMyAffiliateOnboarding().catch(() => null);
+  let w9Url: string | null = null;
+  if (onboarding?.w9_uploaded) {
+    const u = await getAffiliateW9SignedUrlForMe().catch(() => null);
+    w9Url = u?.ok ? u.url ?? null : null;
+  }
+
   return (
     <article className="space-y-12">
       <header className="space-y-3">
@@ -119,6 +132,69 @@ export default async function AffiliateDashboardPage() {
         </h2>
         <CommissionLedgerTable entries={ledger} />
       </section>
+
+      {onboarding?.ok ? (
+        <section aria-labelledby="aff-docs" className="space-y-3">
+          <h2 id="aff-docs" className={sectionHead}>
+            Documents
+          </h2>
+          <div className="border rule bg-paper divide-y rule">
+            <div className="px-5 py-4 flex items-center justify-between gap-4 text-sm">
+              <div>
+                <div className="text-ink">1099 contractor agreement</div>
+                <div className="text-xs text-ink-muted mt-1">
+                  {onboarding.agreement_signed
+                    ? `Signed by ${onboarding.agreement_signed_name} · ${
+                        onboarding.agreement_signed_at
+                          ? new Date(onboarding.agreement_signed_at).toLocaleDateString()
+                          : ""
+                      } · ${onboarding.agreement_version}`
+                    : "Not signed yet."}
+                </div>
+              </div>
+              {!onboarding.agreement_signed ? (
+                <Link
+                  href="/account/affiliate-onboarding"
+                  className="text-xs text-teal hover:underline"
+                >
+                  Complete onboarding →
+                </Link>
+              ) : null}
+            </div>
+            <div className="px-5 py-4 flex items-center justify-between gap-4 text-sm">
+              <div>
+                <div className="text-ink">W9 (read-only)</div>
+                <div className="text-xs text-ink-muted mt-1">
+                  {onboarding.w9_uploaded
+                    ? `${onboarding.w9_filename} · uploaded ${
+                        onboarding.w9_uploaded_at
+                          ? new Date(onboarding.w9_uploaded_at).toLocaleDateString()
+                          : ""
+                      }`
+                    : "Not uploaded yet."}
+                </div>
+              </div>
+              {w9Url ? (
+                <a
+                  href={w9Url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="h-9 px-4 bg-ink text-paper text-xs uppercase tracking-[0.1em] hover:bg-gold inline-flex items-center"
+                >
+                  Download (5 min)
+                </a>
+              ) : !onboarding.w9_uploaded ? (
+                <Link
+                  href="/account/affiliate-onboarding"
+                  className="text-xs text-teal hover:underline"
+                >
+                  Upload →
+                </Link>
+              ) : null}
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       {payouts.length > 0 && (
         <section aria-labelledby="aff-payouts" className="space-y-3">

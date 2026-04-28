@@ -12,6 +12,7 @@ const SECTIONS: Array<{ href: string; label: string }> = [
   { href: "/admin/analytics", label: "Analytics" },
   { href: "/admin/visitors", label: "Visitors" },
   { href: "/admin/coupons", label: "Coupons" },
+  { href: "/admin/affiliates", label: "Affiliates" },
   { href: "/admin/reconciliation", label: "Reconciliation" },
   { href: "/admin/email-preview", label: "Email previews" },
   { href: "/admin/briefs", label: "Briefs" },
