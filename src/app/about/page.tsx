@@ -3,7 +3,21 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "About",
   description:
-    "Bench Grade Peptides LLC — a research chemical distributor supplying synthetic peptides for laboratory research use only.",
+    "Bench Grade Peptides LLC — a US research-chemical distributor supplying HPLC-verified synthetic peptides to laboratories for research use only.",
+  alternates: { canonical: "/about" },
+  openGraph: {
+    title: "About · Bench Grade Peptides",
+    description:
+      "A US research-chemical distributor supplying HPLC-verified synthetic peptides for laboratory research use only.",
+    url: "/about",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "About · Bench Grade Peptides",
+    description:
+      "US research-chemical distributor supplying HPLC-verified synthetic peptides for laboratory research only.",
+  },
 };
 
 export default function AboutPage() {

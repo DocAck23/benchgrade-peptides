@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { ProductCard } from "@/components/catalogue/ProductCard";
 import { CATEGORIES, PRODUCTS, getCategoryBySlug } from "@/lib/catalogue/data";
+import { SITE_URL } from "@/lib/site";
 
 interface PageProps {
   params: Promise<{ category: string }>;
@@ -26,6 +28,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description: category.description,
       url: canonical,
       type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${category.name} · Bench Grade Peptides`,
+      description: category.description,
     },
     // Same compliance posture as PDPs: indexable but no auto-snippets
     // and no image previews — keeps SERP cards from auto-extracting
@@ -52,8 +59,28 @@ export default async function CategoryPage({ params }: PageProps) {
 
   const products = PRODUCTS.filter((p) => p.category_slug === slug);
 
+  // BreadcrumbList JSON-LD — mirrors the visual breadcrumb. Lets Google
+  // render the SERP card with the category path instead of the bare URL.
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+      { "@type": "ListItem", position: 2, name: "Catalogue", item: `${SITE_URL}/catalogue` },
+      { "@type": "ListItem", position: 3, name: category.name, item: `${SITE_URL}/catalogue/${category.slug}` },
+    ],
+  };
+
+  // Cross-link siblings so each category surface exposes the rest of
+  // the catalogue without forcing the visitor back to /catalogue.
+  const siblings = CATEGORIES.filter((c) => c.slug !== category.slug);
+
   return (
     <div className="bg-paper">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
       <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-12 lg:py-16">
         <Breadcrumb
           items={[
@@ -84,6 +111,27 @@ export default async function CategoryPage({ params }: PageProps) {
               <ProductCard key={product.slug} product={product} categorySlug={category.slug} />
             ))}
           </div>
+        )}
+
+        {siblings.length > 0 && (
+          <nav
+            aria-label="Other categories"
+            className="mt-16 pt-8 border-t rule"
+          >
+            <div className="label-eyebrow text-ink-muted mb-4">Other categories</div>
+            <ul className="flex flex-wrap gap-x-6 gap-y-3">
+              {siblings.map((s) => (
+                <li key={s.slug}>
+                  <Link
+                    href={`/catalogue/${s.slug}`}
+                    className="text-sm text-ink-soft hover:text-wine underline underline-offset-4 decoration-rule"
+                  >
+                    {s.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
         )}
       </div>
     </div>

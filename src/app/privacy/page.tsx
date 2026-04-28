@@ -4,7 +4,16 @@ const PRIVACY_EFFECTIVE_DATE = "April 22, 2026";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
-  description: "Privacy policy for Bench Grade Peptides LLC.",
+  description:
+    "How Bench Grade Peptides LLC collects, uses, and retains customer data — order details, RUO acknowledgments, and analytics. We don't sell or rent customer data.",
+  alternates: { canonical: "/privacy" },
+  openGraph: {
+    title: "Privacy Policy · Bench Grade Peptides",
+    description:
+      "How we collect, use, and retain customer data. We don't sell or rent customer data.",
+    url: "/privacy",
+    type: "website",
+  },
 };
 
 export default function PrivacyPage() {

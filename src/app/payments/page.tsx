@@ -4,7 +4,15 @@ import { Callout, DataRow } from "@/components/ui";
 
 export const metadata: Metadata = {
   title: "Payment methods",
-  description: "ACH, wire, and check payment instructions for Bench Grade Peptides orders.",
+  description:
+    "ACH, bank wire, and company check payment instructions for Bench Grade Peptides orders. Net-30 institutional accounts available on request.",
+  alternates: { canonical: "/payments" },
+  openGraph: {
+    title: "Payment methods · Bench Grade Peptides",
+    description: "ACH, bank wire, and company check. Net-30 available for institutions.",
+    url: "/payments",
+    type: "website",
+  },
 };
 
 export default function PaymentsPage() {

@@ -8,7 +8,16 @@ const TERMS_EFFECTIVE_DATE = "April 22, 2026";
 
 export const metadata: Metadata = {
   title: "Terms of Sale",
-  description: "Terms of Sale for Bench Grade Peptides LLC.",
+  description:
+    "Terms of Sale for Bench Grade Peptides LLC — research-use-only certification, no warranty for human or animal use, payment, shipping, and limitation of liability.",
+  alternates: { canonical: "/terms" },
+  openGraph: {
+    title: "Terms of Sale · Bench Grade Peptides",
+    description:
+      "Research-use-only certification, payment, shipping, and limitation of liability.",
+    url: "/terms",
+    type: "website",
+  },
 };
 
 export default function TermsPage() {

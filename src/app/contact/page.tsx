@@ -2,7 +2,21 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: "Contact Bench Grade Peptides LLC.",
+  description:
+    "Contact Bench Grade Peptides LLC — order, regulatory, and compliance inquiries answered within one business day, Monday–Friday.",
+  alternates: { canonical: "/contact" },
+  openGraph: {
+    title: "Contact · Bench Grade Peptides",
+    description:
+      "Order, regulatory, and compliance inquiries — typically answered within one business day.",
+    url: "/contact",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Contact · Bench Grade Peptides",
+    description: "Order, regulatory, and compliance inquiries.",
+  },
 };
 
 export default function ContactPage() {

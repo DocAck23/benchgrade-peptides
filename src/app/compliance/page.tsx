@@ -7,6 +7,13 @@ export const metadata: Metadata = {
   description:
     "Bench Grade Peptides operates as a research chemical distributor. Products are supplied for laboratory research use only.",
   alternates: { canonical: "/compliance" },
+  openGraph: {
+    title: "Compliance & RUO statement · Bench Grade Peptides",
+    description:
+      "Research-use-only scope, customer certification, and the regulatory posture of Bench Grade Peptides.",
+    url: "/compliance",
+    type: "website",
+  },
 };
 
 export default function CompliancePage() {

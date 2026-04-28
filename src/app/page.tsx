@@ -1,8 +1,31 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Flag, QrCode, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ProductCarousel } from "@/components/catalogue/ProductCarousel";
 import { PopularStacksHeroGrid } from "@/components/catalogue/PopularStacksHeroGrid";
+
+export const metadata: Metadata = {
+  // Title-template default lives on the root layout; the home page
+  // overrides title.absolute so it doesn't render as "· Bench Grade".
+  title: { absolute: "Bench Grade Peptides — research-grade synthetic peptides, made in USA" },
+  description:
+    "Research-grade synthetic peptides. Made in USA, HPLC-verified per lot, COA on every vial, cold-chain shipped. Supplied for laboratory research use only.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "Bench Grade Peptides — research-grade synthetic peptides",
+    description:
+      "Made in USA. HPLC-verified per lot. COA on every vial. Supplied for laboratory research use only.",
+    url: "/",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Bench Grade Peptides",
+    description:
+      "Research-grade synthetic peptides. Made in USA, HPLC-verified, COA per lot.",
+  },
+};
 
 /**
  * Homepage — locked brand visual system (spec §16.1, §16.4).

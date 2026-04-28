@@ -4,7 +4,20 @@ import { Callout } from "@/components/ui";
 export const metadata: Metadata = {
   title: "Shipping & handling",
   description:
-    "US domestic shipping tiers, lead times, and cold-chain handling for Bench Grade Peptides orders.",
+    "US domestic shipping tiers, lead times, and cold-chain handling for Bench Grade Peptides orders. Ground free over $200; overnight available.",
+  alternates: { canonical: "/shipping" },
+  openGraph: {
+    title: "Shipping & handling · Bench Grade Peptides",
+    description:
+      "US domestic shipping tiers, lead times, and cold-chain handling. Ground free over $200.",
+    url: "/shipping",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Shipping & handling · Bench Grade Peptides",
+    description: "US domestic shipping, lead times, and cold-chain handling.",
+  },
 };
 
 export default function ShippingPage() {

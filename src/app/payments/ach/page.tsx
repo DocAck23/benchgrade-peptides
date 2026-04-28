@@ -6,6 +6,14 @@ export const metadata: Metadata = {
   title: "ACH instructions — adding Bench Grade Peptides as a recipient",
   description:
     "Step-by-step instructions for paying a Bench Grade Peptides order via ACH credit from your bank's bill-pay or external-transfer flow.",
+  alternates: { canonical: "/payments/ach" },
+  openGraph: {
+    title: "ACH payment instructions · Bench Grade Peptides",
+    description:
+      "Step-by-step for paying a Bench Grade Peptides order via ACH credit from your bank.",
+    url: "/payments/ach",
+    type: "website",
+  },
 };
 
 const beneficiary = process.env.WIRE_BENEFICIARY ?? "Bench Grade Peptides LLC";

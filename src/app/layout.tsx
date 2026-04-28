@@ -137,6 +137,31 @@ export default async function RootLayout({
             }),
           }}
         />
+        {/* WebSite + SearchAction — makes the site eligible for the
+            Google sitelinks search box. The catalogue page already
+            filters by ?q= via CatalogueBrowser, so we route searches
+            there. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "@id": `${SITE_URL}/#website`,
+              url: SITE_URL,
+              name: "Bench Grade Peptides",
+              publisher: { "@id": `${SITE_URL}/#org` },
+              potentialAction: {
+                "@type": "SearchAction",
+                target: {
+                  "@type": "EntryPoint",
+                  urlTemplate: `${SITE_URL}/catalogue?q={search_term_string}`,
+                },
+                "query-input": "required name=search_term_string",
+              },
+            }),
+          }}
+        />
         <CartProvider>
           <a
             href="#main"

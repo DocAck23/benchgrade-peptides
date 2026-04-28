@@ -17,6 +17,12 @@ export const metadata: Metadata = {
     url: "/catalogue",
     type: "website",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Catalogue · Bench Grade Peptides",
+    description:
+      "Research-grade synthetic peptides. HPLC-verified purity, COA per lot.",
+  },
 };
 
 export default function CatalogPage() {

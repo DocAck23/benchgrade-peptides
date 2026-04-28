@@ -3,7 +3,20 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Certificates of Analysis",
   description:
-    "Per-lot HPLC and mass spectrometry identity and purity verification for every Bench Grade Peptides product.",
+    "Per-lot HPLC and mass spectrometry identity and purity verification for every Bench Grade Peptides product. COA ships in every box.",
+  alternates: { canonical: "/coa" },
+  openGraph: {
+    title: "Certificates of Analysis · Bench Grade Peptides",
+    description:
+      "Per-lot HPLC + MS identity and purity verification on every product.",
+    url: "/coa",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Certificates of Analysis · Bench Grade Peptides",
+    description: "Per-lot HPLC + MS identity and purity verification.",
+  },
 };
 
 export default function COAPage() {
