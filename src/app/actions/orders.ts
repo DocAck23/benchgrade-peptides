@@ -1123,18 +1123,39 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
       firstFiftyExtraDiscountCents = Math.round((overThreshold * 20) / 100);
     }
 
-    const adjustedTotal = Math.max(
-      0,
-      finalTotalCents - firstFiftyExtraDiscountCents,
-    );
-    const adjustedDiscountCents =
-      discount_cents + firstFiftyExtraDiscountCents;
-
+    // Codex pass 2 (CRITICAL #1): apply the tier delta to the
+    // PERSISTED post-RPC row, not the in-memory pre-RPC values. The
+    // redeem_coupon RPC already mutated orders.total_cents and
+    // orders.discount_cents when it deducted the 10% baseline; if
+    // we recompute from finalTotalCents/discount_cents (which are
+    // the pre-RPC locals) we end up writing a wrong total.
+    //
+    // Re-read the row, layer the extra delta on top, then write.
     const freeVialQualifies =
       totals.subtotal_cents >= FIRST_250_FREE_VIAL_THRESHOLD_CENTS &&
       !!validInput.first_time_vial_sku;
 
     try {
+      const { data: currentRow } = await supa
+        .from("orders")
+        .select("total_cents, discount_cents")
+        .eq("order_id", order_id)
+        .single();
+      const persistedTotal =
+        typeof currentRow?.total_cents === "number"
+          ? currentRow.total_cents
+          : finalTotalCents;
+      const persistedDiscount =
+        typeof currentRow?.discount_cents === "number"
+          ? currentRow.discount_cents
+          : discount_cents;
+      const adjustedTotal = Math.max(
+        0,
+        persistedTotal - firstFiftyExtraDiscountCents,
+      );
+      const adjustedDiscountCents =
+        persistedDiscount + firstFiftyExtraDiscountCents;
+
       await supa
         .from("orders")
         .update({
@@ -1196,13 +1217,49 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
       .filter((i) => !("is_supply" in i && i.is_supply))
       .reduce((sum, i) => sum + i.quantity, 0);
     if (totalVialQty < FOUNDER_MIN_VIAL_QTY) {
-      // Edge case: redeem_coupon doesn't know about the 3-vial gate
-      // (it's an application-layer rule), so a customer with a
-      // 1-vial cart could in theory get the discount applied. Log
-      // it; admin can review & follow up.
+      // Codex pass 2 (HIGH #2): the 3-vial gate is an
+      // application-layer rule that the redeem_coupon RPC can't
+      // enforce. The previous version only logged a warning here,
+      // but the 25% discount stayed on the order. NOW we authoritatively
+      // REVERSE the redemption: re-read the persisted total/discount,
+      // re-add the FOUNDER discount the RPC took off, and delete the
+      // redemption row so the cap counter is also corrected. The
+      // customer pays full price.
       console.warn(
-        `[submitOrder] FOUNDER applied to order ${order_id} with only ${totalVialQty} vial(s) — gate enforced at preview but bypassed at submit; admin review.`,
+        `[submitOrder] FOUNDER applied to order ${order_id} with only ${totalVialQty} vial(s) — reversing redemption.`,
       );
+      try {
+        const { data: cur } = await supa
+          .from("orders")
+          .select("total_cents, discount_cents")
+          .eq("order_id", order_id)
+          .single();
+        const persistedTotal =
+          typeof cur?.total_cents === "number" ? cur.total_cents : finalTotalCents;
+        const persistedDiscount =
+          typeof cur?.discount_cents === "number"
+            ? cur.discount_cents
+            : discount_cents;
+        // couponApplied is the cents value the RPC took off; add it back.
+        const reversed = couponApplied ?? 0;
+        await supa
+          .from("orders")
+          .update({
+            total_cents: persistedTotal + reversed,
+            discount_cents: Math.max(0, persistedDiscount - reversed),
+          })
+          .eq("order_id", order_id);
+        await supa
+          .from("coupon_redemptions")
+          .delete()
+          .eq("coupon_code", "founder")
+          .eq("order_id", order_id);
+      } catch (err) {
+        console.error(
+          "[submitOrder] FOUNDER reversal failed — manual admin review required:",
+          err,
+        );
+      }
     } else {
       let freeVialCount = 0;
       if (totals.subtotal_cents >= FOUNDER_TWO_FREE_VIAL_THRESHOLD_CENTS) {

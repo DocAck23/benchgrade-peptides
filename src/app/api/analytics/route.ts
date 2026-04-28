@@ -214,10 +214,39 @@ export async function POST(req: NextRequest) {
       body.properties && typeof body.properties === "object"
         ? body.properties
         : {};
-    const { email: _stripEmail, ...sanitizedProps } = rawProps as {
+    const { email: _stripEmail, ...withoutEmail } = rawProps as {
       email?: unknown;
     } & Record<string, unknown>;
     void _stripEmail;
+    // Codex pass 2 (MEDIUM #7): the prior version stripped `email`
+    // and capped `path` but inserted `properties` verbatim — the
+    // claimed cap was never enforced. Walk one level deep, drop any
+    // value that's not string/number/boolean/null, length-cap
+    // strings to 256 chars, and bail entirely if the serialized
+    // result exceeds 8KB.
+    const sanitizedProps: Record<string, unknown> = {};
+    let serializedSize = 0;
+    for (const [k, v] of Object.entries(withoutEmail)) {
+      if (k.length > 64) continue;
+      let safe: unknown;
+      if (typeof v === "string") {
+        safe = v.slice(0, 256);
+      } else if (
+        typeof v === "number" ||
+        typeof v === "boolean" ||
+        v === null
+      ) {
+        safe = v;
+      } else {
+        // Reject objects, arrays, functions, BigInts — keeps the
+        // event-stream schema flat and predictable.
+        continue;
+      }
+      sanitizedProps[k] = safe;
+      serializedSize += k.length + 8;
+      if (typeof safe === "string") serializedSize += safe.length;
+      if (serializedSize > 8 * 1024) break;
+    }
     const eventName = body.name;
 
     // Email correlation: ONLY on the order_submitted event. Codex
