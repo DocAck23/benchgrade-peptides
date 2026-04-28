@@ -29,7 +29,7 @@ function isSubscriptionMode(x: unknown): x is SubscriptionMode {
   if (!x || typeof x !== "object") return false;
   const o = x as Record<string, unknown>;
   return (
-    [1, 3, 6, 9, 12].includes(o.duration_months as number) &&
+    [3, 6, 12].includes(o.duration_months as number) &&
     (o.payment_cadence === "prepay" || o.payment_cadence === "bill_pay") &&
     (o.ship_cadence === "monthly" || o.ship_cadence === "quarterly" || o.ship_cadence === "once")
   );

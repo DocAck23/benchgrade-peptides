@@ -95,7 +95,7 @@ export interface ClientAcknowledgment {
  * subscriptionDiscountPercent — invalid combos fall through to one-shot.
  */
 export interface SubmitOrderSubscriptionMode {
-  duration_months: 1 | 3 | 6 | 9 | 12;
+  duration_months: 3 | 6 | 12;
   payment_cadence: "prepay" | "bill_pay";
   ship_cadence: "monthly" | "quarterly" | "once";
 }
@@ -186,13 +186,7 @@ const PaymentMethodSchema = z.enum(PAYMENT_METHODS);
 // than rejecting the entire checkout.
 const SubscriptionModeSchema = z
   .object({
-    duration_months: z.union([
-      z.literal(1),
-      z.literal(3),
-      z.literal(6),
-      z.literal(9),
-      z.literal(12),
-    ]),
+    duration_months: z.union([z.literal(3), z.literal(6), z.literal(12)]),
     payment_cadence: z.enum(["prepay", "bill_pay"]),
     ship_cadence: z.enum(["monthly", "quarterly", "once"]),
   })

@@ -484,7 +484,7 @@ describe("submitOrder — server-side discount computation", () => {
         // Invalid combo — bill_pay requires duration ≥ 3 months. The
         // server-side discount-percent check returns 0 → we log a
         // warning and let the order roll forward as one-shot.
-        duration_months: 1,
+        duration_months: 1 as unknown as 3,
         payment_cadence: "bill_pay",
         ship_cadence: "monthly",
       },

@@ -33,7 +33,7 @@ export interface CartState {
  * flow.
  */
 export interface SubscriptionMode {
-  duration_months: 1 | 3 | 6 | 9 | 12;
+  duration_months: 3 | 6 | 12;
   payment_cadence: "prepay" | "bill_pay";
   ship_cadence: "monthly" | "quarterly" | "once";
 }

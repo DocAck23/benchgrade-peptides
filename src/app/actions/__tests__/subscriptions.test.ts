@@ -161,7 +161,7 @@ describe("createSubscription (I-SUB-1, I-SUB-2)", () => {
       customer_user_id: null,
       customer_email: "x@example.com",
       items: SAMPLE_ITEMS,
-      plan: { duration_months: 1, payment_cadence: "bill_pay", ship_cadence: "monthly" },
+      plan: { duration_months: 1 as unknown as 3, payment_cadence: "bill_pay", ship_cadence: "monthly" },
       first_order_id: "order-1",
     });
     expect(res.ok).toBe(false);
