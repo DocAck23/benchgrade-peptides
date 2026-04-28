@@ -108,6 +108,107 @@ describe("sendCustomerMessage (I-MSG-1)", () => {
     expect(res.ok).toBe(false);
     expect(res.error).toMatch(/auth|sign/i);
   });
+
+  it("rejects an order_id that doesn't belong to the caller (cross-account tag attempt)", async () => {
+    // Hostile client sends a syntactically valid order_id that
+    // belongs to someone else. The server must look it up scoped to
+    // customer_user_id and refuse — never trust the client tag.
+    cookieGetUser.mockResolvedValue({ data: { user: { id: USER_ID } }, error: null });
+    serviceFrom.mockImplementation((table: string) => {
+      if (table === "orders") {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                maybeSingle: vi.fn(async () => ({ data: null, error: null })),
+              })),
+            })),
+          })),
+        };
+      }
+      return {} as never;
+    });
+    const res = await sendCustomerMessage("hi", "11111111-1111-4111-8111-aaaaaaaaaaaa");
+    expect(res.ok).toBe(false);
+    expect(res.error).toMatch(/order/i);
+  });
+
+  it("rejects malformed order_id (regex slug guard)", async () => {
+    cookieGetUser.mockResolvedValue({ data: { user: { id: USER_ID } }, error: null });
+    // SQL/JSON metacharacters and spaces must be refused before any
+    // database call so we can't be used as a probe.
+    const res = await sendCustomerMessage("hi", "drop'; --");
+    expect(res.ok).toBe(false);
+    expect(res.error).toMatch(/order/i);
+    expect(serviceFrom).not.toHaveBeenCalled();
+  });
+
+  it("accepts an owned order_id and persists it on the message row", async () => {
+    cookieGetUser.mockResolvedValue({ data: { user: { id: USER_ID } }, error: null });
+    const owned = "11111111-1111-4111-8111-bbbbbbbbbbbb";
+    let insertPayload: Record<string, unknown> | null = null;
+    serviceFrom.mockImplementation((table: string) => {
+      if (table === "orders") {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                maybeSingle: vi.fn(async () => ({
+                  data: { order_id: owned },
+                  error: null,
+                })),
+              })),
+            })),
+          })),
+        };
+      }
+      if (table === "messages") {
+        return {
+          insert: vi.fn((payload: Record<string, unknown>) => {
+            insertPayload = payload;
+            return {
+              select: vi.fn(() => ({
+                single: vi.fn(async () => ({
+                  data: { id: MSG_ID },
+                  error: null,
+                })),
+              })),
+            };
+          }),
+        };
+      }
+      return {} as never;
+    });
+    const res = await sendCustomerMessage("Re: my order", owned);
+    expect(res.ok).toBe(true);
+    expect(insertPayload!.order_id).toBe(owned);
+  });
+
+  it("treats null/empty order_id as untagged (no DB lookup)", async () => {
+    cookieGetUser.mockResolvedValue({ data: { user: { id: USER_ID } }, error: null });
+    let insertPayload: Record<string, unknown> | null = null;
+    serviceFrom.mockImplementation((table: string) => {
+      if (table === "messages") {
+        return {
+          insert: vi.fn((payload: Record<string, unknown>) => {
+            insertPayload = payload;
+            return {
+              select: vi.fn(() => ({
+                single: vi.fn(async () => ({
+                  data: { id: MSG_ID },
+                  error: null,
+                })),
+              })),
+            };
+          }),
+        };
+      }
+      throw new Error(`unexpected table lookup: ${table}`);
+    });
+    const res = await sendCustomerMessage("untagged", "");
+    expect(res.ok).toBe(true);
+    expect(insertPayload!.order_id).toBeNull();
+  });
 });
 
 describe("listMyMessages (I-MSG-3 RLS-trust)", () => {

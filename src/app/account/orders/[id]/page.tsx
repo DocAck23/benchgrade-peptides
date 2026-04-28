@@ -389,6 +389,24 @@ export default async function CustomerOrderDetailPage({
           code that resolves to the exact lot record.
         </p>
       </section>
+
+      {/* Per-order support handoff. Routes to the messages thread with the
+          order pre-tagged so the admin sees which order the question is
+          about without the customer having to copy/paste an ID. */}
+      <section className="border rule bg-paper p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <div className="label-eyebrow text-ink-muted mb-1">Need help with this order?</div>
+          <p className="text-sm text-ink-soft">
+            Send a note to the team. We&rsquo;ll see it tagged with this order and reply in your messages thread.
+          </p>
+        </div>
+        <Link
+          href={`/account/messages?order_id=${encodeURIComponent(order.order_id)}`}
+          className="self-start sm:self-auto shrink-0 font-display uppercase text-[11px] tracking-[0.14em] text-paper bg-ink hover:bg-gold-dark transition-colors duration-200 ease-out px-5 py-2.5"
+        >
+          Speak to the team →
+        </Link>
+      </section>
     </article>
   );
 }

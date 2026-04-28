@@ -43,6 +43,8 @@ import { sendAnalyticsEvent } from "@/lib/analytics/client";
 
 const EMPTY: CustomerInfo = {
   name: "",
+  first_name: "",
+  last_name: "",
   email: "",
   institution: "",
   phone: "",
@@ -257,7 +259,8 @@ export function CheckoutPageClient({
   const onContinueStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
     setStep1Error(null);
-    if (!form.name.trim()) return setStep1Error("Full name is required.");
+    if (!(form.first_name ?? "").trim()) return setStep1Error("First name is required.");
+    if (!(form.last_name ?? "").trim()) return setStep1Error("Last name is required.");
     if (!form.email.trim() || !/^\S+@\S+\.\S+$/u.test(form.email.trim()))
       return setStep1Error("Valid email is required.");
     if (!form.ship_address_1.trim()) return setStep1Error("Shipping address is required.");
@@ -369,7 +372,13 @@ export function CheckoutPageClient({
     setSubmitting(true);
     try {
       const res = await submitOrder({
-        customer: form,
+        customer: {
+          ...form,
+          // Pre-compose for type-correctness; the server-side Zod
+          // transform recomposes from first_name + last_name as the
+          // authoritative source, so any client tampering is overwritten.
+          name: `${(form.first_name ?? "")} ${(form.last_name ?? "")}`.replace(/\s+/g, " ").trim(),
+        },
         items: items.map((i) => ({ sku: i.sku, quantity: i.quantity })),
         acknowledgment: {
           is_adult: ack.is_adult,
@@ -439,7 +448,7 @@ export function CheckoutPageClient({
             collapsedSummary={
               step > 1 && (
                 <div className="text-sm text-ink-soft space-y-0.5">
-                  <div>{form.name} · {form.email}</div>
+                  <div>{`${(form.first_name ?? "")} ${(form.last_name ?? "")}`.trim()} · {form.email}</div>
                   <div>
                     {form.ship_address_1}
                     {form.ship_address_2 ? `, ${form.ship_address_2}` : ""}, {form.ship_city}, {form.ship_state.toUpperCase()} {form.ship_zip}
@@ -450,7 +459,10 @@ export function CheckoutPageClient({
           >
             <form onSubmit={onContinueStep1} className="space-y-6">
               <Section title="Contact">
-                <Field label="Full name" required value={form.name} onChange={(v) => update("name", v)} autoComplete="name" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Field label="First name" required value={(form.first_name ?? "")} onChange={(v) => update("first_name", v)} autoComplete="given-name" />
+                  <Field label="Last name" required value={(form.last_name ?? "")} onChange={(v) => update("last_name", v)} autoComplete="family-name" />
+                </div>
                 <Field label="Email" required type="email" value={form.email} onChange={(v) => update("email", v)} autoComplete="email" />
                 <Field label="Phone" type="tel" value={form.phone} onChange={(v) => update("phone", v)} autoComplete="tel" />
                 <Field label="Institution / lab" value={form.institution} onChange={(v) => update("institution", v)} autoComplete="organization" />

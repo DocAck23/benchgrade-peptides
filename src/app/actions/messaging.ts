@@ -28,6 +28,14 @@ const MarkReadSchema = z
   .min(1, "At least one message id required.")
   .max(50, "Too many ids.");
 
+// Order IDs are short slugs like BGP-893CE45D. Anchored regex keeps the
+// payload to known characters so it can't smuggle SQL/JSON metacharacters
+// into the messages.order_id column. The DB also enforces a length CHECK.
+const OrderIdSchema = z
+  .string()
+  .trim()
+  .regex(/^[A-Za-z0-9_-]{1,40}$/u, "Invalid order id.");
+
 export interface SendCustomerMessageResult {
   ok: boolean;
   message_id?: string;
@@ -35,11 +43,23 @@ export interface SendCustomerMessageResult {
 }
 
 export async function sendCustomerMessage(
-  body: string
+  body: string,
+  orderId?: string | null,
 ): Promise<SendCustomerMessageResult> {
   const parsed = BodySchema.safeParse(body);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid body." };
+  }
+
+  // Optional order tag. Empty string and null both mean "not tagged" —
+  // we only validate the slug shape when something non-empty is passed.
+  let validatedOrderId: string | null = null;
+  if (orderId != null && orderId !== "") {
+    const orderParsed = OrderIdSchema.safeParse(orderId);
+    if (!orderParsed.success) {
+      return { ok: false, error: "Invalid order id." };
+    }
+    validatedOrderId = orderParsed.data;
   }
 
   const cookie = await createServerSupabase();
@@ -57,12 +77,38 @@ export async function sendCustomerMessage(
   const service = getSupabaseServer();
   if (!service) return { ok: false, error: "Database unavailable." };
 
+  // Ownership check: the order_id must belong to the caller. Without
+  // this, a hostile client could tag messages with arbitrary order IDs
+  // (admin tools surface these and would mislead). RLS doesn't help —
+  // the column has no FK, and even if it did, RLS fires on the messages
+  // table, not on cross-table joins.
+  //
+  // Known race: between this SELECT and the INSERT below an admin could
+  // delete or reassign the order. The worst-case outcome is a message
+  // tagged with an order_id that no longer points to a live row — an
+  // audit smell for admin tooling, not a security violation (the
+  // attacker still can't tag someone else's order). Acceptable for
+  // launch; revisit with an RPC + FK if cross-table integrity ever
+  // becomes load-bearing.
+  if (validatedOrderId) {
+    const { data: own, error: ownErr } = await service
+      .from("orders")
+      .select("order_id")
+      .eq("order_id", validatedOrderId)
+      .eq("customer_user_id", user.id)
+      .maybeSingle();
+    if (ownErr || !own) {
+      return { ok: false, error: "Order not found." };
+    }
+  }
+
   const { data, error } = await service
     .from("messages")
     .insert({
       customer_user_id: user.id,
       sender: "customer",
       body: parsed.data,
+      order_id: validatedOrderId,
     })
     .select("id")
     .single();

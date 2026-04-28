@@ -64,6 +64,7 @@ function msg(overrides: Partial<MessageRow>): MessageRow {
     customer_user_id: "cust-1",
     sender: "customer",
     body: "hello",
+    order_id: null,
     created_at: "2026-04-25T10:00:00.000Z",
     read_at: null,
     ...overrides,

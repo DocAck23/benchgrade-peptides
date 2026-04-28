@@ -12,28 +12,49 @@ import { sendCustomerMessage } from "@/app/actions/messaging";
  * `sendCustomerMessage` server action (Wave B1). On success: clears,
  * refocuses, calls router.refresh() so the server-rendered thread picks up
  * the new message immediately. Cmd/Ctrl+Enter submits.
+ *
+ * Order-tagged mode: when `orderId` is set (the parent page validated
+ * it against the caller's orders), every message sent by this composer
+ * carries the tag. Server-side `sendCustomerMessage` re-validates
+ * ownership before persisting — never trust the client. `initialBody`
+ * pre-fills the textarea (e.g. `Re: order BGP-XXXX — `).
  */
 
 const MAX_CHARS = 2000;
 const COUNTER_THRESHOLD = 1800;
 
-export function MessageComposer() {
+interface MessageComposerProps {
+  orderId?: string | null;
+  initialBody?: string;
+}
+
+export function MessageComposer({
+  orderId = null,
+  initialBody = "",
+}: MessageComposerProps = {}) {
   const router = useRouter();
-  const [body, setBody] = useState("");
+  const [body, setBody] = useState(initialBody);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isSending, setIsSending] = useState(false);
   const ref = useRef<HTMLTextAreaElement | null>(null);
 
   const trimmed = body.trim();
-  const canSend = trimmed.length > 0 && trimmed.length <= MAX_CHARS && !isSending;
+  // When the body still equals the initial prefill, treat as empty —
+  // we don't want a "Re: order …" stub to be sendable on its own.
+  const onlyPrefill = initialBody.length > 0 && body === initialBody;
+  const canSend =
+    trimmed.length > 0 &&
+    trimmed.length <= MAX_CHARS &&
+    !onlyPrefill &&
+    !isSending;
 
   async function submit() {
     if (!canSend) return;
     setError(null);
     setIsSending(true);
     try {
-      const res = await sendCustomerMessage(trimmed);
+      const res = await sendCustomerMessage(trimmed, orderId);
       if (!res.ok) {
         setError(res.error ?? "Couldn't send. Try again in a moment.");
         return;

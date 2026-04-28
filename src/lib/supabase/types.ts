@@ -16,7 +16,20 @@ import type { OrderStatus } from "@/lib/orders/status";
 export interface OrderRow {
   order_id: string;
   customer: {
+    /**
+     * Composed display name. Always set: for new orders we compose it
+     * from first_name + last_name on insert; legacy orders predating
+     * the split carry the raw single-field value here.
+     */
     name: string;
+    /**
+     * First / last name pair captured at checkout from sprint G onward.
+     * Optional on the type so legacy rows still validate. Reader code
+     * should prefer first_name when present and fall back to splitting
+     * `name` on whitespace (see firstNameOf helper).
+     */
+    first_name?: string;
+    last_name?: string;
     email: string;
     institution?: string;
     phone?: string;
@@ -91,6 +104,10 @@ export interface MessageRow {
   customer_user_id: string;
   sender: 'customer' | 'admin';
   body: string;
+  /** Optional human order slug (e.g. BGP-XXXX) when the message is
+   *  scoped to a specific order; null otherwise. Added in migration
+   *  0023; legacy rows are null. */
+  order_id: string | null;
   created_at: string;
   read_at: string | null;
 }

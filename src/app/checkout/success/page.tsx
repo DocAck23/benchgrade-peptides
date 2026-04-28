@@ -6,6 +6,7 @@ import { formatPrice } from "@/lib/utils";
 import { isPaymentMethod, paymentMethodLabel, getPaymentMethodDetails, type PaymentMethod } from "@/lib/payments/methods";
 import { verifySuccessToken } from "@/lib/orders/success-token";
 import { ZELLE_PER_TX_CAP_LABEL } from "@/lib/payments/zelle";
+import { firstNameOf } from "@/lib/customer/name";
 
 export const metadata: Metadata = {
   title: "Order received",
@@ -73,7 +74,10 @@ export default async function CheckoutSuccessPage({ searchParams }: PageProps) {
     <article className="max-w-3xl mx-auto px-6 lg:px-10 py-14 lg:py-20">
       <div className="label-eyebrow text-gold-dark mb-4">Order received</div>
       <h1 className="font-display text-4xl lg:text-5xl leading-tight text-ink mb-3">
-        Thank you{row?.customer.name ? `, ${row.customer.name.split(" ")[0]}` : ""}.
+        Thank you{row?.customer ? (() => {
+          const f = firstNameOf(row.customer);
+          return f ? `, ${f}` : "";
+        })() : ""}.
       </h1>
       <p className="text-base text-ink-soft mb-8 max-w-prose">
         We&rsquo;ve recorded your order with your RUO certification.

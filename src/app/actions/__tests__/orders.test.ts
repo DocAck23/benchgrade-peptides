@@ -36,10 +36,21 @@ interface GenerateLinkArgs {
 }
 const generateLinkCalls: GenerateLinkArgs[] = [];
 let nextGenerateLinkResult: {
-  data?: { properties?: { action_link?: string }; user?: { id: string } };
+  data?: {
+    properties?: {
+      action_link?: string;
+      hashed_token?: string;
+    };
+    user?: { id: string };
+  };
   error?: unknown;
 } = {
-  data: { properties: { action_link: "https://stub-magic-link.test/abc" } },
+  data: {
+    properties: {
+      action_link: "https://stub-magic-link.test/abc",
+      hashed_token: "stubhashedtoken",
+    },
+  },
 };
 
 // Captured supabase UPDATE calls keyed by table — used by I-CHECKOUT-SUB-1
@@ -178,6 +189,8 @@ import { submitOrder } from "../orders";
 
 const VALID_CUSTOMER = {
   name: "Test Researcher",
+  first_name: "Test",
+  last_name: "Researcher",
   email: "researcher@example.com",
   institution: "Test Lab",
   phone: "555-0100",
@@ -299,7 +312,10 @@ describe("submitOrder — server-side discount computation", () => {
     resendShouldFire = true;
     nextGenerateLinkResult = {
       data: {
-        properties: { action_link: "https://stub-magic-link.test/new-user" },
+        properties: {
+          action_link: "https://stub-magic-link.test/new-user",
+          hashed_token: "stubclaimtoken123",
+        },
       },
     };
 
@@ -331,8 +347,11 @@ describe("submitOrder — server-side discount computation", () => {
     const claim = sentEmails[2];
     expect(claim.to).toBe(VALID_CUSTOMER.email);
     expect(claim.subject.toLowerCase()).toMatch(/account|claim|sign in|access/);
-    // The magic link URL must show up in the rendered HTML body.
-    expect(claim.html).toContain("https://stub-magic-link.test/new-user");
+    // The same-origin claim URL must include the token_hash so verifyOtp
+    // in /auth/callback can mint the session without bouncing through
+    // Supabase's verify endpoint.
+    expect(claim.html).toContain("/auth/callback?token_hash=stubclaimtoken123");
+    expect(claim.html).toContain("type=magiclink");
 
     // generateLink was invoked exactly once with the customer email + the
     // /auth/callback redirectTo (the route already wired up linkOrdersToUser).
@@ -352,7 +371,10 @@ describe("submitOrder — server-side discount computation", () => {
     resendShouldFire = true;
     nextGenerateLinkResult = {
       data: {
-        properties: { action_link: "https://stub-magic-link.test/existing" },
+        properties: {
+          action_link: "https://stub-magic-link.test/existing",
+          hashed_token: "stubexistingtoken",
+        },
         user: { id: "existing-user-id-123" },
       },
     };
@@ -371,13 +393,13 @@ describe("submitOrder — server-side discount computation", () => {
       email: VALID_CUSTOMER.email,
     });
 
-    // The claim email is dispatched with the link returned by
-    // generateLink — whether it signs into a new or existing account
-    // is Supabase's call. We only check that the link we got back is
-    // what we sent.
+    // The claim email is dispatched with our same-origin /auth/callback
+    // link constructed from generateLink's hashed_token. Whether it
+    // signs into a new or existing account is Supabase's call — we
+    // only assert the token we received is in the URL we email.
     const claim = sentEmails[sentEmails.length - 1];
     expect(claim.to).toBe(VALID_CUSTOMER.email);
-    expect(claim.html).toContain("https://stub-magic-link.test/existing");
+    expect(claim.html).toContain("/auth/callback?token_hash=stubexistingtoken");
   });
 
   it("I-CHECKOUT-SUB-1: subscription_mode triggers createSubscription + back-links subscription_id on the order", async () => {
@@ -474,31 +496,28 @@ describe("submitOrder — server-side discount computation", () => {
     expect(orderRow.free_vial_entitlement).toBeNull();
   });
 
-  it("I-CHECKOUT-SUB-2: invalid subscription_mode (bill_pay + 1mo) → order still succeeds, no subscription created", async () => {
+  it("I-CHECKOUT-SUB-2: invalid subscription_mode (bill_pay + 1mo) → order rejected by schema", async () => {
+    // Duration was narrowed to 3|6|12 in the bulk-buy rewrite — Zod
+    // rejects 1 at the schema boundary now. Older codepaths fell
+    // through to one-shot; the new contract is stricter (the form
+    // can't even produce a 1-month subscription) so this test now
+    // asserts the schema-level rejection. The order also doesn't get
+    // inserted because validation fails before any DB write.
     const result = await submitOrder({
       customer: VALID_CUSTOMER,
       items: [{ sku: "BGP-GLP1S-5", quantity: 1 }],
       acknowledgment: VALID_ACK,
       payment_method: "wire",
       subscription_mode: {
-        // Invalid combo — bill_pay requires duration ≥ 3 months. The
-        // server-side discount-percent check returns 0 → we log a
-        // warning and let the order roll forward as one-shot.
         duration_months: 1 as unknown as 3,
         payment_cadence: "bill_pay",
         ship_cadence: "monthly",
       },
     });
 
-    expect(result.ok).toBe(true);
+    expect(result.ok).toBe(false);
     expect(createSubscriptionMock).not.toHaveBeenCalled();
-    // The order row landed normally.
-    expect(insertedRows["orders"]).toHaveLength(1);
-    // No subscription_id back-link UPDATE either.
-    const link = updateCalls.find(
-      (u) => u.table === "orders" && "subscription_id" in u.values
-    );
-    expect(link).toBeUndefined();
+    expect(insertedRows["orders"] ?? []).toHaveLength(0);
   });
 
   it("account-claim failure does NOT roll back the order (best-effort dispatch)", async () => {

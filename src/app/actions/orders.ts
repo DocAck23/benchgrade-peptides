@@ -59,7 +59,21 @@ const CERTIFICATION_VERSION = "2026-04-22";
 // (imported at the top of this file).
 
 export interface CustomerInfo {
+  /**
+   * Composed display name. Always present on a valid order — the Zod
+   * transform recomputes it from first_name + last_name authoritatively
+   * on submit. Legacy rows (predating the split) carry only this field.
+   */
   name: string;
+  /**
+   * First/last captured separately at checkout (sprint G+). Optional on
+   * the interface so email templates that render legacy orders (which
+   * only have `name`) still satisfy the type. New checkouts require
+   * both via the Zod schema; readers should use firstNameOf() to
+   * gracefully fall back to splitting `name` on whitespace.
+   */
+  first_name?: string;
+  last_name?: string;
   email: string;
   institution: string;
   phone: string;
@@ -142,27 +156,45 @@ function sha256Hex(input: string): string {
  * can send anything. Zod bounds every field and caps collection sizes so
  * the action can't be weaponized as a DoS on PRODUCTS.find() / PG insert.
  */
-const CustomerSchema = z.object({
-  name: z.string().trim().min(1, "Name is required.").max(120),
-  email: z.string().trim().email("Valid email is required.").max(200),
-  institution: z.string().trim().max(200).default(""),
-  phone: z.string().trim().max(40).default(""),
-  ship_address_1: z.string().trim().min(1, "Shipping address is required.").max(200),
-  ship_address_2: z.string().trim().max(200).optional(),
-  ship_city: z.string().trim().min(1, "City is required.").max(100),
-  ship_state: z
-    .string()
-    .trim()
-    .transform((s) => s.toUpperCase())
-    .refine((s) => US_STATES_AND_TERRITORIES.has(s), {
-      message: "Valid US state, territory, or APO code is required.",
-    }),
-  ship_zip: z
-    .string()
-    .trim()
-    .regex(/^\d{5}(-\d{4})?$/u, "ZIP code is invalid."),
-  notes: z.string().trim().max(1000).optional(),
-});
+// First/last captured separately at checkout (sprint G+) so the welcome
+// banner can address customers by first name. Composed `name` is what
+// the rest of the system already reads (admin views, emails, packing
+// slips); we keep it as the canonical display field for backwards
+// compatibility with rows that predate the split.
+const CustomerSchema = z
+  .object({
+    // Optional on input — the schema's transform overwrites it from
+    // first_name + last_name unconditionally. Accepted here so a typed
+    // client can satisfy the CustomerInfo interface without a separate
+    // input/output split.
+    name: z.string().trim().max(120).optional(),
+    first_name: z.string().trim().min(1, "First name is required.").max(60),
+    last_name: z.string().trim().min(1, "Last name is required.").max(60),
+    email: z.string().trim().email("Valid email is required.").max(200),
+    institution: z.string().trim().max(200).default(""),
+    phone: z.string().trim().max(40).default(""),
+    ship_address_1: z.string().trim().min(1, "Shipping address is required.").max(200),
+    ship_address_2: z.string().trim().max(200).optional(),
+    ship_city: z.string().trim().min(1, "City is required.").max(100),
+    ship_state: z
+      .string()
+      .trim()
+      .transform((s) => s.toUpperCase())
+      .refine((s) => US_STATES_AND_TERRITORIES.has(s), {
+        message: "Valid US state, territory, or APO code is required.",
+      }),
+    ship_zip: z
+      .string()
+      .trim()
+      .regex(/^\d{5}(-\d{4})?$/u, "ZIP code is invalid."),
+    notes: z.string().trim().max(1000).optional(),
+  })
+  .transform((c) => ({
+    ...c,
+    // Recompose canonical display name — single trailing space collapse
+    // so a multi-token last name like "van der Berg" stays intact.
+    name: `${c.first_name} ${c.last_name}`.replace(/\s+/g, " ").trim(),
+  }));
 
 const CartLineSchema = z.object({
   sku: z
@@ -845,12 +877,29 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
     // Build a same-origin link directly to /auth/callback using the
     // hashed_token. Avoids Supabase's verify endpoint and its Redirect
     // URLs allow list — our callback runs verifyOtp() and sets the
-    // session cookie on our domain in one hop.
+    // session cookie on our domain in one hop. We refuse to email a
+    // claim link over plaintext HTTP outside of localhost (a misconfigured
+    // NEXT_PUBLIC_SITE_URL would otherwise ship single-use auth tokens
+    // unencrypted; the local dev fallback is intentional so engineers
+    // can test without a TLS cert). NODE_ENV=production tightens the
+    // gate further so previews/test envs can't silently send live HTTP
+    // claim links if SITE_URL drifts.
     const tokenHash = linkData?.properties?.hashed_token;
-    const actionLink = tokenHash
+    const candidate = tokenHash
       ? `${SITE_URL}/auth/callback?token_hash=${encodeURIComponent(tokenHash)}&type=magiclink&next=${encodeURIComponent("/account")}`
       : null;
-    if (actionLink && actionLink.startsWith("https://")) {
+    const isHttps = candidate?.startsWith("https://") ?? false;
+    const isLocalhost = candidate?.startsWith("http://localhost") ?? false;
+    const claimLinkAllowed =
+      candidate !== null &&
+      (isHttps || (isLocalhost && process.env.NODE_ENV !== "production"));
+    const actionLink = claimLinkAllowed ? candidate : null;
+    if (!claimLinkAllowed && tokenHash) {
+      console.error(
+        "[submitOrder] refusing to email claim link over plaintext: SITE_URL must be https in production",
+      );
+    }
+    if (actionLink) {
       if (resend) {
         const claim = accountClaimEmail({
           ...emailCtx,

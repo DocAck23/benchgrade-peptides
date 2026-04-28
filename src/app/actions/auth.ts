@@ -83,6 +83,18 @@ export async function requestMagicLink(formData: FormData): Promise<RequestMagic
     const params = new URLSearchParams({ token_hash: tokenHash, type: "magiclink" });
     if (next) params.set("next", next);
     const actionLink = `${SITE_URL}/auth/callback?${params.toString()}`;
+    // Refuse to email a single-use auth token over plaintext HTTP in
+    // production. Localhost is exempted so developers can still test
+    // locally without TLS — and we already log the link to the console
+    // in that path when Resend isn't configured.
+    const isHttps = actionLink.startsWith("https://");
+    const isLocalhost = actionLink.startsWith("http://localhost");
+    if (!isHttps && !(isLocalhost && process.env.NODE_ENV !== "production")) {
+      console.error(
+        "[requestMagicLink] refusing to email magic link over plaintext: SITE_URL must be https in production",
+      );
+      return { ok: true };
+    }
     const resend = getResend();
     if (!resend) {
       // No mailer configured (dev). Log the link and return ok so the

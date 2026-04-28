@@ -74,6 +74,55 @@ export async function linkOrdersToUser(
     return { ok: false, linked: 0 };
   }
 
+  // Best-effort: backfill first/last name onto the user's auth metadata
+  // so the dashboard greeting (firstNameFor in /account/page.tsx) can
+  // address the customer by first name. We only run the write when
+  // BOTH first_name and last_name are absent — once either side has
+  // been populated, a subsequent admin edit or earlier claim flow is
+  // the source of truth and we leave it alone. This sidesteps the
+  // read-merge-write race where two concurrent claims could clobber
+  // each other's edits, by narrowing the write window to "user has
+  // never had any name metadata," which is monotonic. Two concurrent
+  // first-time claims would both write the same first/last derived
+  // from the same most-recent order, so the race is benign.
+  // Failures are logged and swallowed — never block the link-up.
+  try {
+    const { data: userResp } = await supa.auth.admin.getUserById(userId);
+    const existingMeta = userResp?.user?.user_metadata ?? {};
+    const metaFirst = existingMeta.first_name;
+    const metaLast = existingMeta.last_name;
+    if (!metaFirst && !metaLast) {
+      const { data: latest } = await supa
+        .from("orders")
+        .select("customer")
+        .eq("customer_user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const customer = (latest?.customer ?? null) as
+        | { first_name?: string; last_name?: string; name?: string }
+        | null;
+      if (customer) {
+        const composed = customer.name?.trim() ?? "";
+        const splitFirst = composed.split(/\s+/, 1)[0] ?? "";
+        const splitLast = composed.replace(splitFirst, "").trim();
+        const first = (customer.first_name ?? splitFirst).trim();
+        const last = (customer.last_name ?? splitLast).trim();
+        if (first || last) {
+          await supa.auth.admin.updateUserById(userId, {
+            user_metadata: {
+              ...existingMeta,
+              ...(first ? { first_name: first } : {}),
+              ...(last ? { last_name: last } : {}),
+            },
+          });
+        }
+      }
+    }
+  } catch (metaErr) {
+    console.error("[linkOrdersToUser] user_metadata backfill failed:", metaErr);
+  }
+
   return { ok: true, linked: data?.length ?? 0 };
 }
 
