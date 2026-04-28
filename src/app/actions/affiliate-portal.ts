@@ -22,9 +22,13 @@
 import { z } from "zod";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServerSupabase } from "@/lib/supabase/client";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { isAdmin } from "@/lib/admin/auth";
+import { resolveClientIp } from "@/lib/ratelimit/ip";
+import { checkAndIncrement } from "@/lib/ratelimit/window";
+import { SupabaseRateLimitStore } from "@/lib/ratelimit/supabase-store";
 import { SITE_URL } from "@/lib/site";
 import {
   AGREEMENT_HTML,
@@ -34,6 +38,32 @@ import {
 const W9_BUCKET = "affiliate-w9";
 const W9_MAX_BYTES = 5 * 1024 * 1024;
 const SIGNED_URL_TTL_SEC = 300;
+
+/**
+ * Codex pass 1 (MEDIUM #3): pre-condition check used by both
+ * signAffiliateAgreement and uploadAffiliateW9. An affiliate must
+ * have consumed an invite before they can write to the agreements
+ * or W9 ledger — without this, any account holder could spam those
+ * tables and appear in the admin affiliate list.
+ *
+ * Reads `affiliate_invites` for any row consumed by `userId`. Single
+ * indexed lookup; cheap.
+ */
+async function hasConsumedInvite(
+  supa: SupabaseClient,
+  userId: string,
+): Promise<boolean> {
+  try {
+    const { count } = await supa
+      .from("affiliate_invites")
+      .select("token", { count: "exact", head: true })
+      .eq("consumed_by_user_id", userId);
+    return (count ?? 0) > 0;
+  } catch (err) {
+    console.error("[hasConsumedInvite] lookup failed:", err);
+    return false; // fail closed
+  }
+}
 
 // ---------------------------------------------------------------------------
 // generateAffiliateInvite (admin)
@@ -187,6 +217,14 @@ export async function signAffiliateAgreement(
   const supa = getSupabaseServer();
   if (!supa) return { ok: false, error: "Database unavailable." };
 
+  // Codex pass 1 (MEDIUM #3): require a consumed invite before
+  // allowing agreement signing — previously any signed-in account
+  // could write affiliate_agreement rows and be treated as an
+  // affiliate by the admin list.
+  if (!(await hasConsumedInvite(supa, user.id))) {
+    return { ok: false, error: "Affiliate invitation required." };
+  }
+
   const h = await headers();
   const ip =
     h.get("x-forwarded-for")?.split(",")[0]?.trim() ??
@@ -223,6 +261,9 @@ export interface UploadAffiliateW9Result {
 export async function uploadAffiliateW9(
   formData: FormData,
 ): Promise<UploadAffiliateW9Result> {
+  // Cheap checks first — file shape, size, extension. Avoid reading
+  // the file buffer or hitting the DB until we've validated the
+  // basics.
   const file = formData.get("file");
   if (!(file instanceof File)) {
     return { ok: false, error: "No file received." };
@@ -236,6 +277,8 @@ export async function uploadAffiliateW9(
     file.name.toLowerCase().endsWith(".pdf");
   if (!isPdf) return { ok: false, error: "PDF only." };
 
+  // Auth before any further IO — codex pass 1 reordering. Cheaper to
+  // reject unauth callers before reading their file buffer.
   const cookie = await createServerSupabase();
   const {
     data: { user },
@@ -245,11 +288,64 @@ export async function uploadAffiliateW9(
   const supa = getSupabaseServer();
   if (!supa) return { ok: false, error: "Database unavailable." };
 
+  // Codex pass 1 (MEDIUM #3): require a consumed invite — without
+  // this, any signed-in account could re-upload PDFs into a folder
+  // under their UID and then show up in the admin-affiliates list.
+  if (!(await hasConsumedInvite(supa, user.id))) {
+    return { ok: false, error: "Affiliate invitation required." };
+  }
+
+  // Codex pass 1 (MEDIUM #4): per-user rate limit on uploads. 5 per
+  // hour is plenty for the legitimate "uploaded the wrong file → fix"
+  // case but blocks an attacker from spamming 5MB blobs into storage.
+  try {
+    const h0 = await headers();
+    const ipResult = resolveClientIp(h0, {
+      isProduction: process.env.NODE_ENV === "production",
+    });
+    const ipForLimit = ipResult.ok ? ipResult.ip : "unknown";
+    const store = new SupabaseRateLimitStore(supa);
+    const rl = await checkAndIncrement({
+      bucket: `affiliate-w9:${user.id}:${ipForLimit}`,
+      limit: 5,
+      windowSeconds: 3600,
+      store,
+    });
+    if (!rl.allowed) {
+      return {
+        ok: false,
+        error:
+          "Too many W9 upload attempts. Please wait an hour and try again, or email admin if this is urgent.",
+      };
+    }
+  } catch (err) {
+    // Rate-limit infra failure → continue. Better to over-accept the
+    // upload than to block a legitimate affiliate over a transient
+    // hiccup — the size cap + invite gate still bound exposure.
+    console.error("[uploadAffiliateW9] rate-limit check failed:", err);
+  }
+
+  // Codex pass 1 (MEDIUM #4): PDF magic-bytes check. Without this,
+  // an attacker could upload arbitrary binary as `.pdf` content-type
+  // and have it persisted in our private bucket. Done AFTER auth +
+  // invite gate so we don't read the file buffer for unauth callers.
+  const arrayBuffer = await file.arrayBuffer();
+  const head = new Uint8Array(arrayBuffer.slice(0, 5));
+  // %PDF- = 0x25 0x50 0x44 0x46 0x2D
+  const isPdfMagic =
+    head[0] === 0x25 &&
+    head[1] === 0x50 &&
+    head[2] === 0x44 &&
+    head[3] === 0x46 &&
+    head[4] === 0x2d;
+  if (!isPdfMagic) {
+    return { ok: false, error: "File does not appear to be a valid PDF." };
+  }
+
   // Path must start with the user's UID so storage RLS authorises owner
   // SELECT/INSERT. We use crypto.randomUUID() to avoid collisions when
   // an affiliate uploads twice.
   const objectPath = `${user.id}/${crypto.randomUUID()}.pdf`;
-  const arrayBuffer = await file.arrayBuffer();
 
   const { error: uploadErr } = await supa.storage
     .from(W9_BUCKET)
@@ -266,13 +362,33 @@ export async function uploadAffiliateW9(
     null;
   const ua = h.get("user-agent") ?? null;
 
-  // Mark any previous W9 row for this user as superseded — keeps the
-  // ledger append-only but signals which row is the current one.
+  // Codex pass 1 (MEDIUM #4): on supersession, also DELETE the old
+  // storage object so we don't accumulate orphaned 5MB PDFs forever.
+  // Read the prior current row, mark it superseded, then drop the
+  // storage object. Best-effort — failure to delete the storage
+  // object doesn't roll back the row supersession.
+  const { data: priorRows } = await supa
+    .from("affiliate_w9")
+    .select("storage_path")
+    .eq("affiliate_user_id", user.id)
+    .is("superseded_at", null);
   await supa
     .from("affiliate_w9")
     .update({ superseded_at: new Date().toISOString() })
     .eq("affiliate_user_id", user.id)
     .is("superseded_at", null);
+  if (Array.isArray(priorRows) && priorRows.length > 0) {
+    const stalePaths = priorRows
+      .map((r) => (r as { storage_path?: string }).storage_path)
+      .filter((p): p is string => typeof p === "string");
+    if (stalePaths.length > 0) {
+      try {
+        await supa.storage.from(W9_BUCKET).remove(stalePaths);
+      } catch (err) {
+        console.error("[uploadAffiliateW9] storage cleanup failed:", err);
+      }
+    }
+  }
 
   const { error: insertErr } = await supa.from("affiliate_w9").insert({
     affiliate_user_id: user.id,

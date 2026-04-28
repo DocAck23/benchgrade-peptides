@@ -496,6 +496,13 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
   //   • the buyer's email must have zero prior orders
   // Discount = 50% of one unit's retail price for that SKU. Stacks with
   // every other discount (it's a one-time acquisition incentive).
+  // Snapshot the customer's ORIGINAL cart (pre-bonus) so we can
+  // hand a clean list to createSubscription downstream. Without
+  // this, the first-order bonus vial would persist into the
+  // subscription items array and recur on every cycle (codex
+  // review pass 1, HIGH #1).
+  const cartItemsForSubscription = [...resolved.items];
+
   // First-time-buyer perk: append a BONUS vial of the customer's
   // choosing to the order at 25% off retail. The SKU can be ANY
   // catalog peptide — not just one already in the cart — so the
@@ -553,14 +560,17 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
         }
         if (isFirstTime) {
           const retailCents = Math.round(bonusVariant.retail_price * 100);
-          const bonusUnitCents = Math.round(retailCents * 0.75);
-          firstTimeVialDiscountCents = retailCents - bonusUnitCents; // 25%
+          firstTimeVialDiscountCents = Math.round(retailCents * 0.25); // 25%
           firstTimeVialSkuApplied = targetSku;
-          // Append the bonus line. The cart-totals helper already
-          // ran with the original items; we adjust the totals
-          // explicitly below by adding (bonusUnitCents) to subtotal
-          // and total, and tracking the discount in the discount
-          // accounting line.
+          // Append the bonus line at FULL retail price. The 25%
+          // discount lives in `firstTimeVialDiscountCents` and is
+          // subtracted from `finalTotalCents` below — codex review
+          // (Pass 1, HIGH #2) caught a double-count: previously this
+          // line was set at retail × 0.75 AND we subtracted 25%
+          // again, so the customer was effectively getting 50% off.
+          // Adjust the in-flight totals so the bonus retail rolls
+          // into both subtotal AND total; the discount accounting
+          // line below removes the 25% once.
           resolved.items.push({
             sku: bonusVariant.sku,
             product_slug: bonusProduct.slug,
@@ -568,14 +578,12 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
             name: bonusProduct.name,
             size_mg: bonusVariant.size_mg,
             pack_size: bonusVariant.pack_size,
-            unit_price: bonusUnitCents / 100, // dollars
+            unit_price: bonusVariant.retail_price, // FULL retail (dollars)
             quantity: 1,
             vial_image: bonusProduct.vial_image,
           });
-          // Adjust the in-flight totals reference so all downstream
-          // math sees the expanded cart.
-          totals.subtotal_cents += bonusUnitCents;
-          totals.total_cents += bonusUnitCents;
+          totals.subtotal_cents += retailCents;
+          totals.total_cents += retailCents;
         }
       }
     } catch (err) {
@@ -733,7 +741,9 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
         const subResult = await createSubscription({
           customer_user_id: null, // null until magic-link claim binds it
           customer_email: validInput.customer.email,
-          items: resolved.items,
+          // Use the PRE-BONUS snapshot so the first-order bonus vial
+          // doesn't recur every cycle. Codex review pass 1, HIGH #1.
+          items: cartItemsForSubscription,
           plan: {
             duration_months: validInput.subscription_mode.duration_months,
             payment_cadence: validInput.subscription_mode.payment_cadence,
@@ -1022,11 +1032,15 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
             );
           }
         } catch (err) {
-          // Auth lookup failure → fail OPEN; the redeem_coupon RPC
-          // still runs. If we fail closed here a transient infra
-          // hiccup would block real cohort members from claiming.
+          // Auth lookup failure → fail CLOSED. Codex review pass 1
+          // (MEDIUM #5): if the auth service throws, an attacker could
+          // potentially force the throw to bypass the cohort gate. The
+          // cost of failing closed is that a transient supabase hiccup
+          // blocks legitimate FIRST250 redemptions for a few seconds —
+          // recoverable, vs. silent perk leakage which is not.
+          denyFirst250ForAuth = true;
           console.error(
-            "[submitOrder] FIRST250 auth check threw, falling through:",
+            "[submitOrder] FIRST250 auth check threw — failing closed:",
             err,
           );
         }

@@ -19,13 +19,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const category = getCategoryBySlug(slug);
   if (!category) return { title: "Catalogue category not found", robots: { index: false, follow: false } };
   const canonical = `/catalogue/${category.slug}`;
+  // Codex pass 1 (LOW #6): cap SEO description to ~150 chars.
+  // category.description on the data row can run >200 chars (built
+  // for on-page reading), which gets truncated in SERP cards.
+  const seoDescription =
+    category.description.length > 158
+      ? `${category.description.slice(0, 155).trimEnd()}...`
+      : category.description;
   return {
     title: category.name,
-    description: category.description,
+    description: seoDescription,
     alternates: { canonical },
     openGraph: {
       title: `${category.name} · Bench Grade Peptides`,
-      description: category.description,
+      description: seoDescription,
       url: canonical,
       type: "website",
     },

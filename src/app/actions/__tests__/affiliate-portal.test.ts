@@ -255,16 +255,18 @@ describe("signAffiliateAgreement", () => {
   it("captures snapshot HTML + name + ip + ua + version", async () => {
     cookieGetUser.mockResolvedValue({ data: { user: { id: USER_ID } } });
     let inserted: Record<string, unknown> | null = null;
-    serviceFrom.mockImplementation(() => ({
-      insert: (payload: Record<string, unknown>) => {
-        inserted = payload;
-        return {
-          select: () => ({
-            single: async () => ({ data: { id: "agid" }, error: null }),
-          }),
-        };
-      },
-    }));
+    serviceFrom.mockImplementation(
+      withInviteConsumed(() => ({
+        insert: (payload: Record<string, unknown>) => {
+          inserted = payload;
+          return {
+            select: () => ({
+              single: async () => ({ data: { id: "agid" }, error: null }),
+            }),
+          };
+        },
+      })),
+    );
     const res = await signAffiliateAgreement({ signed_name: "Jane Q. Researcher" });
     expect(res.ok).toBe(true);
     expect(inserted).toMatchObject({
@@ -291,7 +293,32 @@ describe("signAffiliateAgreement", () => {
 
 function makePdfFile(name = "w9.pdf", size = 1024): File {
   const bytes = new Uint8Array(size);
+  // Real PDF magic bytes (`%PDF-`) so the upload's magic-bytes check
+  // passes — codex pass 1 hardening (MEDIUM #4) requires it.
+  bytes[0] = 0x25; bytes[1] = 0x50; bytes[2] = 0x44; bytes[3] = 0x46; bytes[4] = 0x2d;
   return new File([bytes], name, { type: "application/pdf" });
+}
+
+/**
+ * Wraps a table-aware service-mock handler so that lookups against
+ * `affiliate_invites` return count=1 (i.e. the user has a consumed
+ * invite). Codex pass 1 (MEDIUM #3) added a `hasConsumedInvite`
+ * gate to signAffiliateAgreement and uploadAffiliateW9; tests that
+ * exercise the OK path need this stub to get past the gate.
+ */
+function withInviteConsumed(
+  otherTablesHandler: (table: string) => unknown,
+): (table: string) => unknown {
+  return (table: string) => {
+    if (table === "affiliate_invites") {
+      return {
+        select: () => ({
+          eq: async () => ({ count: 1, error: null }),
+        }),
+      };
+    }
+    return otherTablesHandler(table);
+  };
 }
 
 describe("uploadAffiliateW9", () => {
@@ -337,23 +364,40 @@ describe("uploadAffiliateW9", () => {
           uploadedPath = path;
           return { error: null };
         },
+        remove: async () => ({ error: null }),
       };
     });
     let inserted: Record<string, unknown> | null = null;
-    serviceFrom.mockImplementation((table: string) => {
-      if (table !== "affiliate_w9") throw new Error("unexpected table " + table);
-      return {
-        update: () => ({
-          eq: () => ({
-            is: async () => ({ error: null }),
-          }),
-        }),
-        insert: async (payload: Record<string, unknown>) => {
-          inserted = payload;
-          return { error: null };
-        },
-      };
-    });
+    serviceFrom.mockImplementation(
+      withInviteConsumed((table: string) => {
+        if (table === "rate_limit_buckets") {
+          // Rate-limit store no-op stub.
+          return {
+            upsert: async () => ({ data: { count: 1 }, error: null }),
+            select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }),
+          };
+        }
+        if (table === "affiliate_w9") {
+          return {
+            update: () => ({
+              eq: () => ({
+                is: async () => ({ error: null }),
+              }),
+            }),
+            insert: async (payload: Record<string, unknown>) => {
+              inserted = payload;
+              return { error: null };
+            },
+            select: () => ({
+              eq: () => ({
+                is: async () => ({ data: [], error: null }),
+              }),
+            }),
+          };
+        }
+        throw new Error("unexpected table " + table);
+      }),
+    );
     const fd = new FormData();
     fd.append("file", makePdfFile("my-w9.pdf", 2048));
     const res = await uploadAffiliateW9(fd);

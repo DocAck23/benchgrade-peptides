@@ -184,9 +184,20 @@ export async function previewCouponForCheckout(
         };
       }
     } catch (err) {
-      console.error("[previewCoupon] auth check failed:", err);
-      // Fail open on infra error — better to let them proceed and
-      // have submitOrder reject than to block on a transient hiccup.
+      console.error("[previewCoupon] FIRST250 auth check failed:", err);
+      // Fail CLOSED. Codex review pass 1 (MEDIUM #5): a transient
+      // auth-service throw should NOT silently grant the cohort
+      // perk in the preview. The preview is cosmetic but consistent
+      // with the submitOrder fail-closed posture.
+      return {
+        status: "auth_required",
+        coupon_discount_cents: 0,
+        other_discount_cents,
+        applied_discount_cents: other_discount_cents,
+        next_total_cents: Math.max(0, subtotal_cents - other_discount_cents),
+        message:
+          "FIRST250 is for the launch cohort — create a free Bench Grade Peptides account to claim it. We'll save your cart and bring you right back here.",
+      };
     }
   }
 
