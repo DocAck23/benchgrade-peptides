@@ -80,6 +80,7 @@ export function CheckoutPageClient({
     clear,
     addItem,
     removeItem,
+    updateQuantity,
   } = useCart();
   const hasStackSave = totals.stack_save_discount_cents > 0;
   const hasSameSku = totals.same_sku_discount_cents > 0;
@@ -703,15 +704,56 @@ export function CheckoutPageClient({
         <aside className="lg:sticky lg:top-8 h-fit border rule bg-paper-soft p-6 space-y-4">
           <div>
             <div className="label-eyebrow text-ink-muted mb-3">Order summary</div>
-            <ul className="space-y-2 text-sm">
+            <ul className="space-y-3 text-sm">
               {items.map((item) => (
-                <li key={item.sku} className="flex justify-between gap-2">
-                  <span className="truncate">
-                    {item.name} · {item.pack_size}-vial pack × {item.quantity}
-                  </span>
-                  <span className="font-mono-data text-ink shrink-0">
-                    {formatPrice(item.unit_price * item.quantity * 100)}
-                  </span>
+                <li
+                  key={item.sku}
+                  className="flex flex-col gap-1.5 pb-2 border-b rule last:border-b-0 last:pb-0"
+                >
+                  <div className="flex justify-between gap-2">
+                    <span className="text-ink leading-snug min-w-0">
+                      <span className="font-mono-data text-ink-muted">
+                        {item.quantity} ×
+                      </span>{" "}
+                      {item.name}
+                      {item.pack_size > 0 ? ` · ${item.pack_size}-vial pack` : ""}
+                    </span>
+                    <span className="font-mono-data text-ink shrink-0">
+                      {formatPrice(item.unit_price * item.quantity * 100)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <div className="inline-flex items-center border rule bg-paper">
+                      <button
+                        type="button"
+                        aria-label={`Decrease quantity of ${item.name}`}
+                        onClick={() => updateQuantity(item.sku, item.quantity - 1)}
+                        className="w-7 h-7 inline-flex items-center justify-center text-ink hover:bg-paper-soft disabled:text-ink-muted disabled:cursor-not-allowed"
+                        disabled={item.quantity <= 1}
+                      >
+                        −
+                      </button>
+                      <span className="w-7 h-7 inline-flex items-center justify-center font-mono-data text-ink border-x rule select-none">
+                        {item.quantity}
+                      </span>
+                      <button
+                        type="button"
+                        aria-label={`Increase quantity of ${item.name}`}
+                        onClick={() => updateQuantity(item.sku, item.quantity + 1)}
+                        className="w-7 h-7 inline-flex items-center justify-center text-ink hover:bg-paper-soft"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      aria-label={`Remove ${item.name}`}
+                      onClick={() => removeItem(item.sku)}
+                      className="text-ink-muted hover:text-wine underline-offset-2 hover:underline"
+                    >
+                      Remove
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
