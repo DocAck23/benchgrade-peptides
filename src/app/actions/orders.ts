@@ -496,15 +496,41 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
   //   • the buyer's email must have zero prior orders
   // Discount = 50% of one unit's retail price for that SKU. Stacks with
   // every other discount (it's a one-time acquisition incentive).
+  // First-time-buyer perk: append a BONUS vial of the customer's
+  // choosing to the order at 25% off retail. The SKU can be ANY
+  // catalog peptide — not just one already in the cart — so the
+  // perk is genuinely additive (founder spec: "additional vial,
+  // not a vial inside the checkout cart already").
+  //
+  // Mechanics:
+  //   1. Look up the chosen SKU in PRODUCTS (full catalog).
+  //   2. Verify customer has zero prior non-cancelled orders.
+  //   3. Append a new line item to resolved.items at quantity 1,
+  //      unit_price = retail × 0.75. The bonus IS shipped — it's
+  //      a real line, not a phantom discount.
+  //   4. Track the discount-cents (retail × 0.25) for the
+  //      `discount_cents` accounting column so the customer sees
+  //      a "you saved $X" line in their order summary.
+  //
+  // Server-validates eligibility; any failure path logs and
+  // proceeds without the bonus (cart already submitted is intact).
   let firstTimeVialDiscountCents = 0;
   let firstTimeVialSkuApplied: string | null = null;
   if (validInput.first_time_vial_sku) {
     try {
       const targetSku = validInput.first_time_vial_sku;
-      const targetLine = resolved.items.find(
-        (i) => i.sku === targetSku && !("is_supply" in i && i.is_supply),
-      );
-      if (targetLine) {
+      // Look up across the full catalog (not just resolved.items).
+      let bonusProduct: CatalogProduct | undefined;
+      let bonusVariant: CatalogProduct["variants"][number] | undefined;
+      for (const p of PRODUCTS) {
+        const v = p.variants.find((vv) => vv.sku === targetSku);
+        if (v) {
+          bonusProduct = p;
+          bonusVariant = v;
+          break;
+        }
+      }
+      if (bonusProduct && bonusVariant) {
         const supa2 = getSupabaseServer();
         let isFirstTime = true;
         if (supa2) {
@@ -517,7 +543,7 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
             .neq("status", "cancelled");
           if (cntErr) {
             console.error(
-              "[submitOrder] first-time vial discount lookup failed:",
+              "[submitOrder] first-time vial bonus eligibility check failed:",
               cntErr,
             );
             isFirstTime = false;
@@ -526,19 +552,34 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
           }
         }
         if (isFirstTime) {
-          // 25% off (down from 50% — too aggressive for launch).
-          // The customer-facing framing is "25% off an additional
-          // vial" — internally we still discount one unit of the
-          // SKU they picked, and the picker UI makes the tradeoff
-          // clear to the researcher.
-          firstTimeVialDiscountCents = Math.round(
-            targetLine.unit_price * 100 * 0.25,
-          );
+          const retailCents = Math.round(bonusVariant.retail_price * 100);
+          const bonusUnitCents = Math.round(retailCents * 0.75);
+          firstTimeVialDiscountCents = retailCents - bonusUnitCents; // 25%
           firstTimeVialSkuApplied = targetSku;
+          // Append the bonus line. The cart-totals helper already
+          // ran with the original items; we adjust the totals
+          // explicitly below by adding (bonusUnitCents) to subtotal
+          // and total, and tracking the discount in the discount
+          // accounting line.
+          resolved.items.push({
+            sku: bonusVariant.sku,
+            product_slug: bonusProduct.slug,
+            category_slug: bonusProduct.category_slug,
+            name: bonusProduct.name,
+            size_mg: bonusVariant.size_mg,
+            pack_size: bonusVariant.pack_size,
+            unit_price: bonusUnitCents / 100, // dollars
+            quantity: 1,
+            vial_image: bonusProduct.vial_image,
+          });
+          // Adjust the in-flight totals reference so all downstream
+          // math sees the expanded cart.
+          totals.subtotal_cents += bonusUnitCents;
+          totals.total_cents += bonusUnitCents;
         }
       }
     } catch (err) {
-      console.error("[submitOrder] first-time vial discount threw:", err);
+      console.error("[submitOrder] first-time vial bonus threw:", err);
       firstTimeVialDiscountCents = 0;
     }
   }
@@ -959,6 +1000,42 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
     try {
       const code = validInput.coupon_code.trim().toLowerCase();
       const emailLower = validInput.customer.email.trim().toLowerCase();
+      // FIRST250 cohort gate (founder spec): the coupon is for
+      // signed-in researchers only. Re-check authentication at
+      // submit time so a hostile client can't bypass the preview-
+      // layer rejection by skipping the preview entirely. We skip
+      // ONLY the `redeem_coupon` RPC + the FIRST250 perk block
+      // below; the order itself goes through at full price, and
+      // the rest of the post-coupon flow (prelaunch backfill, etc.)
+      // still runs.
+      let denyFirst250ForAuth = false;
+      if (code === "first250") {
+        try {
+          const cookieClient = await createServerSupabase();
+          const {
+            data: { user: authedUser },
+          } = await cookieClient.auth.getUser();
+          if (!authedUser) {
+            denyFirst250ForAuth = true;
+            console.info(
+              `[submitOrder] FIRST250 attempted on unauth order ${order_id} — coupon skipped per cohort gate.`,
+            );
+          }
+        } catch (err) {
+          // Auth lookup failure → fail OPEN; the redeem_coupon RPC
+          // still runs. If we fail closed here a transient infra
+          // hiccup would block real cohort members from claiming.
+          console.error(
+            "[submitOrder] FIRST250 auth check threw, falling through:",
+            err,
+          );
+        }
+      }
+      if (denyFirst250ForAuth) {
+        // Skip the RPC entirely. The order is intact at full price.
+        // couponApplied stays null → downstream FIRST250 perk
+        // block below sees no `couponApplied` and skips its work.
+      } else {
       const { data: applied, error: rpcErr } = await supa.rpc("redeem_coupon", {
         p_code: code,
         p_order_id: order_id,
@@ -976,6 +1053,7 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
       } else {
         couponApplied = typeof applied === "number" ? applied : 0;
       }
+      } // close `else` for !denyFirst250ForAuth branch
     } catch (err) {
       console.error("[submitOrder] coupon apply threw:", err);
     }

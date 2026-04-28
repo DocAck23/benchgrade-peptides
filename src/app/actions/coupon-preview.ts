@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { z } from "zod";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { createServerSupabase } from "@/lib/supabase/client";
 import { applyCoupon, validateCouponSync } from "@/lib/coupons/apply";
 import { resolveClientIp } from "@/lib/ratelimit/ip";
 import { checkAndIncrement } from "@/lib/ratelimit/window";
@@ -62,6 +63,7 @@ export type CouponPreviewStatus =
   | "min_subtotal_not_met"
   | "global_cap_reached"
   | "per_email_cap_reached"
+  | "auth_required"
   | "invalid_input";
 
 export interface CouponPreviewResult {
@@ -157,6 +159,35 @@ export async function previewCouponForCheckout(
       next_total_cents: Math.max(0, subtotal_cents - other_discount_cents),
       message: "Coupon service unavailable.",
     };
+  }
+
+  // FIRST250 cohort gate: only authenticated researchers can claim
+  // (founder spec — "make sure all the members who want the discount
+  // create an account"). Surface the requirement BEFORE the coupon
+  // table lookup so the customer gets a clear actionable message
+  // instead of a generic "doesn't apply" rejection.
+  if (code === "first250") {
+    try {
+      const cookieClient = await createServerSupabase();
+      const {
+        data: { user },
+      } = await cookieClient.auth.getUser();
+      if (!user) {
+        return {
+          status: "auth_required",
+          coupon_discount_cents: 0,
+          other_discount_cents,
+          applied_discount_cents: other_discount_cents,
+          next_total_cents: Math.max(0, subtotal_cents - other_discount_cents),
+          message:
+            "FIRST250 is for the launch cohort — create a free Bench Grade Peptides account to claim it. We'll save your cart and bring you right back here.",
+        };
+      }
+    } catch (err) {
+      console.error("[previewCoupon] auth check failed:", err);
+      // Fail open on infra error — better to let them proceed and
+      // have submitOrder reject than to block on a transient hiccup.
+    }
   }
 
   const { data: rec, error } = await supa

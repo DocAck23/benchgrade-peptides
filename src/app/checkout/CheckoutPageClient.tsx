@@ -160,16 +160,23 @@ export function CheckoutPageClient({
     [items],
   );
 
-  // Catalogue rows used to populate the first-time vial picker. We
-  // surface the lines already in the cart, so the customer applies
-  // the 50% off to a SKU they're actually buying.
+  // Catalogue rows used to populate the first-time-vial picker. The
+  // perk is "add an ADDITIONAL vial of your choosing at 25% off" —
+  // not "discount a vial already in cart" — so we surface every
+  // peptide variant in the catalog, not just lines already in the
+  // cart. Server appends the chosen SKU as a bonus line at
+  // retail × 0.75; founder spec.
   const firstTimeChoices = useMemo(() => {
-    return peptideLines.map((line) => ({
-      sku: line.sku,
-      label: `${line.name} · ${line.pack_size}-vial pack — ${formatPrice(line.unit_price * 100)}`,
-      unit_price_cents: Math.round(line.unit_price * 100),
-    }));
-  }, [peptideLines]);
+    return PRODUCTS.flatMap((p) =>
+      p.variants.map((v) => ({
+        sku: v.sku,
+        label: `${p.name} · ${v.size_mg}mg · ${v.pack_size}-vial — ${formatPrice(
+          Math.round(v.retail_price * 100 * 0.75),
+        )} (25% off ${formatPrice(v.retail_price * 100)})`,
+        unit_price_cents: Math.round(v.retail_price * 100),
+      })),
+    );
+  }, []);
 
   const firstTimeDiscountPreviewCents = useMemo(() => {
     if (!isFirstTime || !firstTimeVialSku) return 0;
@@ -608,11 +615,21 @@ export function CheckoutPageClient({
                         "border rule px-3 py-2 text-xs leading-snug mt-1",
                         couponPreview.status === "applied"
                           ? "bg-gold-dark/10 border-gold-dark/40 text-gold-dark"
-                          : "bg-paper-soft text-ink-soft",
+                          : couponPreview.status === "auth_required"
+                            ? "bg-wine/5 border-wine/40 text-wine"
+                            : "bg-paper-soft text-ink-soft",
                       )}
                       data-testid="coupon-preview"
                     >
-                      {couponPreview.message}
+                      <div>{couponPreview.message}</div>
+                      {couponPreview.status === "auth_required" && (
+                        <Link
+                          href={`/login?next=${encodeURIComponent("/checkout")}`}
+                          className="inline-flex items-center mt-2 h-9 px-4 bg-wine text-paper text-[11px] tracking-[0.06em] uppercase hover:bg-ink transition-colors"
+                        >
+                          Create my account →
+                        </Link>
+                      )}
                     </div>
                   )}
                   <span className="text-[11px] text-ink-muted leading-snug">
