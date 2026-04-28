@@ -16,6 +16,8 @@ const SECTIONS: Array<{ href: string; label: string }> = [
   { href: "/admin/reconciliation", label: "Reconciliation" },
   { href: "/admin/email-preview", label: "Email previews" },
   { href: "/admin/briefs", label: "Briefs" },
+  { href: "/admin/launch-status", label: "Launch status" },
+  { href: "/admin/launch-test-plan", label: "Test plan" },
 ];
 
 export default async function AdminLayout({
