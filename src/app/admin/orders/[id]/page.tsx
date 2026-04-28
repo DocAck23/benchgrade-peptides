@@ -5,6 +5,7 @@ import { isAdmin } from "@/lib/admin/auth";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/utils";
 import { StatusControls } from "./StatusControls";
+import { CopyMemo } from "./CopyMemo";
 import { isPaymentMethod } from "@/lib/payments/methods";
 import { isValidStatus } from "@/lib/orders/status";
 
@@ -213,6 +214,12 @@ export default async function AdminOrderPage({
                 Payment method: {order.payment_method}
               </div>
             )}
+            <div className="mt-3 flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] uppercase tracking-wider text-ink-muted">
+                Payment memo
+              </span>
+              <CopyMemo memo={`BGP-${order.order_id.slice(0, 8).toUpperCase()}`} />
+            </div>
           </div>
           <StatusControls orderId={order.order_id} current={order.status} />
         </div>

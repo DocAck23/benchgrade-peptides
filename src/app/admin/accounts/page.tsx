@@ -133,9 +133,17 @@ export default async function AdminAccountsPage() {
             account via <code>customer_user_id</code>.
           </p>
         </div>
-        <a href="/admin" className="text-sm text-teal hover:underline">
-          ← Back to orders
-        </a>
+        <div className="flex items-center gap-4">
+          <a
+            href="/admin/accounts/export"
+            className="text-xs px-3 h-8 inline-flex items-center border border-ink text-ink hover:bg-ink hover:text-paper transition-colors"
+          >
+            Export CSV
+          </a>
+          <a href="/admin" className="text-sm text-teal hover:underline">
+            ← Back to orders
+          </a>
+        </div>
       </div>
 
       <section className="mb-8 grid grid-cols-2 md:grid-cols-4 gap-4">

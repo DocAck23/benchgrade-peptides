@@ -5,6 +5,8 @@ import { isAdmin } from "@/lib/admin/auth";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/utils";
 import { isPaymentMethod } from "@/lib/payments/methods";
+import { escapeLikePattern } from "@/lib/text/like-escape";
+import { MarkFundedButton } from "./MarkFundedButton";
 
 export const metadata: Metadata = {
   title: "Admin",
@@ -91,10 +93,11 @@ const STATUS_CLASSES: Record<string, string> = {
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; q?: string }>;
 }) {
   if (!(await isAdmin())) redirect("/admin/login");
-  const { status } = await searchParams;
+  const { status, q } = await searchParams;
+  const search = (q ?? "").trim();
 
   const supa = getSupabaseServer();
   let orders: OrderRow[] = [];
@@ -109,6 +112,18 @@ export default async function AdminPage({
       .order("created_at", { ascending: false })
       .limit(100);
     if (status) query = query.eq("status", status);
+    if (search) {
+      // Search across customer name + email (JSONB) and order id.
+      const safe = escapeLikePattern(search);
+      const pattern = `%${safe}%`;
+      query = query.or(
+        [
+          `customer->>email.ilike.${pattern}`,
+          `customer->>name.ilike.${pattern}`,
+          `order_id.ilike.${pattern}`,
+        ].join(","),
+      );
+    }
     const { data, error } = await query;
     if (error) loadError = error.message;
     else {
@@ -134,16 +149,50 @@ export default async function AdminPage({
         </div>
       </div>
 
+      <form action="/admin" method="get" className="flex gap-2 mb-4">
+        {status && <input type="hidden" name="status" value={status} />}
+        <input
+          type="search"
+          name="q"
+          defaultValue={search}
+          placeholder="Search by name, email, or order ID…"
+          className="flex-1 h-9 px-3 border rule bg-paper text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:border-ink"
+        />
+        <button
+          type="submit"
+          className="h-9 px-4 text-xs bg-ink text-paper hover:bg-gold transition-colors"
+        >
+          Search
+        </button>
+        {search && (
+          <Link
+            href={status ? `/admin?status=${status}` : "/admin"}
+            className="h-9 px-3 inline-flex items-center text-xs text-ink-soft hover:text-ink"
+          >
+            Clear
+          </Link>
+        )}
+      </form>
+
       <div className="flex flex-wrap gap-2 mb-6">
-        <FilterPill href="/admin" active={!status} label="All" />
-        {Object.entries(STATUS_LABELS).map(([k, v]) => (
-          <FilterPill
-            key={k}
-            href={`/admin?status=${k}`}
-            active={status === k}
-            label={v}
-          />
-        ))}
+        <FilterPill
+          href={search ? `/admin?q=${encodeURIComponent(search)}` : "/admin"}
+          active={!status}
+          label="All"
+        />
+        {Object.entries(STATUS_LABELS).map(([k, v]) => {
+          const params = new URLSearchParams();
+          params.set("status", k);
+          if (search) params.set("q", search);
+          return (
+            <FilterPill
+              key={k}
+              href={`/admin?${params.toString()}`}
+              active={status === k}
+              label={v}
+            />
+          );
+        })}
       </div>
 
       {loadError && (
@@ -207,12 +256,18 @@ export default async function AdminPage({
                       </span>
                     </Td>
                     <Td>
-                      <Link
-                        href={`/admin/orders/${o.order_id}`}
-                        className="text-teal text-xs hover:underline"
-                      >
-                        Open →
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        {(o.status === "awaiting_payment" ||
+                          o.status === "awaiting_wire") && (
+                          <MarkFundedButton orderId={o.order_id} />
+                        )}
+                        <Link
+                          href={`/admin/orders/${o.order_id}`}
+                          className="text-teal text-xs hover:underline"
+                        >
+                          Open →
+                        </Link>
+                      </div>
                     </Td>
                   </tr>
                 );
