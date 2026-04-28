@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase/client";
 import { AccountNav } from "@/components/account/AccountNav";
 import { getMyAffiliateState } from "@/app/actions/affiliate";
+import { getAccountAttention } from "@/lib/account/attention";
 
 /**
  * Customer portal layout (spec §5).
@@ -40,39 +41,15 @@ export default async function AccountLayout({ children }: { children: ReactNode 
     isAffiliate = false;
   }
 
-  // Attention counts — null on failure so the badges simply don't render
-  // (graceful degradation: never break the nav for a count error).
-  let ordersAttention = 0;
-  let messagesAttention = 0;
-  try {
-    const { count } = await supa
-      .from("orders")
-      .select("order_id", { count: "exact", head: true })
-      .eq("customer_user_id", user.id)
-      .eq("status", "awaiting_payment");
-    ordersAttention = typeof count === "number" ? count : 0;
-  } catch {
-    ordersAttention = 0;
-  }
-  try {
-    const { count } = await supa
-      .from("messages")
-      .select("id", { count: "exact", head: true })
-      .eq("customer_user_id", user.id)
-      .eq("sender", "admin")
-      .is("read_at", null);
-    messagesAttention = typeof count === "number" ? count : 0;
-  } catch {
-    messagesAttention = 0;
-  }
+  // Attention counts — graceful degradation: any failure resolves to 0
+  // so the nav never breaks for a count error. Same helper feeds the
+  // global header dropdown so badges stay consistent across surfaces.
+  const attention = await getAccountAttention(supa, user.id);
 
   return (
     <div className="max-w-6xl mx-auto px-6 lg:px-10 py-12 lg:py-16">
       <div className="lg:grid lg:grid-cols-[14rem_1fr] lg:gap-12">
-        <AccountNav
-          isAffiliate={isAffiliate}
-          attention={{ orders: ordersAttention, messages: messagesAttention }}
-        />
+        <AccountNav isAffiliate={isAffiliate} attention={attention} />
         <div className="mt-10 lg:mt-0 min-w-0">{children}</div>
       </div>
     </div>

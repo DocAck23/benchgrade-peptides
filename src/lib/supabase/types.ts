@@ -74,6 +74,12 @@ export interface OrderRow {
   shipped_at?: string | null;
   customer_user_id?: string | null;
   subscription_id?: string | null;
+  /**
+   * Sequential invoice number assigned at insert via the
+   * orders_invoice_seq sequence (starts at 196). Parallel to order_id
+   * which stays the customer-facing slug. Display via formatInvoiceNumber.
+   */
+  invoice_number: number;
   created_at: string;
   updated_at: string;
 }
@@ -110,6 +116,28 @@ export interface MessageRow {
   order_id: string | null;
   created_at: string;
   read_at: string | null;
+}
+
+/**
+ * Customer profile row (one per auth.users.id). Source of truth for
+ * editable defaults: shipping address, name, contact info. Optional
+ * fields are null when the customer hasn't filled them in. Mirrored
+ * to auth.users.user_metadata.first_name/last_name on save so the
+ * dashboard greeting picks up edits without a join.
+ */
+export interface ProfileRow {
+  user_id: string;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  institution: string | null;
+  ship_address_1: string | null;
+  ship_address_2: string | null;
+  ship_city: string | null;
+  ship_state: string | null;
+  ship_zip: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ReferralCodeRow {

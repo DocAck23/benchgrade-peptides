@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { signOutAction } from "@/app/actions/session";
 
 /**
  * Customer portal nav (spec §5 portal route map).
@@ -85,7 +86,13 @@ const BASE_TABS: Tab[] = [
     match: (p) =>
       p === "/account/security" || p.startsWith("/account/security/"),
   },
-  { href: "#", label: "Profile", enabled: false },
+  {
+    href: "/account/profile",
+    label: "Profile",
+    enabled: true,
+    match: (p) =>
+      p === "/account/profile" || p.startsWith("/account/profile/"),
+  },
 ];
 
 const AFFILIATE_TAB: Tab = {
@@ -101,12 +108,14 @@ const linkBase =
 
 function Badge({ count }: { count: number }) {
   // Cap at 99+ to keep layout stable; sub-2-digit pad keeps the rail
-  // a consistent width when the badge appears mid-session.
+  // a consistent width when the badge appears mid-session. Wine pill
+  // with bold paper text — gold-on-cream tested poorly (low contrast,
+  // missed at a glance).
   const display = count > 99 ? "99+" : String(count);
   return (
     <span
       aria-label={`${count} need${count === 1 ? "s" : ""} attention`}
-      className="ml-2 inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full bg-gold text-ink text-[10px] font-display tracking-[0.05em] leading-none"
+      className="ml-2 inline-flex items-center justify-center min-w-[1.4rem] h-5 px-1.5 rounded-full bg-wine text-paper text-[11px] font-display font-bold tracking-[0.02em] leading-none"
     >
       {display}
     </span>
@@ -182,24 +191,53 @@ export function AccountNav({
   return (
     <>
       {/* Mobile: horizontal scroll strip — keeps current behavior on small
-          screens where a sidebar would eat real estate. */}
+          screens where a sidebar would eat real estate. Sign-out lives
+          in the global header dropdown on mobile (and is appended to
+          the strip below as a last resort if the dropdown ever fails
+          to mount). */}
       <nav
         aria-label="Account"
         className="lg:hidden border-b rule overflow-x-auto"
       >
         <ul className="flex items-end gap-x-6 min-w-max">
           {tabs.map((t) => renderTab(t, "strip"))}
+          <li>
+            <form action={signOutAction}>
+              <button
+                type="submit"
+                className={cn(
+                  linkBase,
+                  "block py-3 whitespace-nowrap text-ink-soft hover:text-ink",
+                )}
+              >
+                Sign out
+              </button>
+            </form>
+          </li>
         </ul>
       </nav>
       {/* Desktop: sticky left rail. Sticks to top of viewport so the
-          customer can scroll long detail pages and still navigate. */}
+          customer can scroll long detail pages and still navigate.
+          Sign-out is anchored to the bottom of the rail (via mt-auto
+          on a flex-col wrapper) so it's always one click away. */}
       <nav
         aria-label="Account"
-        className="hidden lg:block lg:sticky lg:top-24 lg:self-start"
+        className="hidden lg:flex lg:flex-col lg:sticky lg:top-24 lg:self-start"
       >
         <ul className="flex flex-col border-l rule">
           {tabs.map((t) => renderTab(t, "rail"))}
         </ul>
+        <form action={signOutAction} className="mt-6 ml-[-1px] pl-4 border-l rule">
+          <button
+            type="submit"
+            className={cn(
+              linkBase,
+              "py-2 text-ink-soft hover:text-ink",
+            )}
+          >
+            Sign out
+          </button>
+        </form>
       </nav>
     </>
   );

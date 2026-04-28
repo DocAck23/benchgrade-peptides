@@ -64,6 +64,18 @@ export function MessageThread({
   const lastCountRef = useRef<number>(initialMessages.length);
   const markedReadRef = useRef<Set<string>>(new Set());
 
+  // When the parent server component re-renders (e.g. after the
+  // composer fires its server action and calls router.refresh()),
+  // a new initialMessages array arrives. The thread state was
+  // initialized once on mount, so without this sync the just-sent
+  // message would only appear after the next poll tick (≤30s wait).
+  // Merge new entries into local state so a sent message lands
+  // immediately while still preserving any rows already received via
+  // the polling loop.
+  useEffect(() => {
+    setMessages((prev) => dedupeAppend(prev, initialMessages));
+  }, [initialMessages]);
+
   // ---- Poll loop ----
   const poll = useCallback(async () => {
     const since =
