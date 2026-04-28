@@ -55,14 +55,20 @@ export function ProductCard({ product, categorySlug }: ProductCardProps) {
           )}
         </div>
 
-        {/* Compound name — wraps to two lines on mobile so long names like
-            "VIP (Vasoactive Intestinal Peptide)" stay readable at 320px. */}
-        <h3 className="font-display text-[12px] sm:text-lg lg:text-xl text-ink leading-tight mb-1 sm:mb-2 line-clamp-2 sm:line-clamp-1 min-h-[2.4em] sm:min-h-0 sm:h-7">
+        {/* Compound name — allow 2 lines on every breakpoint so long
+            names like "Hexarelin Acetate 5mg" or "Melanotan-2" don't
+            get ellipsis-truncated. Reserved height holds 2 lines of
+            the sm:text-lg face cleanly. */}
+        <h3 className="font-display text-[12px] sm:text-lg lg:text-xl text-ink leading-tight mb-1 sm:mb-2 line-clamp-2 min-h-[2.4em] sm:min-h-0 sm:h-[3em]">
           {product.name}
         </h3>
 
-        {/* Summary — hidden on mobile, full two-line clamp from sm up. */}
-        <p className="hidden sm:block text-xs text-ink-muted mb-4 leading-relaxed line-clamp-2 h-8">
+        {/* Summary — hidden on mobile; from sm up reserves 3 lines at
+            text-xs / leading-snug. Previous version was clamped to 2
+            lines but the h-8 box was too short for two leading-relaxed
+            lines, so the description visually clipped mid-line — the
+            "cut off" issue founder reported. */}
+        <p className="hidden sm:block text-xs text-ink-muted mb-4 leading-snug line-clamp-3 h-[3.75em]">
           {product.summary}
         </p>
 
