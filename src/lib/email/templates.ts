@@ -23,22 +23,18 @@ import { paymentMethodLabel } from "@/lib/payments/methods";
  */
 let logoSrcCache: string | null = null;
 export function logoSrc(): string {
-  // In dev, re-read the PNG every call so design iteration on the
-  // logo asset doesn't require a server restart. In production the
-  // cache makes every email send a single in-memory string lookup.
-  if (process.env.NODE_ENV !== "production" && logoSrcCache) {
-    logoSrcCache = null;
-  }
-  if (logoSrcCache) return logoSrcCache;
-  try {
-    const bytes = readFileSync(
-      join(process.cwd(), "public/brand/logo-mark-gold.png")
-    );
-    logoSrcCache = `data:image/png;base64,${bytes.toString("base64")}`;
-  } catch {
-    logoSrcCache = `${SITE_URL}/brand/logo-mark-gold.png`;
-  }
-  return logoSrcCache;
+  // Always use the public URL form — never base64. The 165KB logo
+  // base64-encodes to ~220KB inline, and Gmail clips messages over
+  // 102KB ("[Message clipped] View entire message") which destroys
+  // the customer's first impression. Loading from /brand/<…> means
+  // email clients fetch on first view — standard practice for
+  // commerce email and exactly what Amazon / Shopify / Resend
+  // templates do. The legacy `logoSrcCache` is preserved as a no-op
+  // for tests that imported it, but it is never populated.
+  void logoSrcCache;
+  void readFileSync;
+  void join;
+  return `${SITE_URL}/brand/logo-mark-gold.png`;
 }
 
 interface OrderContext {
