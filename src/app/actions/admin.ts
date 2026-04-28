@@ -29,6 +29,7 @@ import {
   clawbackCommissionForOrder,
 } from "@/app/actions/affiliate";
 import { transitionReferralOnShipped } from "@/app/actions/referrals";
+import { awardPointsForFundedOrder, reversePointsForOrder } from "@/lib/rewards/order-hooks";
 import { SITE_URL } from "@/lib/site";
 import type { CartItem } from "@/lib/cart/types";
 import type { SubscriptionRow } from "@/lib/supabase/types";
@@ -138,6 +139,23 @@ export async function markOrderFunded(
   } catch (err) {
     console.error("[markOrderFunded] awardCommissionForOrder failed:", err);
   }
+  // Best-effort: rewards earnings (own-spend + optional referrer
+  // earnings). Same idempotent contract — a retry is safe because
+  // ledger inserts check for prior (order_id, kind) rows.
+  try {
+    const row = data[0] as OrderRow & {
+      referrer_user_id?: string | null;
+    };
+    await awardPointsForFundedOrder({
+      order_id: row.order_id,
+      customer_user_id: row.customer_user_id ?? null,
+      referrer_user_id: row.referrer_user_id ?? null,
+      total_cents: row.total_cents ?? null,
+      subtotal_cents: row.subtotal_cents,
+    });
+  } catch (err) {
+    console.error("[markOrderFunded] awardPointsForFundedOrder failed:", err);
+  }
   return { ok: true };
 }
 
@@ -244,6 +262,13 @@ export async function markOrderRefunded(
     await clawbackCommissionForOrder(orderId);
   } catch (err) {
     console.error("[markOrderRefunded] clawback failed:", err);
+  }
+  // Best-effort: reverse any rewards points credited at funded time.
+  // Idempotent — the helper checks for an existing reversal row first.
+  try {
+    await reversePointsForOrder(orderId);
+  } catch (err) {
+    console.error("[markOrderRefunded] reversePointsForOrder failed:", err);
   }
   return { ok: true };
 }

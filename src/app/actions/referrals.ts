@@ -172,6 +172,20 @@ export async function claimReferralOnOrder(
     console.error("[claimReferralOnOrder] referral insert failed:", insertErr);
     return { ok: true, ten_percent_off_applied: false };
   }
+
+  // PRD §4.11: lock attribution onto the order itself so rewards
+  // hooks read an immutable column at award time. Best-effort —
+  // failure here doesn't block the order, but the award path falls
+  // back to looking up the referrals table if the column is null.
+  try {
+    await service
+      .from("orders")
+      .update({ referrer_user_id: ownerId })
+      .eq("order_id", input.order_id)
+      .is("referrer_user_id", null);
+  } catch (err) {
+    console.error("[claimReferralOnOrder] referrer_user_id stamp failed:", err);
+  }
   return { ok: true, ten_percent_off_applied: true };
 }
 

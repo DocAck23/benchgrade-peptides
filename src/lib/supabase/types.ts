@@ -75,6 +75,13 @@ export interface OrderRow {
   customer_user_id?: string | null;
   subscription_id?: string | null;
   /**
+   * Locked referral attribution captured at order placement from the
+   * bgp_ref cookie (sprint G1, migration 0027). PRD §4.11: first
+   * attribution wins; historical edits to the referrals table no
+   * longer affect rewards earned on this order.
+   */
+  referrer_user_id?: string | null;
+  /**
    * Sequential invoice number assigned at insert via the
    * orders_invoice_seq sequence (starts at 196). Parallel to order_id
    * which stays the customer-facing slug. Display via formatInvoiceNumber.
@@ -138,6 +145,71 @@ export interface ProfileRow {
   ship_zip: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/** Customer status tier (sprint G1). Lowercase to match the Postgres enum. */
+export type RewardTier =
+  | "initiate"
+  | "researcher"
+  | "principal"
+  | "fellow"
+  | "laureate";
+
+/** Every credit/debit on the rewards ledger. Append-only audit trail. */
+export type PointsLedgerKind =
+  | "earn_own_spend"
+  | "earn_referee_first"
+  | "earn_referee_spend"
+  | "redeem_credit"
+  | "redeem_raffle_entry"
+  | "redeem_vial_5"
+  | "redeem_vial_10"
+  | "redeem_shipping"
+  | "admin_credit"
+  | "admin_debit"
+  | "reversal";
+
+export interface PointsLedgerRow {
+  id: string;
+  user_id: string;
+  kind: PointsLedgerKind;
+  /** Signed change to tier-points bucket (zero for pure redemptions). */
+  tier_delta: number;
+  /** Signed change to redeemable balance. */
+  balance_delta: number;
+  /** First-of-month date string (YYYY-MM-DD); used for rolling-window aging. */
+  bucket_month: string;
+  source_order_id: string | null;
+  source_referral_user_id: string | null;
+  note: string | null;
+  created_at: string;
+}
+
+/** Denormalized rewards state per user; recomputed from ledger. */
+export interface UserRewardsRow {
+  user_id: string;
+  tier: RewardTier;
+  tier_points: number;
+  available_balance: number;
+  lifetime_points_earned: number;
+  referee_count: number;
+  referee_total_spend_cents: number;
+  free_shipping_until: string | null;
+  recomputed_at: string;
+}
+
+export type VialCreditSource = "redemption" | "raffle" | "admin";
+
+export interface VialCreditRow {
+  id: string;
+  user_id: string;
+  source: VialCreditSource;
+  /** Max vial size redeemable; null = unrestricted (raffle "any vial"). */
+  max_size_mg: number | null;
+  issued_at: string;
+  redeemed_at: string | null;
+  redeemed_order_id: string | null;
+  note: string | null;
 }
 
 export interface ReferralCodeRow {

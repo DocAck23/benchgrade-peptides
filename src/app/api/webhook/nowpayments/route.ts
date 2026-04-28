@@ -15,6 +15,7 @@ import {
   awardCommissionForOrder,
   clawbackCommissionForOrder,
 } from "@/app/actions/affiliate";
+import { awardPointsForFundedOrder, reversePointsForOrder } from "@/lib/rewards/order-hooks";
 
 /**
  * NOWPayments IPN (webhook) endpoint.
@@ -296,6 +297,20 @@ export async function POST(req: Request) {
     } catch (err) {
       console.error("[nowpayments webhook] awardCommissionForOrder failed:", err);
     }
+    // Best-effort: rewards earnings (own-spend + optional referrer
+    // earnings). Idempotent — the helper checks for prior ledger rows.
+    try {
+      const row = updated[0] as OrderRow & { referrer_user_id?: string | null };
+      await awardPointsForFundedOrder({
+        order_id: row.order_id,
+        customer_user_id: row.customer_user_id ?? null,
+        referrer_user_id: row.referrer_user_id ?? null,
+        total_cents: row.total_cents ?? null,
+        subtotal_cents: row.subtotal_cents,
+      });
+    } catch (err) {
+      console.error("[nowpayments webhook] awardPointsForFundedOrder failed:", err);
+    }
   }
   // Codex review #3 H6: refund clawback. If the IPN flipped the order to
   // `refunded`, reverse any commission already earned and cancel
@@ -317,6 +332,15 @@ export async function POST(req: Request) {
       console.error(
         "[nowpayments webhook] clawbackCommissionForOrder failed:",
         err
+      );
+    }
+    // Best-effort: reverse rewards points credited at funded time.
+    try {
+      await reversePointsForOrder(orderId);
+    } catch (err) {
+      console.error(
+        "[nowpayments webhook] reversePointsForOrder failed:",
+        err,
       );
     }
   }
