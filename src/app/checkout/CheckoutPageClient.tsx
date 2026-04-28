@@ -845,11 +845,10 @@ void SUPPLIES;
 void ({} as CatalogProduct);
 
 /**
- * Step-3 inner UI. Forces an explicit "subscribe & save" vs.
- * "one-time purchase" decision before the customer can advance to
- * payment. The subscription form lives behind the "Subscribe & save"
- * button so a researcher buying once doesn't get pulled into a
- * configurator they didn't ask for.
+ * Step-3 inner UI. Two tabs visible upfront — One-time / Subscribe &
+ * save — so customers can compare the two paths without committing to
+ * "Subscribe" first. Picking "One-time" clears any pending subscription
+ * draft; picking "Subscribe & save" reveals the tier picker.
  */
 function SubscribeChoiceStep({
   hasSubscription,
@@ -860,50 +859,61 @@ function SubscribeChoiceStep({
   onPickOneTime: () => void;
   onContinue: () => void;
 }) {
-  const [showSub, setShowSub] = useState(hasSubscription);
-
-  if (!showSub) {
-    return (
-      <div className="space-y-4">
-        <p className="text-sm text-ink-soft">
-          Add a subscription for a locked-in discount, or continue with a
-          one-time purchase.
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => setShowSub(true)}
-            className="h-12 px-5 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-gold transition-colors"
-          >
-            Subscribe &amp; save
-          </button>
-          <button
-            type="button"
-            onClick={onPickOneTime}
-            className="h-12 px-5 border border-ink text-ink text-sm tracking-[0.04em] hover:bg-ink hover:text-paper transition-colors"
-          >
-            Continue with one-time
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Default tab: subscribe-already-set → subscribe; otherwise one-time.
+  const [tab, setTab] = useState<"one-time" | "subscribe">(
+    hasSubscription ? "subscribe" : "one-time",
+  );
 
   return (
-    <div className="space-y-4">
-      <SubscriptionUpsellCard />
-      <div className="flex flex-wrap gap-3">
-        <ContinueButton onClick={onContinue}>
-          Continue to payment
-        </ContinueButton>
+    <div className="space-y-5">
+      <div role="tablist" aria-label="Order type" className="grid grid-cols-2 border rule">
         <button
           type="button"
-          onClick={() => setShowSub(false)}
-          className="h-11 px-4 text-sm text-ink-soft hover:text-ink"
+          role="tab"
+          aria-selected={tab === "one-time"}
+          onClick={() => {
+            setTab("one-time");
+            // Clear any pending subscription draft so payment step
+            // sees a clean one-time cart.
+            if (hasSubscription) onPickOneTime();
+          }}
+          className={cn(
+            "h-12 px-5 text-sm tracking-[0.04em] transition-colors",
+            tab === "one-time"
+              ? "bg-ink text-paper"
+              : "bg-paper text-ink hover:bg-paper-soft",
+          )}
         >
-          ← Back
+          One-time order
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "subscribe"}
+          onClick={() => setTab("subscribe")}
+          className={cn(
+            "h-12 px-5 text-sm tracking-[0.04em] transition-colors border-l rule",
+            tab === "subscribe"
+              ? "bg-ink text-paper"
+              : "bg-paper text-ink hover:bg-paper-soft",
+          )}
+        >
+          Subscribe &amp; save
         </button>
       </div>
+
+      {tab === "one-time" ? (
+        <p className="text-sm text-ink-soft">
+          Pay once, ship once. Switch to <em>Subscribe &amp; save</em> above to
+          lock in a multi-month discount.
+        </p>
+      ) : (
+        <SubscriptionUpsellCard />
+      )}
+
+      <ContinueButton onClick={onContinue}>
+        Continue to payment
+      </ContinueButton>
     </div>
   );
 }
