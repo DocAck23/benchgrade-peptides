@@ -5,6 +5,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/utils";
 import { isPaymentMethod, paymentMethodLabel, getPaymentMethodDetails, type PaymentMethod } from "@/lib/payments/methods";
 import { verifySuccessToken } from "@/lib/orders/success-token";
+import { ZELLE_PER_TX_CAP_LABEL } from "@/lib/payments/zelle";
 
 export const metadata: Metadata = {
   title: "Order received",
@@ -261,7 +262,7 @@ function PaymentInstructions({ method, memo, details, amount }: InstructionsProp
       rows.push(["Zelle handle", details.zelle.handle]);
     }
     rows.push(["Memo / note", memo, true]);
-    footer = "Send from your bank's Zelle app. Most US banks settle in seconds. $500 per-transaction cap on most banks; if your order is over $500, send via wire or ACH instead.";
+    footer = `Send from your bank's Zelle app. Most US banks settle in seconds. ${ZELLE_PER_TX_CAP_LABEL} per-transaction cap on most banks; if your order is over ${ZELLE_PER_TX_CAP_LABEL}, send via wire or ACH instead. When Zelle asks the purpose, choose "Paying a business" or "For goods or services" — not friends & family.`;
   }
 
   return (

@@ -535,7 +535,7 @@ export function CheckoutPageClient({
               </AddonCard>
 
               <ContinueButton onClick={() => advance(3)}>
-                Continue to subscribe & save
+                Continue
               </ContinueButton>
             </div>
           </StepShell>

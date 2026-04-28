@@ -2,6 +2,7 @@
 
 import { useId } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ChevronDown, AlertCircle, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -9,6 +10,7 @@ import {
   type PaymentMethodDetails,
   paymentMethodLabel,
 } from "@/lib/payments/methods";
+import { ZELLE_PER_TX_CAP_LABEL } from "@/lib/payments/zelle";
 
 interface AccordionProps {
   availableMethods: PaymentMethod[];
@@ -20,14 +22,14 @@ interface AccordionProps {
 const RECOMMENDED: Record<PaymentMethod, string | null> = {
   wire: "Recommended for first-time buyers — fastest",
   ach: "Best for repeat buyers — free, after one-time setup",
-  zelle: "Instant for orders under $500",
+  zelle: `Instant for orders under ${ZELLE_PER_TX_CAP_LABEL}`,
   crypto: "Auto-confirms on-chain — no admin reconciliation",
 };
 
 const HEADLINE_BLURB: Record<PaymentMethod, string> = {
   wire: "Same-day to 1 business day clear · ~$15–30 wire fee at your bank",
   ach: "Free · 1–3 business days clear · 1–2 day verification on first use",
-  zelle: "Instant at most US banks · $500 per-transaction cap",
+  zelle: `Instant at most US banks · ${ZELLE_PER_TX_CAP_LABEL} per-transaction cap`,
   crypto: "BTC, ETH, USDT, USDC, LTC · 10–60 minutes",
 };
 
@@ -257,8 +259,8 @@ function ZellePanel({ d }: { d: NonNullable<PaymentMethodDetails["zelle"]> }) {
       <div className="border-l-4 border-warn/60 bg-warn/5 px-4 py-3 mb-4 text-xs text-ink leading-relaxed flex gap-2">
         <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-warn" strokeWidth={2} />
         <span>
-          <strong className="font-display text-ink">$500 per-transaction cap</strong>{" "}
-          at most banks. If your order is over $500, choose Wire or ACH so it goes
+          <strong className="font-display text-ink">{ZELLE_PER_TX_CAP_LABEL} per-transaction cap</strong>{" "}
+          at most banks. If your order is over {ZELLE_PER_TX_CAP_LABEL}, choose Wire or ACH so it goes
           through in one transfer.
         </span>
       </div>
@@ -266,6 +268,32 @@ function ZellePanel({ d }: { d: NonNullable<PaymentMethodDetails["zelle"]> }) {
         <DetailRow label="Name" value={d.name} mono={false} />
         <DetailRow label="Zelle ID" value={d.handle} copy />
       </dl>
+      <div className="mt-4 border rule bg-paper-soft p-4 flex flex-col sm:flex-row gap-4 items-center">
+        <div className="shrink-0">
+          <Image
+            src="/payments/zelle-qr.png"
+            alt="Bench Grade Peptides Zelle QR code"
+            width={180}
+            height={213}
+            className="block bg-paper border rule p-2"
+            unoptimized
+          />
+        </div>
+        <div className="text-xs text-ink-soft leading-relaxed flex-1">
+          <strong className="font-display text-ink block mb-1">Or scan to pay</strong>
+          Open your bank&rsquo;s app → Zelle → Scan code. Faster than typing the
+          handle, and most banks pre-fill the recipient name automatically.
+        </div>
+      </div>
+      <div className="mt-3 border rule bg-paper-soft px-4 py-3 text-xs text-ink-soft leading-relaxed">
+        <strong className="font-display text-ink block mb-1">
+          When Zelle asks what you&rsquo;re paying for:
+        </strong>
+        Choose <em>&ldquo;Paying a business&rdquo;</em> or <em>&ldquo;For goods or services&rdquo;</em> —
+        not <em>friends &amp; family</em>. Zelle&rsquo;s purpose questions exist to verify
+        legitimate commerce; selecting the right option keeps your transfer from
+        being held for review.
+      </div>
       <MemoCallout />
     </div>
   );
