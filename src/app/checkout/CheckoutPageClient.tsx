@@ -579,15 +579,15 @@ export function CheckoutPageClient({
           >
             <form onSubmit={onSubmitFinal} className="space-y-8">
               <Section title="Payment method">
+                <div className="mb-4">
+                  <CardProcessorFootnote />
+                </div>
                 <PaymentMethodAccordion
                   availableMethods={availableMethods}
                   details={paymentDetails}
                   selected={paymentMethod}
                   onSelect={(m) => setPaymentMethod(m)}
                 />
-                <div className="mt-3">
-                  <CardProcessorFootnote />
-                </div>
               </Section>
 
               <Section title="Coupon (optional)">
