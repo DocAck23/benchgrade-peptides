@@ -71,14 +71,18 @@ export async function requestMagicLink(formData: FormData): Promise<RequestMagic
     if (error) {
       return { ok: false, error: "Could not send sign-in link. Please try again." };
     }
-    const actionLink = data?.properties?.action_link;
-    // Defense-in-depth: insist on https before letting the URL into
-    // an email template. If the link isn't usable we still return ok
-    // (don't leak that the link wasn't sent), but log so we notice.
-    if (!actionLink || !actionLink.startsWith("https://")) {
-      console.error("[requestMagicLink] invalid action_link from generateLink");
+    // Build our own link straight to /auth/callback using the hashed_token
+    // from generateLink. Bypasses Supabase's /auth/v1/verify endpoint and
+    // its Redirect URLs allow list — the callback verifies the OTP itself
+    // via verifyOtp() and sets the session cookie on our domain directly.
+    const tokenHash = data?.properties?.hashed_token;
+    if (!tokenHash) {
+      console.error("[requestMagicLink] missing hashed_token from generateLink");
       return { ok: true };
     }
+    const params = new URLSearchParams({ token_hash: tokenHash, type: "magiclink" });
+    if (next) params.set("next", next);
+    const actionLink = `${SITE_URL}/auth/callback?${params.toString()}`;
     const resend = getResend();
     if (!resend) {
       // No mailer configured (dev). Log the link and return ok so the

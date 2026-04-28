@@ -40,9 +40,10 @@ function requireEnv(name: string): string {
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
+  const tokenHash = url.searchParams.get("token_hash");
   const next = url.searchParams.get("next");
 
-  if (!code) {
+  if (!code && !tokenHash) {
     return NextResponse.redirect(new URL("/login?error=missing-code", url));
   }
 
@@ -67,7 +68,9 @@ export async function GET(req: NextRequest) {
   );
 
   try {
-    const { data, error } = await supa.auth.exchangeCodeForSession(code);
+    const { data, error } = tokenHash
+      ? await supa.auth.verifyOtp({ type: "magiclink", token_hash: tokenHash })
+      : await supa.auth.exchangeCodeForSession(code as string);
     if (error || !data?.session) {
       return NextResponse.redirect(new URL("/login?error=invalid-link", url));
     }

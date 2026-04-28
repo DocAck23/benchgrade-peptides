@@ -842,11 +842,14 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
       email: validInput.customer.email,
       options: { redirectTo: `${SITE_URL}/auth/callback?next=/account` },
     });
-    const actionLink = linkData?.properties?.action_link;
-    // Defense-in-depth: explicitly assert https scheme before passing
-    // the URL into an email template. escapeHtml() handles attribute
-    // escaping, but a non-https value (javascript:, data:, http:) would
-    // survive escaping and remain clickable.
+    // Build a same-origin link directly to /auth/callback using the
+    // hashed_token. Avoids Supabase's verify endpoint and its Redirect
+    // URLs allow list — our callback runs verifyOtp() and sets the
+    // session cookie on our domain in one hop.
+    const tokenHash = linkData?.properties?.hashed_token;
+    const actionLink = tokenHash
+      ? `${SITE_URL}/auth/callback?token_hash=${encodeURIComponent(tokenHash)}&type=magiclink&next=${encodeURIComponent("/account")}`
+      : null;
     if (actionLink && actionLink.startsWith("https://")) {
       if (resend) {
         const claim = accountClaimEmail({
