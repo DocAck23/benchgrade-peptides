@@ -14,6 +14,8 @@ import { Footer } from "@/components/layout/Footer";
 import { CartProvider } from "@/lib/cart/CartContext";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { AnalyticsBeacon } from "@/components/analytics/AnalyticsBeacon";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { ClarityScript } from "@/components/analytics/ClarityScript";
 import { PrelaunchPopup } from "@/components/prelaunch/PrelaunchPopup";
 import { Suspense } from "react";
 import { headers } from "next/headers";
@@ -181,6 +183,8 @@ export default async function RootLayout({
         <Suspense fallback={null}>
           <AnalyticsBeacon />
         </Suspense>
+        <SpeedInsights />
+        <ClarityScript />
         {/* Pre-launch waitlist popup — suppressed for bots/crawlers
             via server-side UA scan (so Google doesn't see "first
             100 orders" promotional copy in indexed page text). */}

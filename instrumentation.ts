@@ -20,8 +20,9 @@ export async function register() {
       // Don't ship PII — we already pass customer data through trusted
       // server actions; Sentry doesn't need to see it.
       sendDefaultPii: false,
-      // Keep the integrations list minimal until we have a use for more.
-      integrations: [],
+      // Defaults include http + node auto-instrumentation, which is
+      // what makes the Sentry Performance tab populate. Don't pass
+      // an empty integrations array here — it disables them.
     });
   }
 

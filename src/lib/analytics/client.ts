@@ -10,6 +10,17 @@
  */
 
 import type { AnalyticsEventName } from "./types";
+import { clarityEvent, clarityIdentify } from "./clarity";
+
+// High-signal events worth marking on the Clarity replay timeline.
+// Pageviews and product_view fire too often to be useful as markers.
+const CLARITY_TIMELINE_EVENTS: ReadonlySet<AnalyticsEventName> = new Set([
+  "checkout_start",
+  "coupon_attempt",
+  "order_submitted",
+  "order_funded",
+  "subscription_started",
+]);
 
 interface SendOptions {
   path?: string;
@@ -48,6 +59,18 @@ export function sendAnalyticsEvent(
       body,
       keepalive: true,
     });
+
+    // Mirror the high-signal events onto the Clarity replay timeline,
+    // and identify the customer the moment we know their email
+    // (order_submitted is the first event that carries it).
+    if (CLARITY_TIMELINE_EVENTS.has(name)) {
+      clarityEvent(name);
+    }
+    const propEmail = (options.properties as { email?: unknown } | undefined)
+      ?.email;
+    if (typeof propEmail === "string" && propEmail.includes("@")) {
+      clarityIdentify(propEmail);
+    }
   } catch {
     /* analytics is best-effort — must never throw into render */
   }

@@ -37,7 +37,7 @@ import {
   personalVialDiscount,
   type AffiliateTier,
 } from "@/lib/affiliate/tiers";
-import { US_STATES_AND_TERRITORIES } from "@/lib/geography/us-states";
+import { US_STATES_AND_TERRITORIES, US_STATES_OPTIONS } from "@/lib/geography/us-states";
 import { sendAnalyticsEvent } from "@/lib/analytics/client";
 
 const EMPTY: CustomerInfo = {
@@ -448,7 +448,7 @@ export function CheckoutPageClient({
                 <Field label="Address line 2" value={form.ship_address_2 ?? ""} onChange={(v) => update("ship_address_2", v)} autoComplete="address-line2" />
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="City" required value={form.ship_city} onChange={(v) => update("ship_city", v)} autoComplete="address-level2" />
-                  <Field label="State" required value={form.ship_state} onChange={(v) => update("ship_state", v)} autoComplete="address-level1" />
+                  <StateSelect label="State" required value={form.ship_state} onChange={(v) => update("ship_state", v)} />
                 </div>
                 <Field label="ZIP" required value={form.ship_zip} onChange={(v) => update("ship_zip", v)} autoComplete="postal-code" />
               </Section>
@@ -1241,6 +1241,43 @@ interface FieldProps {
   type?: string;
   autoComplete?: string;
   multiline?: boolean;
+}
+
+function StateSelect({
+  label,
+  value,
+  onChange,
+  required,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  required?: boolean;
+}) {
+  const base =
+    "w-full border rule bg-paper px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus-visible:outline-none focus-visible:border-ink";
+  return (
+    <label className="block">
+      <span className="block text-xs text-ink-muted mb-1">
+        {label}
+        {required && <span className="text-wine"> *</span>}
+      </span>
+      <select
+        required={required}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        autoComplete="address-level1"
+        className={base}
+      >
+        <option value="">Select state…</option>
+        {US_STATES_OPTIONS.map((s) => (
+          <option key={s.code} value={s.code}>
+            {s.name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
 }
 
 function Field({ label, value, onChange, required, type = "text", autoComplete, multiline }: FieldProps) {

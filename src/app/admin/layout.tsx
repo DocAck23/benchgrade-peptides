@@ -9,9 +9,12 @@ export const metadata: Metadata = {
 
 const SECTIONS: Array<{ href: string; label: string }> = [
   { href: "/admin", label: "Orders" },
+  { href: "/admin/accounts", label: "Accounts" },
   { href: "/admin/analytics", label: "Analytics" },
+  { href: "/admin/funnel", label: "Funnel" },
   { href: "/admin/visitors", label: "Visitors" },
   { href: "/admin/coupons", label: "Coupons" },
+  { href: "/admin/waitlist", label: "Waitlist" },
   { href: "/admin/affiliates", label: "Affiliates" },
   { href: "/admin/reconciliation", label: "Reconciliation" },
   { href: "/admin/email-preview", label: "Email previews" },
