@@ -20,6 +20,7 @@ import { formatPrice, cn } from "@/lib/utils";
 import { Callout } from "@/components/ui";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/site";
 import { CardProcessorFootnote } from "@/components/checkout/CardProcessorFootnote";
+import { FirstTimeBonusPicker } from "@/components/checkout/FirstTimeBonusPicker";
 import { PaymentMethodAccordion } from "@/components/checkout/PaymentMethodAccordion";
 import { SubscriptionUpsellCard } from "@/components/checkout/SubscriptionUpsellCard";
 import { parseReferralCookie } from "@/lib/referrals/cookie";
@@ -175,13 +176,24 @@ export function CheckoutPageClient({
   // retail × 0.75; founder spec.
   const firstTimeChoices = useMemo(() => {
     return PRODUCTS.flatMap((p) =>
-      p.variants.map((v) => ({
-        sku: v.sku,
-        label: `${p.name} · ${v.size_mg}mg · ${v.pack_size}-vial — ${formatPrice(
-          Math.round(v.retail_price * 100 * 0.75),
-        )} (25% off ${formatPrice(v.retail_price * 100)})`,
-        unit_price_cents: Math.round(v.retail_price * 100),
-      })),
+      p.variants.map((v) => {
+        const retail = Math.round(v.retail_price * 100);
+        return {
+          sku: v.sku,
+          name: p.name,
+          size_mg: v.size_mg,
+          pack_size: v.pack_size,
+          retail_price_cents: retail,
+          discounted_cents: Math.round(retail * 0.75),
+          image_url: p.vial_image,
+          // Legacy fields kept so the rest of the file keeps working
+          // without further edits.
+          label: `${p.name} · ${v.size_mg}mg · ${v.pack_size}-vial — ${formatPrice(
+            Math.round(retail * 0.75),
+          )} (25% off ${formatPrice(retail)})`,
+          unit_price_cents: retail,
+        };
+      }),
     );
   }, []);
 
@@ -493,23 +505,11 @@ export function CheckoutPageClient({
                   body="Pick a vial as your first-order bonus — 25% off one additional unit on top of your cart. Stacks with every other discount."
                   highlight
                 >
-                  <label className="flex flex-col gap-1.5 mt-3">
-                    <span className="text-[10px] uppercase tracking-[0.1em] text-ink-muted">
-                      Apply to
-                    </span>
-                    <select
-                      value={firstTimeVialSku}
-                      onChange={(e) => setFirstTimeVialSku(e.target.value)}
-                      className="h-10 px-3 border rule bg-paper text-sm focus:outline-none focus:border-ink"
-                    >
-                      <option value="">— Skip this offer —</option>
-                      {firstTimeChoices.map((c) => (
-                        <option key={c.sku} value={c.sku}>
-                          {c.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <FirstTimeBonusPicker
+                    choices={firstTimeChoices}
+                    selectedSku={firstTimeVialSku}
+                    onSelect={setFirstTimeVialSku}
+                  />
                 </AddonCard>
               )}
 

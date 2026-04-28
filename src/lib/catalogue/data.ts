@@ -1658,7 +1658,7 @@ export const SUPPLIES: readonly CatalogProduct[] = [
         pack_size: 1,
         sku: "BAC-WATER-10ML",
         wholesale_cost: 2,
-        retail_price: 8,
+        retail_price: 9.99,
         bundle_supply: true,
       },
     ],
