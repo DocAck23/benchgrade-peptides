@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 import { CATEGORIES, PRODUCTS } from "@/lib/catalogue/data";
+import { POPULAR_STACKS } from "@/lib/catalogue/stacks";
+import { RESEARCH_ARTICLES } from "@/lib/research/articles";
 import { SITE_URL } from "@/lib/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -31,5 +33,37 @@ export default function sitemap(): MetadataRoute.Sitemap {
     lastModified: now,
   }));
 
-  return [...staticEntries, ...categoryEntries, ...productEntries];
+  const stackEntries: MetadataRoute.Sitemap = POPULAR_STACKS.map((s) => ({
+    url: `${SITE_URL}/catalogue/stacks/${s.slug}`,
+    priority: 0.7,
+    changeFrequency: "monthly",
+    lastModified: now,
+  }));
+
+  const researchIndex: MetadataRoute.Sitemap = [
+    {
+      url: `${SITE_URL}/research`,
+      priority: 0.7,
+      changeFrequency: "weekly",
+      lastModified: now,
+    },
+  ];
+
+  const researchArticleEntries: MetadataRoute.Sitemap = RESEARCH_ARTICLES.map(
+    (a) => ({
+      url: `${SITE_URL}/research/${a.slug}`,
+      priority: 0.6,
+      changeFrequency: "yearly",
+      lastModified: now,
+    }),
+  );
+
+  return [
+    ...staticEntries,
+    ...categoryEntries,
+    ...productEntries,
+    ...stackEntries,
+    ...researchIndex,
+    ...researchArticleEntries,
+  ];
 }

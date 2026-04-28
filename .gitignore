@@ -45,7 +45,9 @@ next-env.d.ts
 # brainstorm scratch
 .superpowers/
 
-# brainstorm + iteration scratch — committed once, future drops untracked
-research/
+# brainstorm + iteration scratch — committed once, future drops untracked.
+# Anchored to repo root so it doesn't shadow legitimate src/**/research/
+# code paths (e.g. /research route, /lib/research/articles.ts).
+/research/
 *.zip
 *-scratch/

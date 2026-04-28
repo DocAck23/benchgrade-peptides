@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Breadcrumb } from "@/components/ui";
+import { ResearchBrowser } from "@/components/research/ResearchBrowser";
+import { RESEARCH_ARTICLES } from "@/lib/research/articles";
 
 export const metadata: Metadata = {
   title: "Research",
@@ -13,6 +14,12 @@ export const metadata: Metadata = {
       "Long-form research articles on peptide science, synthesis, and verification.",
     url: "/research",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Research · Bench Grade Peptides",
+    description:
+      "Long-form research articles on peptide science, synthesis, and verification.",
   },
 };
 
@@ -36,24 +43,7 @@ export default function ResearchPage() {
           </p>
         </header>
 
-        <section className="border border-rule bg-paper-soft p-8 sm:p-12 text-center">
-          <div className="label-eyebrow text-gold-dark mb-3">Coming soon</div>
-          <h2 className="font-display text-2xl sm:text-3xl text-ink mb-4">
-            First articles publish next month.
-          </h2>
-          <p className="text-ink-soft max-w-xl mx-auto mb-6 leading-relaxed">
-            We&rsquo;re building a research library covering peptide stability,
-            HPLC method development, lot-by-lot purity verification, and class-level
-            pharmacology references. Subscribe and we&rsquo;ll send you the first
-            article when it lands.
-          </p>
-          <Link
-            href="/catalogue"
-            className="inline-flex items-center h-12 px-8 bg-wine text-paper text-sm tracking-[0.04em] hover:bg-gold-dark transition-colors"
-          >
-            Browse the catalogue
-          </Link>
-        </section>
+        <ResearchBrowser articles={RESEARCH_ARTICLES} />
       </div>
     </div>
   );
