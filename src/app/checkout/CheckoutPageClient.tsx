@@ -15,6 +15,7 @@ import {
   previewCouponForCheckout,
   type CouponPreviewResult,
 } from "@/app/actions/coupon-preview";
+import { getLifetimeShippingForMe } from "@/app/actions/lifetime-shipping";
 import { formatPrice, cn } from "@/lib/utils";
 import { Callout } from "@/components/ui";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/site";
@@ -110,6 +111,11 @@ export function CheckoutPageClient({
   // re-validated authoritatively in submitOrder.
   const [isFirstTime, setIsFirstTime] = useState<boolean | null>(null);
   const [firstTimeVialSku, setFirstTimeVialSku] = useState<string>("");
+  // Lifetime free-shipping eligibility (FIRST250 cohort members).
+  // Resolved against the auth-user OR the email the customer types
+  // into step 1; flips the FreeShippingBar to a "perk recognized"
+  // state instead of the threshold pill.
+  const [lifetimeShipping, setLifetimeShipping] = useState(false);
 
   // Sprint 3 Wave C — referral discount preview line.
   const [referralPreview, setReferralPreview] = useState<{
@@ -250,10 +256,15 @@ export function CheckoutPageClient({
       return setStep1Error("ZIP code is invalid.");
 
     try {
-      const res = await checkIsFirstTimeBuyer(form.email.trim());
-      setIsFirstTime(res.first_time);
+      const [firstTimeRes, lifetimeRes] = await Promise.all([
+        checkIsFirstTimeBuyer(form.email.trim()),
+        getLifetimeShippingForMe({ email: form.email.trim() }),
+      ]);
+      setIsFirstTime(firstTimeRes.first_time);
+      setLifetimeShipping(lifetimeRes.eligible);
     } catch {
       setIsFirstTime(false);
+      setLifetimeShipping(false);
     }
     advance(2);
   };
@@ -812,7 +823,7 @@ export function CheckoutPageClient({
               </span>
             </div>
           </div>
-          <FreeShippingBar subtotal={subtotal} />
+          <FreeShippingBar subtotal={subtotal} lifetimeMember={lifetimeShipping} />
         </aside>
       </div>
 
@@ -1079,7 +1090,39 @@ function ToggleRow({
   );
 }
 
-function FreeShippingBar({ subtotal }: { subtotal: number }) {
+function FreeShippingBar({
+  subtotal,
+  lifetimeMember = false,
+}: {
+  subtotal: number;
+  lifetimeMember?: boolean;
+}) {
+  // Lifetime cohort members (FIRST250) get free shipping forever,
+  // regardless of cart subtotal — render a celebratory pill instead
+  // of the threshold progress bar.
+  if (lifetimeMember) {
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-xs">
+          <Check
+            className="w-3.5 h-3.5 text-gold"
+            strokeWidth={2}
+            aria-hidden
+          />
+          <span className="text-ink">
+            Free domestic shipping included &mdash;{" "}
+            <span className="text-gold-dark">FIRST-250 cohort perk.</span>
+          </span>
+        </div>
+        <div
+          className="h-1 w-full bg-gold"
+          role="presentation"
+          aria-hidden
+        />
+      </div>
+    );
+  }
+
   const remaining = Math.max(FREE_SHIPPING_THRESHOLD - subtotal, 0);
   const pct = Math.min((subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
   const unlocked = remaining === 0 && subtotal > 0;
