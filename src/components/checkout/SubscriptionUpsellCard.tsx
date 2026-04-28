@@ -7,20 +7,16 @@ import { formatPrice, cn } from "@/lib/utils";
 
 type PlanDuration = SubscriptionModeForCart["duration_months"];
 type PaymentCadence = SubscriptionModeForCart["payment_cadence"];
-type ShipCadence = SubscriptionModeForCart["ship_cadence"];
 
-const ALL_DURATIONS: PlanDuration[] = [1, 3, 6, 9, 12];
-
-const SHIP_OPTIONS: { value: ShipCadence; label: string; sub?: string }[] = [
-  { value: "monthly", label: "Monthly", sub: "default" },
-  { value: "quarterly", label: "Quarterly" },
-  { value: "once", label: "Ship once", sub: "+3% bonus" },
-];
+const ALL_DURATIONS: PlanDuration[] = [3, 6, 12];
 
 const DEFAULT_MODE: SubscriptionModeForCart = {
   duration_months: 6,
   payment_cadence: "prepay",
-  ship_cadence: "monthly",
+  // Prepay is always a single bulk shipment (N× cart qty in one box).
+  // Bill-monthly ships one box per paid cycle. The ship_cadence field
+  // is preserved on the type for downstream wiring but hidden from UI.
+  ship_cadence: "once",
 };
 
 /**
@@ -47,12 +43,13 @@ export function SubscriptionUpsellCard() {
   const isActive = subscriptionMode !== null;
 
   const setMode = (next: SubscriptionModeForCart) => {
-    // Coerce invalid combos forward when toggling.
-    let m = { ...next };
-    if (m.payment_cadence === "bill_pay") {
-      if (m.duration_months === 1) m.duration_months = 3;
-      if (m.ship_cadence === "once") m.ship_cadence = "monthly";
-    }
+    // Coerce ship_cadence to match payment cadence:
+    //   prepay     → ship_once (bulk N× shipment)
+    //   bill_pay   → ship monthly (one box per paid cycle)
+    const m: SubscriptionModeForCart = {
+      ...next,
+      ship_cadence: next.payment_cadence === "prepay" ? "once" : "monthly",
+    };
     setSubscriptionMode(m);
   };
 
@@ -62,10 +59,6 @@ export function SubscriptionUpsellCard() {
 
   const onDuration = (duration: PlanDuration) => {
     setMode({ ...draft, duration_months: duration });
-  };
-
-  const onShip = (ship: ShipCadence) => {
-    setMode({ ...draft, ship_cadence: ship });
   };
 
   const onToggleSubscribe = () => {
@@ -129,16 +122,14 @@ export function SubscriptionUpsellCard() {
         <div
           role="radiogroup"
           aria-label="Plan duration"
-          className="grid grid-cols-5 gap-1.5"
+          className="grid grid-cols-3 gap-1.5"
         >
           {ALL_DURATIONS.map((d) => {
-            const disabled = !isPrepay && d === 1;
-            const selected = draft.duration_months === d && !disabled;
-            // Show discount for this duration in current cadence
+            const selected = draft.duration_months === d;
             const previewPct = subscriptionDiscountPercent({
               duration_months: d,
               payment_cadence: draft.payment_cadence,
-              ship_cadence: isPrepay ? draft.ship_cadence : "monthly",
+              ship_cadence: isPrepay ? "once" : "monthly",
             });
             return (
               <button
@@ -147,21 +138,16 @@ export function SubscriptionUpsellCard() {
                 data-duration={d}
                 role="radio"
                 aria-checked={selected}
-                disabled={disabled}
-                onClick={() => !disabled && onDuration(d)}
+                onClick={() => onDuration(d)}
                 className={cn(
                   "flex flex-col items-center justify-center h-14 border rule text-xs transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold",
                   selected
                     ? "bg-wine text-paper border-wine"
-                    : disabled
-                      ? "bg-paper text-ink-muted/50 cursor-not-allowed opacity-50"
-                      : "bg-paper text-ink hover:bg-paper-soft",
+                    : "bg-paper text-ink hover:bg-paper-soft",
                 )}
               >
-                <span className="font-medium">
-                  {disabled ? "N/A" : `${d} mo`}
-                </span>
-                {!disabled && previewPct > 0 && (
+                <span className="font-medium">{`${d} mo`}</span>
+                {previewPct > 0 && (
                   <span
                     className={cn(
                       "text-[10px] mt-0.5",
@@ -177,50 +163,21 @@ export function SubscriptionUpsellCard() {
         </div>
       </div>
 
-      {/* Ship cadence row */}
-      <div>
-        <div className="label-eyebrow text-ink-muted mb-2">Shipping cadence</div>
-        <div
-          role="radiogroup"
-          aria-label="Shipping cadence"
-          className="grid grid-cols-3 gap-1.5"
-        >
-          {SHIP_OPTIONS.map((opt) => {
-            const disabled = !isPrepay && opt.value === "once";
-            const selected = draft.ship_cadence === opt.value && !disabled;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                data-ship={opt.value}
-                role="radio"
-                aria-checked={selected}
-                disabled={disabled}
-                onClick={() => !disabled && onShip(opt.value)}
-                className={cn(
-                  "flex flex-col items-center justify-center h-12 border rule text-xs transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold",
-                  selected
-                    ? "bg-ink text-paper border-ink"
-                    : disabled
-                      ? "bg-paper text-ink-muted/50 cursor-not-allowed opacity-50"
-                      : "bg-paper text-ink hover:bg-paper-soft",
-                )}
-              >
-                <span>{opt.label}</span>
-                {opt.sub && (
-                  <span
-                    className={cn(
-                      "text-[10px] mt-0.5",
-                      selected ? "text-paper/80" : "text-ink-muted",
-                    )}
-                  >
-                    {opt.sub}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+      {/* Mode summary — what this plan actually does */}
+      <div className="border rule bg-paper px-3 py-2 text-[11px] text-ink-soft leading-relaxed">
+        {isPrepay ? (
+          <>
+            <strong className="font-display text-ink">Prepay · one bulk shipment.</strong>{" "}
+            Pay once today, ship {draft.duration_months}× your cart in a single
+            box right away. Renews after {draft.duration_months} months.
+          </>
+        ) : (
+          <>
+            <strong className="font-display text-ink">Bill monthly · one box per payment.</strong>{" "}
+            Each month we email a payment reminder. After you pay, that month&rsquo;s
+            box ships. 5-day grace per missed payment, then auto-cancel.
+          </>
+        )}
       </div>
 
       {/* Live total preview */}
@@ -231,15 +188,21 @@ export function SubscriptionUpsellCard() {
         >
           <div className="text-xs text-ink-soft">
             <span className="font-mono-data text-base text-wine">
-              {formatPrice(previewTotals.total_cents)}
+              {formatPrice(
+                isPrepay
+                  ? previewTotals.total_cents * draft.duration_months
+                  : previewTotals.total_cents,
+              )}
             </span>{" "}
-            today
+            {isPrepay ? "today" : `/month × ${draft.duration_months}`}
           </div>
           <div className="text-xs text-gold-dark">
             saves{" "}
             <span className="font-mono-data">
               {formatPrice(
-                previewTotals.subscription_discount_cents + previewTotals.same_sku_discount_cents,
+                (previewTotals.subscription_discount_cents +
+                  previewTotals.same_sku_discount_cents) *
+                  (isPrepay ? draft.duration_months : 1),
               )}
             </span>{" "}
             vs retail

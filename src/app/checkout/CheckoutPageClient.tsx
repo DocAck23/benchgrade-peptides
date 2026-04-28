@@ -814,7 +814,7 @@ export function CheckoutPageClient({
             )}
             <div className="flex items-baseline justify-between pt-2">
               <span className="text-sm text-ink-soft">
-                {itemCount} {itemCount === 1 ? "vial" : "vials"}
+                {itemCount} {itemCount === 1 ? "item" : "items"}
               </span>
               <span className="font-mono-data text-lg text-wine">
                 {formatPrice(
