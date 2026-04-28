@@ -105,34 +105,53 @@ export default async function ManageSubscriptionPage() {
         </ul>
       </section>
 
-      <section className="border rule bg-paper-soft p-6 lg:p-8">
-        <p
-          className="font-editorial text-lg text-ink-soft mb-5 max-w-prose"
-          style={{ fontFamily: "var(--font-editorial)" }}
-        >
-          Stack changes go through our team to ensure inventory and timing.
-          Email{" "}
-          <a href={`mailto:${ADMIN_EMAIL}`} className="text-gold-dark underline">
-            {ADMIN_EMAIL}
-          </a>{" "}
-          with subject{" "}
-          <code className="font-mono-data text-sm text-ink bg-paper px-1.5 py-0.5 border rule">
-            {subjectShort}
-          </code>{" "}
-          and we&apos;ll confirm within 1 business day.
-        </p>
+      <section className="border rule bg-paper-soft p-6 lg:p-8 space-y-5">
+        <div>
+          <h2 className="font-display uppercase text-[13px] tracking-[0.18em] text-ink mb-2">
+            Swap a vial in the stack
+          </h2>
+          <p
+            className="font-editorial text-base text-ink-soft max-w-prose"
+            style={{ fontFamily: "var(--font-editorial)" }}
+          >
+            Item swaps go through our team to ensure inventory and timing.
+            Email{" "}
+            <a href={`mailto:${ADMIN_EMAIL}`} className="text-gold-dark underline">
+              {ADMIN_EMAIL}
+            </a>{" "}
+            with subject{" "}
+            <code className="font-mono-data text-sm text-ink bg-paper px-1.5 py-0.5 border rule">
+              {subjectShort}
+            </code>{" "}
+            and we&apos;ll confirm within 1 business day.
+          </p>
+        </div>
         <a
           href={mailto}
           className="inline-flex items-center h-11 px-6 bg-wine text-paper font-display uppercase text-[12px] tracking-[0.14em] hover:bg-wine-deep transition-colors duration-200 ease-out"
         >
           Email the team
         </a>
-        <Link
-          href="/account/subscription"
-          className="ml-4 font-display uppercase text-[11px] tracking-[0.12em] text-gold-dark hover:text-ink transition-colors duration-200 ease-out"
-        >
-          ← Back to subscription
-        </Link>
+        <hr className="border-rule" />
+        <div>
+          <h2 className="font-display uppercase text-[13px] tracking-[0.18em] text-ink mb-2">
+            Pause, skip, resume, or cancel
+          </h2>
+          <p
+            className="font-editorial text-base text-ink-soft max-w-prose mb-4"
+            style={{ fontFamily: "var(--font-editorial)" }}
+          >
+            These are all self-service. Head back to your subscription
+            overview to pause shipments, skip the next cycle, resume after
+            a pause, or cancel entirely.
+          </p>
+          <Link
+            href="/account/subscription"
+            className="inline-flex items-center h-11 px-6 border-2 border-ink text-ink font-display uppercase text-[12px] tracking-[0.14em] hover:bg-ink hover:text-paper transition-colors duration-200 ease-out"
+          >
+            ← Back to subscription
+          </Link>
+        </div>
       </section>
     </article>
   );

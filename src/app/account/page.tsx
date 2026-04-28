@@ -134,6 +134,31 @@ export default async function AccountDashboardPage() {
       ? (subRows[0] as SubscriptionRow)
       : null;
 
+  // Surface any orders that still owe payment so the customer
+  // can't miss them. Wire/ACH/Zelle/crypto orders sit in
+  // "awaiting_payment" until reconciliation matches the bank hit.
+  const { data: pendingRows } = await supa
+    .from("orders")
+    .select("order_id, created_at, total_cents, subtotal_cents")
+    .eq("status", "awaiting_payment")
+    .order("created_at", { ascending: false })
+    .limit(5);
+  const pending: Array<{
+    order_id: string;
+    created_at: string;
+    total_cents: number | null;
+    subtotal_cents: number;
+  }> = Array.isArray(pendingRows)
+    ? pendingRows
+        .filter((r): r is NonNullable<typeof r> => !!r && typeof r === "object")
+        .map((r) => r as {
+          order_id: string;
+          created_at: string;
+          total_cents: number | null;
+          subtotal_cents: number;
+        })
+    : [];
+
   const recent: RecentOrderRow[] = Array.isArray(rows)
     ? rows
         .filter((r): r is RecentOrderRow => {
@@ -162,6 +187,60 @@ export default async function AccountDashboardPage() {
           Track your bench supply, review past lots, and prep your next run.
         </p>
       </header>
+
+      {pending.length > 0 && (
+        <section
+          aria-labelledby="payment-pending-heading"
+          className="border-2 border-wine bg-wine/5 p-6 lg:p-8"
+        >
+          <div className="flex items-baseline justify-between mb-4 gap-3 flex-wrap">
+            <h2
+              id="payment-pending-heading"
+              className="font-display uppercase text-[13px] tracking-[0.18em] text-wine"
+            >
+              {pending.length === 1
+                ? "Payment pending — 1 order"
+                : `Payment pending — ${pending.length} orders`}
+            </h2>
+            <span className="text-xs text-ink-soft">
+              We&rsquo;ll ship as soon as payment lands.
+            </span>
+          </div>
+          <ul className="divide-y rule">
+            {pending.map((order) => {
+              const total = order.total_cents ?? order.subtotal_cents;
+              return (
+                <li key={order.order_id}>
+                  <Link
+                    href={`/account/orders/${order.order_id}`}
+                    className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] items-center gap-3 md:gap-6 py-3 hover:bg-paper transition-colors -mx-2 px-2"
+                  >
+                    <div>
+                      <div className="font-mono-data text-xs text-ink-muted uppercase tracking-wider">
+                        BGP-{order.order_id.slice(0, 8)}
+                      </div>
+                      <div className="text-sm text-ink mt-0.5">
+                        Placed{" "}
+                        {new Date(order.created_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </div>
+                    </div>
+                    <span className="font-mono-data text-sm text-wine font-semibold">
+                      {formatPrice(total)} due
+                    </span>
+                    <span className="font-display uppercase text-[11px] tracking-[0.12em] text-wine">
+                      Pay now →
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       <section
         aria-labelledby="recent-orders-heading"
