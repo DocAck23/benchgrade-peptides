@@ -620,6 +620,26 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
     })
   );
 
+  // Prepay subscription: customer pays for the full plan upfront and
+  // receives N× cart contents in one bulk shipment. Multiply each
+  // cart line's quantity by duration_months so the order row reflects
+  // exactly what we ship. The first-time bonus vial is excluded —
+  // that's a one-time acquisition incentive, not part of the
+  // recurring stack. Pricing is already correct
+  // (basePricing.total_cents = plan_total) so we don't recompute it.
+  if (
+    subscriptionPlanValid &&
+    validInput.subscription_mode &&
+    validInput.subscription_mode.payment_cadence === "prepay"
+  ) {
+    const N = validInput.subscription_mode.duration_months;
+    resolved.items = resolved.items.map((it) =>
+      it.sku === firstTimeVialSkuApplied
+        ? it
+        : { ...it, quantity: it.quantity * N },
+    );
+  }
+
   const row = {
     order_id,
     customer: validInput.customer,

@@ -153,21 +153,18 @@ describe('computeCartTotalsForCheckout', () => {
     expect(checkout.total_cents).toBe(30000 - 7500);
   });
 
-  it('U-COMBO-SUB-3: prepay 12mo + ship_once → 38% subscription discount, smaller total than monthly', () => {
+  it('U-COMBO-SUB-3: prepay 12mo → 35% discount; ship_cadence is now derived (always "once" for prepay)', () => {
     const items = [vial('A', 100, 3)];
-    const monthly = computeCartTotalsForCheckout(items, {
-      duration_months: 12,
-      payment_cadence: 'prepay',
-      ship_cadence: 'monthly',
-    });
-    const once = computeCartTotalsForCheckout(items, {
+    const totals = computeCartTotalsForCheckout(items, {
       duration_months: 12,
       payment_cadence: 'prepay',
       ship_cadence: 'once',
     });
-    expect(monthly.subscription_discount_percent).toBe(35);
-    expect(once.subscription_discount_percent).toBe(38);
-    expect(once.total_cents).toBeLessThan(monthly.total_cents);
+    expect(totals.subscription_discount_percent).toBe(35);
+    // 35% off $300 cycle subtotal = $105 off → $195 cycle total.
+    // total_cents reflects per-cycle price (caller × duration for plan total).
+    expect(totals.subscription_discount_cents).toBe(10500);
+    expect(totals.total_cents).toBe(19500);
   });
 
   it('U-COMBO-SUB-4: same-SKU multiplier 5+ AND subscription mode → both apply', () => {

@@ -1,6 +1,14 @@
 export type PaymentCadence = "prepay" | "bill_pay";
+/**
+ * `ship_cadence` is now a derived semantic, not a customer choice:
+ *   prepay   → "once"     (one bulk shipment of N× cart contents)
+ *   bill_pay → "monthly"  (one box per paid cycle)
+ * The type stays "monthly | quarterly | once" for backward-compat with
+ * any in-flight cart state stored in localStorage; only "once" and
+ * "monthly" are produced by current code paths.
+ */
 export type ShipCadence = "monthly" | "quarterly" | "once";
-export type PlanDuration = 1 | 3 | 6 | 9 | 12;
+export type PlanDuration = 3 | 6 | 12;
 
 export interface SubscriptionPlanInput {
   duration_months: PlanDuration;
@@ -18,41 +26,28 @@ export interface SubscriptionTotals {
 }
 
 const PREPAY_TABLE: Record<PlanDuration, number> = {
-  1: 5,
   3: 18,
   6: 25,
-  9: 30,
   12: 35,
 };
 
 const BILL_PAY_TABLE: Record<PlanDuration, number> = {
-  1: 0, // invalid — no 1-month bill-pay
   3: 10,
   6: 15,
-  9: 18,
   12: 20,
 };
 
-const SHIP_ONCE_BONUS = 3;
-
 /**
  * Returns the discount % off retail for a subscription plan.
- * Returns 0 for invalid combinations (e.g., bill_pay + 1mo, or bill_pay + ship_once).
+ * Returns 0 for invalid combinations (e.g. unknown duration or
+ * legacy combo from stored localStorage state).
  */
 export function subscriptionDiscountPercent(plan: SubscriptionPlanInput): number {
-  const { duration_months, payment_cadence, ship_cadence } = plan;
-
+  const { duration_months, payment_cadence } = plan;
   if (payment_cadence === "bill_pay") {
-    // Invalid combos for bill-pay: 1-month, or ship-once.
-    if (duration_months === 1) return 0;
-    if (ship_cadence === "once") return 0;
     return BILL_PAY_TABLE[duration_months] ?? 0;
   }
-
-  // prepay
-  const base = PREPAY_TABLE[duration_months] ?? 0;
-  if (base === 0) return 0;
-  return ship_cadence === "once" ? base + SHIP_ONCE_BONUS : base;
+  return PREPAY_TABLE[duration_months] ?? 0;
 }
 
 /**

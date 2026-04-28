@@ -2,8 +2,10 @@ import type { CartItem } from "./types";
 import { subscriptionDiscountPercent } from "@/lib/subscriptions/discounts";
 
 export interface SubscriptionModeForCart {
-  duration_months: 1 | 3 | 6 | 9 | 12;
+  duration_months: 3 | 6 | 12;
   payment_cadence: "prepay" | "bill_pay";
+  // Always derived: prepay → "once", bill_pay → "monthly". Type is
+  // wider so legacy stored state in localStorage round-trips cleanly.
   ship_cadence: "monthly" | "quarterly" | "once";
 }
 

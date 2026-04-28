@@ -122,7 +122,7 @@ describe("<SubscriptionUpsellCard/> — C-CHECKOUT-SUB-1..4", () => {
       const dt = (el.props as { "data-duration"?: unknown })["data-duration"];
       return typeof dt === "number";
     });
-    expect(durationButtons.length).toBe(5); // 1, 3, 6, 9, 12 in prepay mode
+    expect(durationButtons.length).toBe(3); // 3, 6, 12 — only valid plan lengths
 
     // Prepay should be selected by default
     const prepayToggle = findAll(tree as ReactNode, (el) => {
@@ -133,7 +133,7 @@ describe("<SubscriptionUpsellCard/> — C-CHECKOUT-SUB-1..4", () => {
     expect((prepayToggle[0].props as { "aria-pressed"?: boolean })["aria-pressed"]).toBe(true);
   });
 
-  it("C-CHECKOUT-SUB-2: bill-pay mode → 1mo button is disabled / N/A", () => {
+  it("C-CHECKOUT-SUB-2: bill-pay mode → only 3/6/12 buttons exist (no 1mo)", () => {
     setCart([vial(1, 3)], {
       duration_months: 3,
       payment_cadence: "bill_pay",
@@ -144,22 +144,23 @@ describe("<SubscriptionUpsellCard/> — C-CHECKOUT-SUB-1..4", () => {
       const dt = (el.props as { "data-duration"?: unknown })["data-duration"];
       return dt === 1;
     });
-    expect(oneMonthBtn.length).toBe(1);
-    expect((oneMonthBtn[0].props as { disabled?: boolean }).disabled).toBe(true);
+    expect(oneMonthBtn.length).toBe(0);
   });
 
-  it("C-CHECKOUT-SUB-3: prepay 6mo selected → live total preview shows $X today + savings", () => {
-    // 3 packs × 1-vial × $100 = $300 subtotal
+  it("C-CHECKOUT-SUB-3: prepay 6mo selected → preview shows N×cycle total + N×savings", () => {
+    // 3 packs × 1-vial × $100 = $300 cycle subtotal
+    // Prepay 6mo @ 25% → $75 saved per cycle, $225 per cycle total.
+    // Customer pays full plan upfront: 6 × $225 = $1,350. Total
+    // savings displayed: 6 × $75 = $450.
     setCart([vial(3, 1, 100)], {
       duration_months: 6,
       payment_cadence: "prepay",
-      ship_cadence: "monthly",
+      ship_cadence: "once",
     });
     const tree = SubscriptionUpsellCard();
     const text = textContent(tree as ReactNode);
-    // $300 subtotal; 25% off = $75 savings; $225 today
-    expect(text).toMatch(/\$225/);
-    expect(text).toMatch(/\$75/);
+    expect(text).toMatch(/\$1,350/);
+    expect(text).toMatch(/\$450/);
     expect(text).toMatch(/save/i);
   });
 
