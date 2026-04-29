@@ -46,11 +46,11 @@ export function PopularStacks() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
         {resolved.map((r) => (
           <article
             key={r.stack.slug}
-            className="border border-rule bg-paper-soft p-2 sm:p-3 lg:p-4 flex flex-col gap-2 sm:gap-3"
+            className="border border-rule bg-paper p-3 sm:p-4 lg:p-5 flex flex-col gap-2 sm:gap-3 overflow-hidden"
             aria-labelledby={`stack-${r.stack.slug}`}
           >
             {/* Mobile: whole card is a single link to the stack page,
@@ -90,10 +90,16 @@ export function PopularStacks() {
               </div>
             </Link>
 
-            {/* Tablet & desktop card — full content, AddStackToCart CTA */}
+            {/* Tablet & desktop card — full content, AddStackToCart CTA.
+                The image, header, and lines all sit INSIDE the card
+                padding box so the cream-bleed-into-paper artifact
+                founder noticed (negative-margin tagline band visible
+                under the card edge) is gone. The whole card is now a
+                clean stack of stacked sections, each properly bordered
+                and contained. */}
             <Link
               href={`/catalogue/stacks/${r.stack.slug}`}
-              className="hidden sm:block -mx-3 sm:-mx-5 lg:-mx-6 -mt-3 sm:-mt-5 lg:-mt-6 mb-1 bg-paper border-b border-rule"
+              className="hidden sm:block bg-paper-soft border border-rule mb-1"
               aria-hidden="true"
               tabIndex={-1}
             >
@@ -105,7 +111,7 @@ export function PopularStacks() {
               />
             </Link>
             <header className="hidden sm:block">
-              <div className="label-eyebrow text-gold-dark text-[10px] sm:text-xs mb-1.5">
+              <div className="label-eyebrow text-gold-dark text-[11px] sm:text-xs mb-2">
                 {r.lines.length}-vial stack
               </div>
               <h3
@@ -113,14 +119,12 @@ export function PopularStacks() {
               >
                 {r.stack.name}
               </h3>
-              <p
-                className="-mx-3 sm:-mx-5 lg:-mx-6 mt-1 px-3 sm:px-5 lg:px-6 py-2.5 bg-gold-light/30 border-y border-gold/40 text-[15px] sm:text-base text-ink leading-snug"
-              >
+              <p className="text-[14px] sm:text-[15px] text-ink leading-snug">
                 {r.stack.tagline}
               </p>
             </header>
 
-            <ul className="hidden sm:block border-t border-rule pt-3 space-y-2 text-[13px] sm:text-sm">
+            <ul className="hidden sm:block border-t border-rule pt-3 space-y-1.5 text-[13px] sm:text-[14px]">
               {r.lines.map(({ product, variant, line }) => (
                 <li
                   key={variant.sku}
@@ -128,24 +132,24 @@ export function PopularStacks() {
                 >
                   <Link
                     href={`/catalogue/${product.category_slug}/${product.slug}`}
-                    className="font-medium text-ink hover:text-wine transition-colors duration-200 underline-offset-2 hover:underline"
+                    className="font-medium text-ink hover:text-wine transition-colors duration-200 underline-offset-2 hover:underline truncate"
                   >
                     {product.name} · {variant.size_mg}mg{line.quantity > 1 ? ` × ${line.quantity}` : ""}
                   </Link>
-                  <span className="font-mono-data text-ink-muted text-xs whitespace-nowrap">
+                  <span className="font-mono-data text-ink-muted text-[13px] whitespace-nowrap">
                     {formatPrice(variant.retail_price * line.quantity * 100)}
                   </span>
                 </li>
               ))}
             </ul>
 
-            <p className="hidden sm:block text-[12.5px] sm:text-[13px] italic text-ink-soft leading-relaxed pt-1 border-t border-rule/60" style={{ fontFamily: "var(--font-editorial)" }}>
+            <p className="hidden sm:block text-[13px] italic text-ink-soft leading-relaxed pt-2 border-t border-rule/60" style={{ fontFamily: "var(--font-editorial)" }}>
               {r.stack.why}
             </p>
 
             <div className="hidden sm:flex mt-auto pt-3 border-t border-rule flex-col gap-2">
               <div className="flex items-baseline justify-between">
-                <div className="text-[10px] uppercase tracking-[0.1em] text-ink-muted font-display">
+                <div className="text-[11px] uppercase tracking-[0.1em] text-ink-muted font-display">
                   Retail total
                 </div>
                 <div className="font-mono-data text-base sm:text-lg text-ink font-semibold">
