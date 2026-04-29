@@ -11,6 +11,13 @@ import {
   getCountryBreakdown,
   getDeviceBreakdown,
   getDailyTimeline,
+  getUniqueVisitorWindows,
+  getRevisitDistribution,
+  getFirstVsReturningConversion,
+  getTopAbandonmentPaths,
+  getTopSearches,
+  getAdAttribution,
+  isRollupTruncated,
 } from "@/lib/analytics/queries";
 
 export const metadata: Metadata = {
@@ -26,17 +33,38 @@ export const dynamic = "force-dynamic";
 export default async function AdminAnalyticsPage() {
   if (!(await isAdmin())) redirect("/admin/login");
 
-  const [kpi, funnel, sources, paths, skus, countries, devices, timeline] =
-    await Promise.all([
-      getKpiSummary(),
-      getFunnel(7),
-      getTrafficSources(7),
-      getTopPaths(7),
-      getTopSkus(30),
-      getCountryBreakdown(7),
-      getDeviceBreakdown(7),
-      getDailyTimeline(30),
-    ]);
+  const [
+    kpi,
+    funnel,
+    sources,
+    paths,
+    skus,
+    countries,
+    devices,
+    timeline,
+    uniques,
+    revisits,
+    conversionSplit,
+    abandonment,
+    searches,
+    ads,
+  ] = await Promise.all([
+    getKpiSummary(),
+    getFunnel(7),
+    getTrafficSources(7),
+    getTopPaths(7),
+    getTopSkus(30),
+    getCountryBreakdown(7),
+    getDeviceBreakdown(7),
+    getDailyTimeline(30),
+    getUniqueVisitorWindows(),
+    getRevisitDistribution(),
+    getFirstVsReturningConversion(30),
+    getTopAbandonmentPaths(30),
+    getTopSearches(30),
+    getAdAttribution(30),
+  ]);
+  const dataTruncated = await isRollupTruncated(30);
 
   const maxFunnel = Math.max(1, ...funnel.map((f) => f.sessions));
   const maxSpark = Math.max(1, ...timeline.map((t) => t.sessions));
@@ -83,6 +111,123 @@ export default async function AdminAnalyticsPage() {
             value={`${kpi.email_capture_pct_7d.toFixed(1)}%`}
           />
           <Kpi label="Sessions 30d" value={kpi.sessions_30d.toLocaleString()} />
+        </div>
+      </section>
+
+      {dataTruncated && (
+        <section
+          className="border-2 border-wine bg-wine/5 px-5 py-4"
+          aria-live="polite"
+        >
+          <div className="text-sm text-wine">
+            <span className="font-bold">Heads up:</span> the 30-day session
+            count exceeded the dashboard&rsquo;s 50,000-row rollup cap. The
+            revisit, conversion, abandonment, search, and ad-attribution
+            sections below are computed over the most recent 50,000 rows
+            only — treat their numbers as a lower bound until the queries
+            are pushed into a SQL view.
+          </div>
+        </section>
+      )}
+
+      {/* Unique visitors across rolling windows. Built off
+          visitor_fingerprints (salted-hash IP+UA-class). Falls back
+          to session counts when fingerprinting is disabled (no salt
+          configured); we surface that explicitly so the founder
+          knows when the number is "estimated unique sessions" vs
+          "estimated unique people." */}
+      <section>
+        <div className="flex items-baseline justify-between mb-3">
+          <h2 className="label-eyebrow text-ink-muted">Unique visitors</h2>
+          {!uniques.fingerprinting_enabled && (
+            <span className="text-[10px] text-ink-muted">
+              fingerprinting disabled — set ANALYTICS_FINGERPRINT_SALT to upgrade these to true uniques
+            </span>
+          )}
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Kpi label="Last hour" value={uniques.last_hour.toLocaleString()} />
+          <Kpi label="Last 24h" value={uniques.last_24h.toLocaleString()} />
+          <Kpi label="Last 7d" value={uniques.last_7d.toLocaleString()} />
+          <Kpi label="Last 30d" value={uniques.last_30d.toLocaleString()} />
+        </div>
+      </section>
+
+      {/* Revisit cadence: how many times each visitor has come back
+          in the last 30 days. "1" is first-time-only — anything in
+          2/3/4+ is meaningful retention signal. */}
+      <section>
+        <h2 className="label-eyebrow text-ink-muted mb-3">
+          Revisits · last 30d
+        </h2>
+        <div className="border rule bg-paper">
+          {(() => {
+            const total = revisits.reduce((s, r) => s + r.visitors, 0);
+            const max = Math.max(1, ...revisits.map((r) => r.visitors));
+            return revisits.map((r, i) => {
+              const widthPct = Math.max((r.visitors / max) * 100, 1);
+              const sharePct =
+                total > 0 ? ((r.visitors / total) * 100).toFixed(1) : "0";
+              return (
+                <div
+                  key={r.bucket}
+                  className={`flex items-center gap-3 px-5 py-3 ${
+                    i < revisits.length - 1 ? "border-b rule" : ""
+                  }`}
+                >
+                  <div className="w-32 shrink-0 text-sm text-ink">
+                    {r.bucket === "1"
+                      ? "1 visit (first-time only)"
+                      : `${r.bucket} visits`}
+                  </div>
+                  <div className="flex-1 h-7 bg-paper-soft border rule overflow-hidden">
+                    <div
+                      className="h-full bg-ink"
+                      style={{ width: `${widthPct}%` }}
+                    />
+                  </div>
+                  <div className="w-24 text-right font-mono-data text-sm">
+                    {r.visitors.toLocaleString()}
+                  </div>
+                  <div className="w-20 text-right text-xs text-ink-muted">
+                    {sharePct}%
+                  </div>
+                </div>
+              );
+            });
+          })()}
+        </div>
+      </section>
+
+      {/* First-vs-returning conversion. Each side shows the cohort
+          size + the conversion %. Comparison is the headline number
+          — does the brand's repeat-visit experience close better
+          than the first impression? */}
+      <section>
+        <h2 className="label-eyebrow text-ink-muted mb-3">
+          First-time vs returning conversion · last 30d
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="border rule bg-paper p-5">
+            <div className="label-eyebrow text-ink-muted">First-time visitors</div>
+            <div className="mt-2 font-mono-data text-3xl text-ink">
+              {conversionSplit.first_visit_pct.toFixed(2)}%
+            </div>
+            <div className="mt-1 text-xs text-ink-muted">
+              {conversionSplit.first_visit_orders.toLocaleString()} orders /{" "}
+              {conversionSplit.first_visit_total.toLocaleString()} sessions
+            </div>
+          </div>
+          <div className="border rule bg-paper p-5">
+            <div className="label-eyebrow text-ink-muted">Returning visitors</div>
+            <div className="mt-2 font-mono-data text-3xl text-ink">
+              {conversionSplit.returning_pct.toFixed(2)}%
+            </div>
+            <div className="mt-1 text-xs text-ink-muted">
+              {conversionSplit.returning_orders.toLocaleString()} orders /{" "}
+              {conversionSplit.returning_total.toLocaleString()} sessions
+            </div>
+          </div>
         </div>
       </section>
 
@@ -220,6 +365,74 @@ export default async function AdminAnalyticsPage() {
           </Card>
         </div>
       </div>
+
+      {/* Abandonment + search side-by-side. These are the two
+          surfaces the founder asked about most directly: where do
+          people drop off, and what are they looking for. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Card title="Top abandonment pages · 30d">
+          <Table
+            head={["Last page seen", "Sessions"]}
+            rows={abandonment.map((row) => [
+              <span
+                key={row.path}
+                className="font-mono-data text-xs truncate block max-w-[280px]"
+                title={row.path}
+              >
+                {row.path}
+              </span>,
+              row.count.toLocaleString(),
+            ])}
+            empty="No abandoned sessions in window."
+          />
+        </Card>
+
+        <Card title="Top searches · 30d">
+          <Table
+            head={["Term", "Searches"]}
+            rows={searches.map((row) => [
+              <span key={row.term} className="text-sm">
+                {row.term}
+              </span>,
+              row.count.toLocaleString(),
+            ])}
+            empty="No catalogue searches in window."
+          />
+        </Card>
+      </div>
+
+      {/* Ad attribution rollup. Empty until the founder runs paid
+          campaigns; structured for fast scan once data lands.
+          Identifier truncated visually to keep the column tight on
+          mobile (ad ids are long alphanumeric blobs). */}
+      <section>
+        <h2 className="label-eyebrow text-ink-muted mb-3">
+          Ad attribution · 30d
+        </h2>
+        <div className="border rule bg-paper">
+          <Table
+            head={["Source", "Identifier", "Sessions", "Orders"]}
+            rows={ads.map((row) => [
+              <span
+                key={`${row.source}:${row.identifier}`}
+                className="font-mono-data text-xs uppercase tracking-wider"
+              >
+                {row.source}
+              </span>,
+              <span
+                key={`${row.source}-${row.identifier}-id`}
+                className="font-mono-data text-xs text-ink-muted truncate block max-w-[280px]"
+                title={row.identifier}
+              >
+                {row.identifier}
+              </span>,
+              row.sessions.toLocaleString(),
+              row.orders.toLocaleString(),
+            ])}
+            empty="No ad-attributed sessions yet."
+          />
+        </div>
+      </section>
     </article>
   );
 }

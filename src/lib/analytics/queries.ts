@@ -497,5 +497,452 @@ export async function getDailyTimeline(windowDays = 30): Promise<DailyPoint[]> {
   return days;
 }
 
+/**
+ * Distinct-visitor counts over multiple windows. Uses
+ * `visitor_fingerprints.last_seen_at` so the count is true-unique
+ * (one row per fingerprint, not per session). Falls back to session
+ * count when fingerprinting is disabled (no salt configured) so the
+ * dashboard never shows zeros while the migration is rolling out.
+ */
+export interface UniqueVisitorWindows {
+  last_hour: number;
+  last_24h: number;
+  last_7d: number;
+  last_30d: number;
+  fingerprinting_enabled: boolean;
+}
+
+/**
+ * Soft cap on raw rows pulled into JS for any of the rollup queries.
+ * When a query hits this cap the dashboard surfaces a "results
+ * truncated, numbers are a lower bound" banner so the founder
+ * doesn't make decisions on silently-undercounted data.
+ */
+const ROLLUP_ROW_CAP = 50_000;
+
+export async function getUniqueVisitorWindows(): Promise<UniqueVisitorWindows> {
+  const supa = getSupabaseServer();
+  if (!supa) {
+    return {
+      last_hour: 0,
+      last_24h: 0,
+      last_7d: 0,
+      last_30d: 0,
+      fingerprinting_enabled: false,
+    };
+  }
+
+  const now = Date.now();
+  const HOUR = 60 * 60 * 1000;
+  const DAY_LOCAL = 24 * HOUR;
+  const cutoffs = [
+    { key: "last_hour" as const, since: new Date(now - HOUR).toISOString() },
+    { key: "last_24h" as const, since: new Date(now - DAY_LOCAL).toISOString() },
+    { key: "last_7d" as const, since: new Date(now - 7 * DAY_LOCAL).toISOString() },
+    { key: "last_30d" as const, since: new Date(now - 30 * DAY_LOCAL).toISOString() },
+  ];
+
+  // Fingerprinting status is derived from the env var, not from
+  // table contents — codex caught the original "rows > 0 = enabled"
+  // check as inverted: a salt rotation or unset would silently keep
+  // showing pre-rotation rows as if hashing were still active. The
+  // env var is the authoritative on/off switch since the route
+  // declines to hash without it.
+  const fingerprintingEnabled = Boolean(
+    process.env.ANALYTICS_FINGERPRINT_SALT,
+  );
+
+  const result: UniqueVisitorWindows = {
+    last_hour: 0,
+    last_24h: 0,
+    last_7d: 0,
+    last_30d: 0,
+    fingerprinting_enabled: fingerprintingEnabled,
+  };
+
+  for (const c of cutoffs) {
+    if (fingerprintingEnabled) {
+      const { count } = await supa
+        .from("visitor_fingerprints")
+        .select("fingerprint_hash", { count: "exact", head: true })
+        .gte("last_seen_at", c.since);
+      result[c.key] = count ?? 0;
+    } else {
+      const { count } = await supa
+        .from("analytics_sessions")
+        .select("session_id", { count: "exact", head: true })
+        .gte("first_seen_at", c.since);
+      result[c.key] = count ?? 0;
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Revisit-count histogram for the last 30 days. Buckets visitors by
+ * how many distinct sessions they spawned. "1" = first-time, "4+"
+ * collapsed into a long tail since the founder's main signal is
+ * "are people coming back at all."
+ */
+export interface RevisitBucket {
+  bucket: "1" | "2" | "3" | "4+";
+  visitors: number;
+}
+
+export async function getRevisitDistribution(): Promise<RevisitBucket[]> {
+  const supa = getSupabaseServer();
+  if (!supa) return [];
+
+  const since = new Date(Date.now() - 30 * 86400 * 1000).toISOString();
+
+  const { data } = await supa
+    .from("analytics_sessions")
+    .select("fingerprint_hash")
+    .gte("first_seen_at", since)
+    .not("fingerprint_hash", "is", null)
+    .limit(ROLLUP_ROW_CAP);
+  const counts = new Map<string, number>();
+  for (const row of (data ?? []) as Array<{ fingerprint_hash: string }>) {
+    counts.set(row.fingerprint_hash, (counts.get(row.fingerprint_hash) ?? 0) + 1);
+  }
+  const buckets: Record<RevisitBucket["bucket"], number> = {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4+": 0,
+  };
+  for (const n of counts.values()) {
+    if (n >= 4) buckets["4+"] += 1;
+    else if (n === 3) buckets["3"] += 1;
+    else if (n === 2) buckets["2"] += 1;
+    else buckets["1"] += 1;
+  }
+  return [
+    { bucket: "1", visitors: buckets["1"] },
+    { bucket: "2", visitors: buckets["2"] },
+    { bucket: "3", visitors: buckets["3"] },
+    { bucket: "4+", visitors: buckets["4+"] },
+  ];
+}
+
+/**
+ * One-shot truncation probe used by the admin page to decide whether
+ * to surface a "data may be undercounted" banner. Returns true when
+ * any rollup query in this module would have hit the row cap; the
+ * 30-day session count is the broadest input, so checking that alone
+ * is a sufficient proxy for all the JS-side aggregations.
+ */
+export async function isRollupTruncated(
+  windowDays = 30,
+): Promise<boolean> {
+  const supa = getSupabaseServer();
+  if (!supa) return false;
+  const since = new Date(Date.now() - windowDays * 86400 * 1000).toISOString();
+  const { count } = await supa
+    .from("analytics_sessions")
+    .select("session_id", { count: "exact", head: true })
+    .gte("first_seen_at", since);
+  return (count ?? 0) >= ROLLUP_ROW_CAP;
+}
+
+/**
+ * First-visit vs returning-visit conversion split. PRD §2:
+ *   - First-visit: % of fresh fingerprints that placed an order on
+ *     their first session.
+ *   - Returning-visit: % of returning fingerprints that placed an
+ *     order on any return session.
+ *
+ * Computed from `analytics_sessions.is_first_visit` flag (set by the
+ * route at session start) cross-joined with order_submitted events
+ * tied to the same session_id.
+ */
+export interface ConversionSplit {
+  first_visit_total: number;
+  first_visit_orders: number;
+  first_visit_pct: number;
+  returning_total: number;
+  returning_orders: number;
+  returning_pct: number;
+}
+
+export async function getFirstVsReturningConversion(
+  windowDays = 30,
+): Promise<ConversionSplit> {
+  const empty: ConversionSplit = {
+    first_visit_total: 0,
+    first_visit_orders: 0,
+    first_visit_pct: 0,
+    returning_total: 0,
+    returning_orders: 0,
+    returning_pct: 0,
+  };
+
+  const supa = getSupabaseServer();
+  if (!supa) return empty;
+
+  const since = new Date(Date.now() - windowDays * 86400 * 1000).toISOString();
+
+  const { data: sessions } = await supa
+    .from("analytics_sessions")
+    .select("session_id, is_first_visit")
+    .gte("first_seen_at", since)
+    .not("is_first_visit", "is", null)
+    .limit(ROLLUP_ROW_CAP);
+  if (!Array.isArray(sessions) || sessions.length === 0) return empty;
+
+  const sessionIds = sessions.map(
+    (s) => (s as { session_id: string }).session_id,
+  );
+  // Same authoritative-truth pattern as abandonment: reconcile both
+  // the analytics beacon and the orders table so a dropped beacon
+  // doesn't move a converter into the non-converter cohort.
+  const orderedSet = new Set<string>();
+  const BATCH = 100;
+  for (let i = 0; i < sessionIds.length; i += BATCH) {
+    const slice = sessionIds.slice(i, i + BATCH);
+    const { data: ev } = await supa
+      .from("analytics_events")
+      .select("session_id")
+      .eq("event_name", "order_submitted")
+      .in("session_id", slice);
+    for (const e of (ev ?? []) as Array<{ session_id: string }>) {
+      orderedSet.add(e.session_id);
+    }
+    const { data: orders } = await supa
+      .from("orders")
+      .select("session_id")
+      .in("session_id", slice)
+      .not("session_id", "is", null);
+    for (const o of (orders ?? []) as Array<{ session_id: string | null }>) {
+      if (o.session_id) orderedSet.add(o.session_id);
+    }
+  }
+
+  const result: ConversionSplit = { ...empty };
+  for (const s of sessions as Array<{ session_id: string; is_first_visit: boolean }>) {
+    const ordered = orderedSet.has(s.session_id);
+    if (s.is_first_visit) {
+      result.first_visit_total += 1;
+      if (ordered) result.first_visit_orders += 1;
+    } else {
+      result.returning_total += 1;
+      if (ordered) result.returning_orders += 1;
+    }
+  }
+  result.first_visit_pct =
+    result.first_visit_total > 0
+      ? (result.first_visit_orders / result.first_visit_total) * 100
+      : 0;
+  result.returning_pct =
+    result.returning_total > 0
+      ? (result.returning_orders / result.returning_total) * 100
+      : 0;
+  return result;
+}
+
+/**
+ * Top abandonment pages. PRD §2: among sessions in the window that
+ * had at least one pageview but never reached order_submitted, group
+ * by `last_path` (set by the route on every pageview). Returns the
+ * top 20 paths by abandonment count.
+ */
+export interface AbandonmentRow {
+  path: string;
+  count: number;
+}
+
+export async function getTopAbandonmentPaths(
+  windowDays = 30,
+): Promise<AbandonmentRow[]> {
+  const supa = getSupabaseServer();
+  if (!supa) return [];
+
+  const since = new Date(Date.now() - windowDays * 86400 * 1000).toISOString();
+
+  const { data: sessions } = await supa
+    .from("analytics_sessions")
+    .select("session_id, last_path")
+    .gte("first_seen_at", since)
+    .not("last_path", "is", null)
+    .limit(ROLLUP_ROW_CAP);
+  if (!Array.isArray(sessions) || sessions.length === 0) return [];
+
+  const sessionToPath = new Map<string, string>();
+  for (const s of sessions as Array<{ session_id: string; last_path: string }>) {
+    sessionToPath.set(s.session_id, s.last_path);
+  }
+
+  // Subtract sessions that actually converted. Codex caught the
+  // original implementation as relying solely on the
+  // `order_submitted` beacon — which can be dropped (rate limit, lost
+  // tab, network blip) leaving a real buyer in the abandonment list.
+  // Reconcile against the authoritative orders.session_id column too:
+  // any analytics session linked to an order row in the window is a
+  // converter, regardless of whether the client beacon landed.
+  const orderedSet = new Set<string>();
+  const ids = Array.from(sessionToPath.keys());
+  // Smaller batch size to stay well below PostgREST URL limits
+  // across hosting tiers (codex caught 500 × 36 chars as risky).
+  const BATCH = 100;
+  for (let i = 0; i < ids.length; i += BATCH) {
+    const slice = ids.slice(i, i + BATCH);
+    const { data: ev } = await supa
+      .from("analytics_events")
+      .select("session_id")
+      .eq("event_name", "order_submitted")
+      .in("session_id", slice);
+    for (const e of (ev ?? []) as Array<{ session_id: string }>) {
+      orderedSet.add(e.session_id);
+    }
+    const { data: orders } = await supa
+      .from("orders")
+      .select("session_id")
+      .in("session_id", slice)
+      .not("session_id", "is", null);
+    for (const o of (orders ?? []) as Array<{ session_id: string | null }>) {
+      if (o.session_id) orderedSet.add(o.session_id);
+    }
+  }
+
+  const counts = new Map<string, number>();
+  for (const [sid, path] of sessionToPath.entries()) {
+    if (orderedSet.has(sid)) continue;
+    counts.set(path, (counts.get(path) ?? 0) + 1);
+  }
+
+  return Array.from(counts.entries())
+    .map(([path, count]) => ({ path, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 20);
+}
+
+/**
+ * Top product_search terms in the window. Pulls from
+ * analytics_events where event_name='product_search' and the term
+ * lives in properties.term. Aggregates and ranks.
+ */
+export interface SearchRow {
+  term: string;
+  count: number;
+}
+
+export async function getTopSearches(
+  windowDays = 30,
+): Promise<SearchRow[]> {
+  const supa = getSupabaseServer();
+  if (!supa) return [];
+
+  const since = new Date(Date.now() - windowDays * 86400 * 1000).toISOString();
+
+  const { data } = await supa
+    .from("analytics_events")
+    .select("properties")
+    .eq("event_name", "product_search")
+    .gte("occurred_at", since)
+    .limit(ROLLUP_ROW_CAP);
+  const counts = new Map<string, number>();
+  for (const row of (data ?? []) as Array<{
+    properties?: { term?: string };
+  }>) {
+    const t = row.properties?.term;
+    if (!t || typeof t !== "string") continue;
+    const norm = t.trim().toLowerCase();
+    if (!norm) continue;
+    counts.set(norm, (counts.get(norm) ?? 0) + 1);
+  }
+  return Array.from(counts.entries())
+    .map(([term, count]) => ({ term, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 20);
+}
+
+/**
+ * Ad-click attribution rollup. PRD §4.4: group sessions by
+ * non-null gclid / fbclid / utm_id and report sessions + orders.
+ * Empty everywhere until the founder runs ads.
+ */
+export interface AdAttributionRow {
+  source: "gclid" | "fbclid" | "utm_id";
+  identifier: string;
+  sessions: number;
+  orders: number;
+}
+
+export async function getAdAttribution(
+  windowDays = 30,
+): Promise<AdAttributionRow[]> {
+  const supa = getSupabaseServer();
+  if (!supa) return [];
+
+  const since = new Date(Date.now() - windowDays * 86400 * 1000).toISOString();
+  const { data: sessions } = await supa
+    .from("analytics_sessions")
+    .select("session_id, gclid, fbclid, utm_id")
+    .gte("first_seen_at", since)
+    .or("gclid.not.is.null,fbclid.not.is.null,utm_id.not.is.null")
+    .limit(ROLLUP_ROW_CAP);
+  if (!Array.isArray(sessions) || sessions.length === 0) return [];
+
+  const sessionIds = sessions.map(
+    (s) => (s as { session_id: string }).session_id,
+  );
+  const orderedSet = new Set<string>();
+  const BATCH = 100;
+  for (let i = 0; i < sessionIds.length; i += BATCH) {
+    const slice = sessionIds.slice(i, i + BATCH);
+    const { data: ev } = await supa
+      .from("analytics_events")
+      .select("session_id")
+      .eq("event_name", "order_submitted")
+      .in("session_id", slice);
+    for (const e of (ev ?? []) as Array<{ session_id: string }>) {
+      orderedSet.add(e.session_id);
+    }
+    const { data: orders } = await supa
+      .from("orders")
+      .select("session_id")
+      .in("session_id", slice)
+      .not("session_id", "is", null);
+    for (const o of (orders ?? []) as Array<{ session_id: string | null }>) {
+      if (o.session_id) orderedSet.add(o.session_id);
+    }
+  }
+
+  type Key = `${"gclid" | "fbclid" | "utm_id"}:${string}`;
+  const tally = new Map<Key, { sessions: number; orders: number }>();
+  for (const s of sessions as Array<{
+    session_id: string;
+    gclid: string | null;
+    fbclid: string | null;
+    utm_id: string | null;
+  }>) {
+    const ordered = orderedSet.has(s.session_id);
+    for (const [src, id] of [
+      ["gclid", s.gclid],
+      ["fbclid", s.fbclid],
+      ["utm_id", s.utm_id],
+    ] as const) {
+      if (!id) continue;
+      const k: Key = `${src}:${id}`;
+      const cur = tally.get(k) ?? { sessions: 0, orders: 0 };
+      cur.sessions += 1;
+      if (ordered) cur.orders += 1;
+      tally.set(k, cur);
+    }
+  }
+
+  return Array.from(tally.entries())
+    .map(([key, v]) => {
+      const [source, identifier] = key.split(":") as [
+        AdAttributionRow["source"],
+        string,
+      ];
+      return { source, identifier, sessions: v.sessions, orders: v.orders };
+    })
+    .sort((a, b) => b.sessions - a.sessions)
+    .slice(0, 20);
+}
+
 /** Invariant probe used by tests / migrations to confirm the tables wired up. */
 export const ANALYTICS_NOW = isoNow;

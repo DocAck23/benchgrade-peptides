@@ -17,7 +17,8 @@ export type AnalyticsEventName =
   | "affiliate_click"
   | "referral_click"
   | "coa_request"
-  | "newsletter_signup";
+  | "newsletter_signup"
+  | "product_search";
 
 export interface AnalyticsEventInput {
   name: AnalyticsEventName;
@@ -36,6 +37,11 @@ export interface AnalyticsSessionInit {
   utm_campaign?: string | null;
   utm_content?: string | null;
   utm_term?: string | null;
+  /** Ad-platform click identifiers — Google `gclid`, Meta `fbclid`,
+   *  generic `utm_id`. Captured at first hit alongside UTM. */
+  gclid?: string | null;
+  fbclid?: string | null;
+  utm_id?: string | null;
 }
 
 export const SESSION_COOKIE = "bgp_sess";

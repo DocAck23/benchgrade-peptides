@@ -65,6 +65,13 @@ export function AnalyticsBeacon() {
           utm_campaign: params?.get("utm_campaign") ?? null,
           utm_content: params?.get("utm_content") ?? null,
           utm_term: params?.get("utm_term") ?? null,
+          // Ad-platform click ids — Google `gclid`, Meta `fbclid`,
+          // generic `utm_id` (some platforms emit this instead of UTM).
+          // Frozen on first hit alongside the UTM block so subsequent
+          // navigations don't overwrite the first-touch attribution.
+          gclid: params?.get("gclid") ?? null,
+          fbclid: params?.get("fbclid") ?? null,
+          utm_id: params?.get("utm_id") ?? null,
         };
       }
     } catch {

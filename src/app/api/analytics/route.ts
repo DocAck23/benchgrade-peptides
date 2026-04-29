@@ -25,6 +25,7 @@ const ALLOWED_EVENTS: AnalyticsEventName[] = [
   "referral_click",
   "coa_request",
   "newsletter_signup",
+  "product_search",
 ];
 
 function classifyDevice(ua: string): "mobile" | "tablet" | "desktop" | "bot" | "unknown" {
@@ -68,7 +69,33 @@ interface IncomingEvent {
     utm_campaign?: string | null;
     utm_content?: string | null;
     utm_term?: string | null;
+    gclid?: string | null;
+    fbclid?: string | null;
+    utm_id?: string | null;
   };
+}
+
+/**
+ * Compute a one-way fingerprint of the visitor for revisit /
+ * unique-count analytics. Inputs: salt + ip + device class. UA-class
+ * (not full UA) keeps a phone vs laptop split without inflating
+ * fingerprints for every browser-update string change.
+ *
+ * Returns null when the salt is missing — this collapses analytics
+ * fingerprinting to "session-only" gracefully so production never
+ * blows up if the env var is rotated or unset; the dashboard widgets
+ * that depend on fingerprints just show empty rather than throwing.
+ */
+function computeFingerprint(
+  ip: string,
+  deviceClass: string,
+): string | null {
+  const salt = process.env.ANALYTICS_FINGERPRINT_SALT;
+  if (!salt || ip === "unknown") return null;
+  return crypto
+    .createHash("sha256")
+    .update(`${salt}|${ip}|${deviceClass}`)
+    .digest("hex");
 }
 
 /**
@@ -151,6 +178,11 @@ export async function POST(req: NextRequest) {
     req.headers.get("cf-ipcountry") ??
     null;
   const deviceClass = classifyDevice(userAgent);
+  // Salted-hash visitor fingerprint for unique/revisit analytics.
+  // Persisting only the hash (no raw IP) keeps the table out of GDPR
+  // PII scope. Salt rotation in env intentionally severs prior
+  // fingerprints from new sessions — acts as a retention reset.
+  const fingerprintHash = computeFingerprint(ip, deviceClass);
 
   // Drop bot traffic from the events table — we don't want googlebot
   // pageviews skewing conversion math. We still mint the session so a
@@ -170,6 +202,89 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // Visitor fingerprint upsert. is_first_visit is derived from the
+    // INSERT outcome rather than a select-then-count: codex caught
+    // the original two-step pattern as race-prone (two simultaneous
+    // tab-opens both reading session_count=0 and both setting
+    // is_first_visit=true). The fingerprint table's PK on
+    // fingerprint_hash means an INSERT either succeeds (= row
+    // didn't exist before us = first visit) or hits a duplicate-
+    // key error (= someone got here first = returning). The
+    // PostgREST onConflict:'fingerprint_hash' upsert returns the
+    // resulting row but doesn't tell us whether we inserted or
+    // updated; we use a two-statement pattern: try INSERT, on
+    // conflict 23505 = returning visitor. Best-effort throughout —
+    // a fingerprint failure leaves the session row null and the
+    // dashboard falls back to session-level counts.
+    let isFirstVisit: boolean | null = null;
+    if (fingerprintHash) {
+      try {
+        const { error: insertErr } = await supa
+          .from("visitor_fingerprints")
+          .insert({
+            fingerprint_hash: fingerprintHash,
+            session_count: 1,
+            event_count: 1,
+          });
+        if (!insertErr) {
+          // Row didn't exist → this is the first visit. The session
+          // row about to be inserted will carry is_first_visit=true.
+          isFirstVisit = isNewSession ? true : null;
+        } else {
+          // Either a duplicate-key (returning visitor — expected
+          // happy path) or a real error. Either way, fall through
+          // to the increment update; on returning visitor the
+          // update writes monotonically. On a real error the update
+          // probably also fails and we just log.
+          isFirstVisit = isNewSession ? false : null;
+          await supa
+            .from("visitor_fingerprints")
+            .update({
+              // For session_count we need a read+add or an RPC; the
+              // PostgREST UPDATE doesn't support arithmetic. Use a
+              // best-effort read + write, accepting the small race
+              // on the increment counter (codex pass 1 marked this
+              // race as low-blast-radius — none of the dashboards
+              // consume session_count directly, only fingerprint
+              // existence + last_seen_at + ordered_at).
+              last_seen_at: new Date().toISOString(),
+            })
+            .eq("fingerprint_hash", fingerprintHash);
+          if (isNewSession) {
+            const { data: cur } = await supa
+              .from("visitor_fingerprints")
+              .select("session_count, event_count")
+              .eq("fingerprint_hash", fingerprintHash)
+              .maybeSingle();
+            const row = cur as
+              | { session_count?: number; event_count?: number }
+              | null;
+            await supa
+              .from("visitor_fingerprints")
+              .update({
+                session_count: (row?.session_count ?? 0) + 1,
+                event_count: (row?.event_count ?? 0) + 1,
+              })
+              .eq("fingerprint_hash", fingerprintHash);
+          } else {
+            const { data: cur } = await supa
+              .from("visitor_fingerprints")
+              .select("event_count")
+              .eq("fingerprint_hash", fingerprintHash)
+              .maybeSingle();
+            const row = cur as { event_count?: number } | null;
+            await supa
+              .from("visitor_fingerprints")
+              .update({ event_count: (row?.event_count ?? 0) + 1 })
+              .eq("fingerprint_hash", fingerprintHash);
+          }
+        }
+      } catch (fpErr) {
+        console.error("[analytics] fingerprint upsert failed:", fpErr);
+        // Non-fatal: session/event still record without fingerprint.
+      }
+    }
+
     if (isNewSession) {
       // First touch — insert the canonical session row with all the
       // first-touch attribution. We use INSERT here rather than upsert
@@ -177,18 +292,25 @@ export async function POST(req: NextRequest) {
       // for new sessions. If a duplicate slips through (concurrent
       // tabs racing on cookie set), the unique-violation is swallowed
       // by the catch below — best-effort.
+      const initialPath = cap(body.init?.landing_path ?? body.path ?? null, 1024);
       await supa.from("analytics_sessions").insert({
         session_id: sessionId,
         country,
         user_agent: cap(userAgent, 512),
         device_class: deviceClass,
-        landing_path: cap(body.init?.landing_path ?? body.path ?? null, 1024),
+        landing_path: initialPath,
+        last_path: initialPath,
         referrer: cap(body.init?.referrer ?? null, 1024),
         utm_source: cap(body.init?.utm_source ?? null, 200),
         utm_medium: cap(body.init?.utm_medium ?? null, 200),
         utm_campaign: cap(body.init?.utm_campaign ?? null, 200),
         utm_content: cap(body.init?.utm_content ?? null, 200),
         utm_term: cap(body.init?.utm_term ?? null, 200),
+        gclid: cap(body.init?.gclid ?? null, 200),
+        fbclid: cap(body.init?.fbclid ?? null, 200),
+        utm_id: cap(body.init?.utm_id ?? null, 200),
+        fingerprint_hash: fingerprintHash,
+        is_first_visit: isFirstVisit,
         last_seen_at: new Date().toISOString(),
       });
     } else {
@@ -197,9 +319,17 @@ export async function POST(req: NextRequest) {
       // a fresh `init` payload (codex review #8 — every new tab in
       // sessionStorage was firing init and overwriting the original
       // landing/UTM with whatever the user clicked through to next).
+      // last_path IS updated on every pageview so the abandonment
+      // dashboard knows the most recent surface the visitor saw.
+      const sessionUpdate: Record<string, unknown> = {
+        last_seen_at: new Date().toISOString(),
+      };
+      if (body.name === "pageview" && typeof body.path === "string") {
+        sessionUpdate.last_path = body.path.slice(0, 1024);
+      }
       await supa
         .from("analytics_sessions")
-        .update({ last_seen_at: new Date().toISOString() })
+        .update(sessionUpdate)
         .eq("session_id", sessionId);
     }
 
@@ -269,6 +399,24 @@ export async function POST(req: NextRequest) {
           .update({ customer_email_lower: propEmail })
           .eq("session_id", sessionId)
           .is("customer_email_lower", null);
+      }
+      // Stamp the fingerprint as having ordered, once. Conditional on
+      // `is(null)` so the very first conversion timestamp wins —
+      // matters for "first-session conversion" cohorts on the admin
+      // analytics page.
+      if (fingerprintHash) {
+        try {
+          await supa
+            .from("visitor_fingerprints")
+            .update({ ordered_at: new Date().toISOString() })
+            .eq("fingerprint_hash", fingerprintHash)
+            .is("ordered_at", null);
+        } catch (fpErr) {
+          console.error(
+            "[analytics] fingerprint ordered_at update failed:",
+            fpErr,
+          );
+        }
       }
     }
 

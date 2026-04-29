@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Search, X } from "lucide-react";
 import { ProductCard } from "@/components/catalogue/ProductCard";
 import type { CatalogProduct, CatalogCategory } from "@/lib/catalogue/data";
+import { sendAnalyticsEvent } from "@/lib/analytics/client";
 
 interface CatalogueBrowserProps {
   categories: CatalogCategory[];
@@ -60,6 +61,29 @@ export function CatalogueBrowser({
     (s, g) => s + g.matches.length,
     0,
   );
+
+  // Search-event emission. Debounced so a visitor typing "abc" → "abcd"
+  // → "abcde" emits a single event for "abcde" rather than three
+  // separate ones. We also drop empty queries (the cleared state) and
+  // queries shorter than two characters — too noisy to be useful.
+  // The lastEmittedRef prevents re-emitting the same term if the user
+  // tabs away and back without changing the input.
+  const lastEmittedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (trimmed.length < 2) return;
+    if (trimmed === lastEmittedRef.current) return;
+    const timer = window.setTimeout(() => {
+      lastEmittedRef.current = trimmed;
+      void sendAnalyticsEvent("product_search", {
+        properties: {
+          term: trimmed.slice(0, 100),
+          results_count: totalShown,
+        },
+      });
+    }, 600);
+    return () => window.clearTimeout(timer);
+  }, [query, totalShown]);
 
   const toggle = (slug: string) => {
     setEnabledCategories((prev) => {
