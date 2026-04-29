@@ -44,9 +44,16 @@ async function main() {
   ];
 
   // Exclude compliance source files themselves — they contain the banned terms by definition.
+  // Also exclude the research bibliography (`src/lib/research/articles.ts`):
+  // those are titles + abstracts of peer-reviewed published papers, cited
+  // verbatim with author + DOI metadata. Quoting a published paper's title
+  // is research citation, not RUO marketing copy. The compliance framework
+  // (memory/ruo_compliance_framework.md §3) bars BGP from making drug-claim
+  // language; it doesn't require redacting the names of cited literature.
   const excludeFile = (p: string) =>
     p.includes("src/lib/compliance/") ||
-    p.includes("scripts/lint-content.ts");
+    p.includes("scripts/lint-content.ts") ||
+    p.includes("src/lib/research/articles.ts");
 
   const scanTargets = files.filter((p) => !excludeFile(p));
 

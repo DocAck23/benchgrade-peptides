@@ -657,7 +657,7 @@ export function CheckoutPageClient({
                     </div>
                   )}
                   <span className="text-[11px] text-ink-muted leading-snug">
-                    Coupon does not stack with Stack &amp; Save or referrals — we&rsquo;ll
+                    Coupon does not combine with Stack &amp; Save or referrals — we&rsquo;ll
                     automatically apply whichever discount saves you the most.
                   </span>
                 </label>

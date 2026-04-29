@@ -162,9 +162,14 @@ export const BANNED_TERMS: BannedTerm[] = [
   },
 
   // --- Bundling / stacking / protocol language ---
-  // "stack with", "cycle with", "run a protocol"
+  // "stack with", "cycle with", "run a protocol".
+  //
+  // The `with\b` word boundary on the cycle alternative stops false
+  // positives like "skip the next scheduled cycle WITHOUT pausing" —
+  // the prior pattern matched "cycle wi[th]out" inside the longer
+  // word and flagged code comments about subscription scheduling.
   {
-    pattern: /\b(stack\s+(?:with|it\s+with)|cycle\s+(?:with|of\s+\w+\s+mg)|run\s+(?:a|the)\s+(?:protocol|cycle|regimen)|combine\s+with\s+\w+\s+for)/i,
+    pattern: /\b(stack\s+(?:with|it\s+with)\b|cycle\s+(?:with\b|of\s+\w+\s+mg)|run\s+(?:a|the)\s+(?:protocol|cycle|regimen)|combine\s+with\s+\w+\s+for)/i,
     category: "bundling_language",
     rationale: "Stacking/cycling implies use-case for subject administration.",
   },
