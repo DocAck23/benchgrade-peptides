@@ -1849,3 +1849,167 @@ ${SITE_URL}
 
   return { subject, text, html };
 }
+
+// ---------- Sprint G4: rewards transactional emails ----------
+
+export interface TierUpContext {
+  customer_name: string;
+  new_tier_label: string;
+  own_discount_pct: number;
+  referral_link_pct: number;
+  rewards_url: string;
+}
+
+/** Customer crossed up into a higher tier (PRD §7). */
+export function tierUpEmail(ctx: TierUpContext): {
+  subject: string;
+  text: string;
+  html: string;
+} {
+  const subject = `You're now a ${ctx.new_tier_label} at Bench Grade`;
+  const memo = `TIER · ${ctx.new_tier_label.toUpperCase()}`;
+
+  const text = [
+    `${ctx.customer_name} —`,
+    ``,
+    `You crossed into ${ctx.new_tier_label}. From now on:`,
+    ``,
+    `• ${ctx.own_discount_pct}% off every order, applied automatically.`,
+    `• Your referral link gives ${ctx.referral_link_pct}% off the referee's first order.`,
+    ``,
+    `See your full tier details + redeem points: ${ctx.rewards_url}`,
+    ``,
+    RUO_DISCLAIMER,
+    ``,
+    `Bench Grade Peptides · Made in USA`,
+  ].join("\n");
+
+  const bodyHtml = `
+    <p style="margin:0 0 14px 0;">${escapeHtml(ctx.customer_name)} —</p>
+    <p style="margin:0 0 14px 0;">You crossed into <strong>${escapeHtml(ctx.new_tier_label)}</strong>. From now on:</p>
+    <ul style="margin:0 0 18px 18px;padding:0;">
+      <li style="margin:0 0 6px 0;font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#1A0506;"><strong>${ctx.own_discount_pct}%</strong> off every order, applied automatically.</li>
+      <li style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#1A0506;">Your referral link gives <strong>${ctx.referral_link_pct}%</strong> off the referee's first order.</li>
+    </ul>`;
+
+  const html = editorialEmailHtml({
+    title: `Welcome to ${escapeHtml(ctx.new_tier_label)}.`,
+    bodyHtml,
+    memo,
+    cta: { label: "Open your rewards page", href: ctx.rewards_url },
+  });
+
+  return { subject, text, html };
+}
+
+export interface RaffleWonContext {
+  customer_name: string;
+  month_label: string;
+  prize_kind: "cash" | "vials_2";
+  prize_amount_cents: number | null;
+  rewards_url: string;
+}
+
+/** Customer won the monthly raffle (PRD §7). Fires from confirmRaffleDraw. */
+export function raffleWonEmail(ctx: RaffleWonContext): {
+  subject: string;
+  text: string;
+  html: string;
+} {
+  const subject = `You won the ${ctx.month_label} raffle`;
+  const memo = `RAFFLE · ${ctx.month_label.toUpperCase()}`;
+
+  const prizeLine =
+    ctx.prize_kind === "cash"
+      ? ctx.prize_amount_cents != null
+        ? `$${(ctx.prize_amount_cents / 100).toFixed(2)} cash`
+        : "Cash prize"
+      : "2 vials of your choice";
+
+  const text = [
+    `${ctx.customer_name} —`,
+    ``,
+    `You won the ${ctx.month_label} Bench Grade raffle.`,
+    ``,
+    `Your prize: ${prizeLine}.`,
+    ``,
+    ctx.prize_kind === "cash"
+      ? "We'll be in touch within 24 hours to confirm the payout method (Zelle, wire, or check)."
+      : "Two vial credits have been added to your account — redeem at any future checkout.",
+    ``,
+    `See your rewards: ${ctx.rewards_url}`,
+    ``,
+    RUO_DISCLAIMER,
+    ``,
+    `Bench Grade Peptides · Made in USA`,
+  ].join("\n");
+
+  const bodyHtml = `
+    <p style="margin:0 0 14px 0;">${escapeHtml(ctx.customer_name)} —</p>
+    <p style="margin:0 0 14px 0;">You won the <strong>${escapeHtml(ctx.month_label)}</strong> Bench Grade raffle.</p>
+    <div style="background:#F4EBD7;border:1px solid #D4C8A8;padding:18px;margin:0 0 18px 0;">
+      <div style="font-family:Georgia,'Times New Roman',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6B5350;margin-bottom:8px;">Your prize</div>
+      <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:bold;color:#1A0506;">${escapeHtml(prizeLine)}</p>
+    </div>
+    <p style="margin:0 0 14px 0;font-size:14px;color:#4A2528;line-height:1.6;">
+      ${
+        ctx.prize_kind === "cash"
+          ? "We'll be in touch within 24 hours to confirm the payout method (Zelle, wire, or check)."
+          : "Two vial credits have been added to your account — redeem at any future checkout."
+      }
+    </p>`;
+
+  const html = editorialEmailHtml({
+    title: "Congratulations.",
+    bodyHtml,
+    memo,
+    cta: { label: "Open your rewards page", href: ctx.rewards_url },
+  });
+
+  return { subject, text, html };
+}
+
+export interface VialCreditIssuedContext {
+  customer_name: string;
+  count: number;
+  size_cap_label: string; // "5mg", "10mg", or "any vial"
+  source_label: string; // e.g. "April 2026 raffle", "store credit redemption", "admin gift"
+  rewards_url: string;
+}
+
+/** A vial credit landed on the customer's account (PRD §7). */
+export function vialCreditIssuedEmail(ctx: VialCreditIssuedContext): {
+  subject: string;
+  text: string;
+  html: string;
+} {
+  const plural = ctx.count > 1 ? "credits" : "credit";
+  const subject = `Your free vial ${plural} ${ctx.count > 1 ? "are" : "is"} ready`;
+  const memo = `VIAL CREDIT · ${ctx.count}`;
+
+  const text = [
+    `${ctx.customer_name} —`,
+    ``,
+    `${ctx.count} free vial ${plural} (${ctx.size_cap_label}) have been added to your account from ${ctx.source_label}. Redeem at any future checkout.`,
+    ``,
+    `See your rewards: ${ctx.rewards_url}`,
+    ``,
+    RUO_DISCLAIMER,
+    ``,
+    `Bench Grade Peptides · Made in USA`,
+  ].join("\n");
+
+  const bodyHtml = `
+    <p style="margin:0 0 14px 0;">${escapeHtml(ctx.customer_name)} —</p>
+    <p style="margin:0 0 14px 0;"><strong>${ctx.count}</strong> free vial ${plural} (<strong>${escapeHtml(ctx.size_cap_label)}</strong>) ${ctx.count > 1 ? "have" : "has"} been added to your account from ${escapeHtml(ctx.source_label)}.</p>
+    <p style="margin:0 0 14px 0;font-size:14px;color:#4A2528;line-height:1.6;">Redeem at any future checkout — no expiration.</p>`;
+
+  const html = editorialEmailHtml({
+    title: `Free vial ${plural} ready.`,
+    bodyHtml,
+    memo,
+    cta: { label: "Shop the catalogue", href: "/catalogue" },
+  });
+
+  return { subject, text, html };
+}

@@ -25,7 +25,9 @@
 
 import { z } from "zod";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { tierFromPoints } from "@/lib/rewards/tiers";
+import { tierFromPoints, tierSpec, TIER_SPECS } from "@/lib/rewards/tiers";
+import { SITE_URL } from "@/lib/site";
+import { sendTierUp } from "@/lib/email/notifications/send-rewards-emails";
 import type {
   PointsLedgerKind,
   RewardTier,
@@ -317,6 +319,17 @@ export async function recomputeRewards(userId: string): Promise<RewardsActionRes
     // Non-fatal: leave at zero so the recompute still updates points.
   }
 
+  // Read the prior tier (if any) so we can detect a cross-up
+  // transition AFTER the upsert lands. Two-step to keep the
+  // tier-up email idempotent: it fires only when the prior tier
+  // existed and the new tier is strictly higher.
+  const { data: prior } = await service
+    .from("user_rewards")
+    .select("tier")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const priorTier = (prior as { tier?: RewardTier } | null)?.tier ?? null;
+
   const { error: upsertErr } = await service.from("user_rewards").upsert(
     {
       user_id: userId,
@@ -332,6 +345,37 @@ export async function recomputeRewards(userId: string): Promise<RewardsActionRes
   if (upsertErr) {
     console.error("[recomputeRewards] upsert failed:", upsertErr);
     return { ok: false, error: "Recompute failed." };
+  }
+
+  // Tier-up email — best-effort, fires only on a true cross-up
+  // (priorTier defined and below the new tier in the ladder). Sent
+  // via service-role auth admin getUserById to look up the email
+  // off auth.users; we don't store email on user_rewards directly.
+  if (priorTier && priorTier !== tier) {
+    const priorIdx = TIER_SPECS.findIndex((s) => s.tier === priorTier);
+    const newIdx = TIER_SPECS.findIndex((s) => s.tier === tier);
+    if (newIdx > priorIdx) {
+      try {
+        const { data: userResp } = await service.auth.admin.getUserById(userId);
+        const email = userResp?.user?.email ?? null;
+        if (email) {
+          const meta = userResp?.user?.user_metadata as
+            | { first_name?: string; last_name?: string }
+            | undefined;
+          const firstName = meta?.first_name ?? email.split("@")[0];
+          const spec = tierSpec(tier);
+          await sendTierUp(email, {
+            customer_name: firstName,
+            new_tier_label: spec.label,
+            own_discount_pct: spec.ownDiscountPct,
+            referral_link_pct: spec.referralLinkPct,
+            rewards_url: `${SITE_URL}/account/rewards`,
+          });
+        }
+      } catch (emailErr) {
+        console.error("[recomputeRewards] tier-up email failed:", emailErr);
+      }
+    }
   }
 
   return { ok: true };

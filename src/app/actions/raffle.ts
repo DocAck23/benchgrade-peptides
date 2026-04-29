@@ -27,6 +27,11 @@ import { z } from "zod";
 import { createServerSupabase } from "@/lib/supabase/client";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { isAdmin } from "@/lib/admin/auth";
+import { SITE_URL } from "@/lib/site";
+import {
+  sendRaffleWon,
+  sendVialCreditIssued,
+} from "@/lib/email/notifications/send-rewards-emails";
 import {
   computeRaffleEntries,
   monthKey,
@@ -507,6 +512,49 @@ export async function confirmRaffleDraw(
       ok: false,
       error: `Prize issue failed: ${issueErr}. Claim rolled back; you can retry.`,
     };
+  }
+
+  // Best-effort prize emails. Failures here log and proceed — the
+  // claim and side-effects already landed, so the customer has
+  // their prize even without the notification. Admin can resend
+  // manually if needed.
+  try {
+    const { data: userResp } = await service.auth.admin.getUserById(
+      m.winner_user_id,
+    );
+    const email = userResp?.user?.email ?? null;
+    if (email) {
+      const meta = userResp?.user?.user_metadata as
+        | { first_name?: string }
+        | undefined;
+      const firstName = meta?.first_name ?? email.split("@")[0];
+      const monthLabel = new Date(`${m.month}T00:00:00Z`).toLocaleDateString(
+        "en-US",
+        { month: "long", year: "numeric", timeZone: "UTC" },
+      );
+      const rewardsUrl = `${SITE_URL}/account/rewards`;
+      await sendRaffleWon(email, {
+        customer_name: firstName,
+        month_label: monthLabel,
+        prize_kind: m.prize_kind,
+        prize_amount_cents: m.prize_amount_cents,
+        rewards_url: rewardsUrl,
+      });
+      if (m.prize_kind === "vials_2") {
+        const sizeCapLabel = m.vial_size_cap_mg
+          ? `${m.vial_size_cap_mg}mg max`
+          : "any vial";
+        await sendVialCreditIssued(email, {
+          customer_name: firstName,
+          count: 2,
+          size_cap_label: sizeCapLabel,
+          source_label: `${monthLabel} raffle`,
+          rewards_url: rewardsUrl,
+        });
+      }
+    }
+  } catch (emailErr) {
+    console.error("[confirmRaffleDraw] prize emails failed:", emailErr);
   }
 
   return { ok: true };
