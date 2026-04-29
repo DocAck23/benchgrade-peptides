@@ -4,6 +4,14 @@
     {
       "path": "/api/cron/rewards-recompute",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/raffle-snapshot",
+      "schedule": "55 8 1 * *"
+    },
+    {
+      "path": "/api/cron/raffle-draw",
+      "schedule": "0 9 1 * *"
     }
   ]
 }

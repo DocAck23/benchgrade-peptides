@@ -200,6 +200,39 @@ export interface UserRewardsRow {
 
 export type VialCreditSource = "redemption" | "raffle" | "admin";
 
+export type RafflePrizeKind = "cash" | "vials_2";
+
+export interface RaffleMonthRow {
+  month: string;
+  prize_kind: RafflePrizeKind;
+  prize_amount_cents: number | null;
+  vial_size_cap_mg: number | null;
+  entry_snapshot_at: string | null;
+  winner_user_id: string | null;
+  drawn_at: string | null;
+  confirmed_by_admin_at: string | null;
+  created_at: string;
+}
+
+export interface RaffleEntryRow {
+  month: string;
+  user_id: string;
+  entry_count: number;
+}
+
+export type CashPayoutMethod = "zelle" | "wire" | "check";
+
+export interface CashPayoutRow {
+  id: string;
+  user_id: string;
+  amount_cents: number;
+  source_month: string | null;
+  paid_at: string | null;
+  paid_method: CashPayoutMethod | null;
+  note: string | null;
+  created_at: string;
+}
+
 export interface VialCreditRow {
   id: string;
   user_id: string;

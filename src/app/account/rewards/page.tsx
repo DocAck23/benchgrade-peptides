@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase/client";
 import { getMyRewards } from "@/app/actions/rewards";
+import { getMyRaffleEntries } from "@/app/actions/raffle";
 import { TierLadder } from "@/components/account/TierLadder";
+import { formatPrice } from "@/lib/utils";
 import {
   REDEMPTION_OPTIONS,
   nextTierProgress,
@@ -89,6 +91,11 @@ export default async function RewardsPage() {
   const progress = nextTierProgress(rewards.tier_points);
   const current = tierSpec(rewards.tier);
 
+  // Live raffle-entries for this month + the configured prize.
+  // Best-effort: a failure here doesn't break the rewards page,
+  // we just hide the raffle card.
+  const raffle = await getMyRaffleEntries().catch(() => null);
+
   // Recent ledger — last 25 entries. RLS scopes to the caller; the
   // `source_referral_user_id` column is exposed on read-own-rows
   // (acknowledged tradeoff: a referee can see their referrer's user
@@ -170,6 +177,67 @@ export default async function RewardsPage() {
           )}
         </div>
       </section>
+
+      {/* Monthly raffle widget — shows live entry count, the
+          breakdown by source (tier base + own spend + referee
+          spend), and the prize the founder configured for this
+          month. Empty admin config falls back to a placeholder
+          message so the customer always sees the section. */}
+      {raffle && raffle.ok && (
+        <section className="border-2 border-wine bg-wine/5 p-5 sm:p-6 space-y-3">
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <div>
+              <div className="label-eyebrow text-wine font-bold mb-1">
+                Monthly raffle
+              </div>
+              <h2 className="font-display text-2xl text-ink">
+                {raffle.entry_count.toLocaleString()} entr
+                {raffle.entry_count === 1 ? "y" : "ies"} this month
+              </h2>
+            </div>
+            {raffle.prize ? (
+              <div className="text-right">
+                <div className="label-eyebrow text-ink-muted">This month&rsquo;s prize</div>
+                <div className="font-display text-base text-ink mt-1">
+                  {raffle.prize.kind === "cash"
+                    ? raffle.prize.amount_cents
+                      ? `${formatPrice(raffle.prize.amount_cents)} cash`
+                      : "Cash prize"
+                    : "2 free vials of choice"}
+                </div>
+              </div>
+            ) : (
+              <div className="text-xs text-ink-muted text-right max-w-[200px]">
+                Prize for this month is being configured.
+              </div>
+            )}
+          </div>
+          <ul className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-ink-soft">
+            <li className="border rule bg-paper p-3">
+              <span className="font-mono-data text-ink">
+                {raffle.base_from_tier}
+              </span>{" "}
+              from your tier
+            </li>
+            <li className="border rule bg-paper p-3">
+              <span className="font-mono-data text-ink">
+                {raffle.from_own_spend}
+              </span>{" "}
+              from your spend ($25 / entry)
+            </li>
+            <li className="border rule bg-paper p-3">
+              <span className="font-mono-data text-ink">
+                {raffle.from_referee_spend}
+              </span>{" "}
+              from referee spend ($10 / entry)
+            </li>
+          </ul>
+          <p className="text-xs text-ink-muted">
+            Drawn on the 1st of next month. Winners are emailed within 24
+            hours of the founder confirming the draw.
+          </p>
+        </section>
+      )}
 
       {/* Earning rates explainer */}
       <section className="border rule bg-paper-soft p-5 sm:p-6 space-y-3">
