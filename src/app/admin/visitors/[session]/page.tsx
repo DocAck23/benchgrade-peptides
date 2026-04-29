@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { LocalTime } from "@/components/admin/LocalTime";
 import { isAdmin } from "@/lib/admin/auth";
 import { getSupabaseServer } from "@/lib/supabase/server";
 
@@ -67,8 +68,14 @@ export default async function VisitorPathPage({
       </header>
 
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Field label="First seen" value={formatLocal(s.first_seen_at)} />
-        <Field label="Last seen" value={formatLocal(s.last_seen_at)} />
+        <Field
+          label="First seen"
+          value={s.first_seen_at ? <LocalTime iso={s.first_seen_at} /> : "—"}
+        />
+        <Field
+          label="Last seen"
+          value={s.last_seen_at ? <LocalTime iso={s.last_seen_at} /> : "—"}
+        />
         <Field label="Time on site" value={formatDuration(sessionMs)} />
         <Field label="Country" value={s.country ?? "—"} />
         <Field label="Device" value={s.device_class ?? "—"} />
@@ -95,7 +102,7 @@ export default async function VisitorPathPage({
             {evList.map((e, i) => (
               <li key={i} className="px-5 py-3 flex items-baseline gap-4">
                 <span className="font-mono-data text-xs text-ink-muted whitespace-nowrap w-44">
-                  {formatLocal(e.occurred_at)}
+                  <LocalTime iso={e.occurred_at} />
                 </span>
                 <span
                   className={`inline-block px-2 py-0.5 text-[10px] font-mono-data uppercase ${eventClass(e.event_name)}`}
@@ -175,7 +182,7 @@ function Field({
   mono,
 }: {
   label: string;
-  value: string;
+  value: React.ReactNode;
   mono?: boolean;
 }) {
   return (

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin/auth";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/utils";
+import { LocalTime } from "@/components/admin/LocalTime";
 
 export const metadata: Metadata = {
   title: "Accounts · Admin",
@@ -186,15 +187,15 @@ export default async function AdminAccountsPage() {
                         {r.email}
                       </a>
                     </Td>
-                    <Td>{fmt(r.created_at)}</Td>
-                    <Td>{fmt(r.last_sign_in_at)}</Td>
+                    <Td>{r.created_at ? <LocalTime iso={r.created_at} /> : "—"}</Td>
+                    <Td>{r.last_sign_in_at ? <LocalTime iso={r.last_sign_in_at} /> : "—"}</Td>
                     <Td className="text-right tabular-nums">
                       {r.order_count.toLocaleString()}
                     </Td>
                     <Td className="text-right tabular-nums">
                       {r.lifetime_cents > 0 ? formatPrice(r.lifetime_cents) : "—"}
                     </Td>
-                    <Td>{fmt(r.last_order_at)}</Td>
+                    <Td>{r.last_order_at ? <LocalTime iso={r.last_order_at} /> : "—"}</Td>
                     <Td>
                       {r.confirmed ? (
                         <span className="text-teal">confirmed</span>

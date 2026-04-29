@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
+import { LocalTime } from "@/components/admin/LocalTime";
 import { isAdmin } from "@/lib/admin/auth";
 import {
   getAffiliateDetailAdmin,
@@ -54,7 +55,7 @@ export default async function AdminAffiliateDetailPage({
               <Meta label="Signed name" value={detail.agreement.signed_name} />
               <Meta
                 label="Signed at"
-                value={new Date(detail.agreement.signed_at).toLocaleString()}
+                value={<LocalTime iso={detail.agreement.signed_at} />}
               />
               <Meta label="Version" value={detail.agreement.agreement_version} />
               <Meta label="IP" value={detail.agreement.ip ?? "—"} />
@@ -83,7 +84,7 @@ export default async function AdminAffiliateDetailPage({
               </div>
               <div className="text-xs text-ink-muted mt-1">
                 {(detail.w9.byte_size / 1024).toFixed(1)} KB · uploaded{" "}
-                {new Date(detail.w9.uploaded_at).toLocaleString()}
+                <LocalTime iso={detail.w9.uploaded_at} />
               </div>
             </div>
             {w9Url ? (
@@ -109,7 +110,7 @@ export default async function AdminAffiliateDetailPage({
   );
 }
 
-function Meta({ label, value }: { label: string; value: string }) {
+function Meta({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
       <div className="text-[10px] uppercase tracking-[0.1em] text-ink-muted">

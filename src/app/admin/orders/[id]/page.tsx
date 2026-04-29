@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { LocalTime } from "@/components/admin/LocalTime";
 import { isAdmin } from "@/lib/admin/auth";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/utils";
@@ -206,8 +207,8 @@ export default async function AdminOrderPage({
             <div className="label-eyebrow text-ink-muted mb-1">Order</div>
             <h1 className="font-mono-data text-lg text-ink">{order.order_id}</h1>
             <div className="text-xs text-ink-muted mt-1">
-              Placed {new Date(order.created_at).toLocaleString()} · updated{" "}
-              {new Date(order.updated_at).toLocaleString()}
+              Placed <LocalTime iso={order.created_at} /> · updated{" "}
+              <LocalTime iso={order.updated_at} />
             </div>
             {order.payment_method && (
               <div className="font-mono-data text-xs text-teal mt-2 uppercase tracking-wider">
@@ -293,7 +294,7 @@ export default async function AdminOrderPage({
         <h2 className="label-eyebrow text-ink-muted mb-3">RUO acknowledgment</h2>
         <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
           <Dt>Acknowledged</Dt>
-          <Dd>{new Date(order.acknowledgment.acknowledged_at).toLocaleString()}</Dd>
+          <Dd><LocalTime iso={order.acknowledgment.acknowledged_at} /></Dd>
           <Dt>IP / UA</Dt>
           <Dd className="font-mono-data text-xs break-all">
             {order.acknowledgment.ip} · {order.acknowledgment.user_agent}

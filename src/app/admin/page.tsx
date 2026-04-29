@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin/auth";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { LocalTime } from "@/components/admin/LocalTime";
 import { formatPrice } from "@/lib/utils";
 import { isPaymentMethod } from "@/lib/payments/methods";
 import { escapeLikePattern } from "@/lib/text/like-escape";
@@ -223,9 +224,10 @@ export default async function AdminPage({
                 return (
                   <tr key={o.order_id} className="hover:bg-paper-soft">
                     <Td>
-                      <span className="font-mono-data text-xs text-ink-muted">
-                        {new Date(o.created_at).toLocaleString()}
-                      </span>
+                      <LocalTime
+                        iso={o.created_at}
+                        className="font-mono-data text-xs text-ink-muted"
+                      />
                     </Td>
                     <Td>
                       <div className="text-ink">{o.customer.name}</div>

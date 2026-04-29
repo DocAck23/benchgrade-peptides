@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin/auth";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { LocalTime } from "@/components/admin/LocalTime";
 
 export const metadata: Metadata = {
   title: "Waitlist · Admin",
@@ -117,8 +118,8 @@ export default async function AdminWaitlistPage() {
                 {rows.map((r) => (
                   <tr key={r.email_lower} className="hover:bg-paper-soft">
                     <Td className="font-mono text-xs">{r.email_lower}</Td>
-                    <Td>{fmt(r.signed_up_at)}</Td>
-                    <Td>{r.welcome_sent_at ? fmt(r.welcome_sent_at) : "—"}</Td>
+                    <Td>{r.signed_up_at ? <LocalTime iso={r.signed_up_at} /> : "—"}</Td>
+                    <Td>{r.welcome_sent_at ? <LocalTime iso={r.welcome_sent_at} /> : "—"}</Td>
                     <Td>
                       {r.first_order_id ? (
                         <a

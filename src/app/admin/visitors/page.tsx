@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin/auth";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { LocalTime } from "@/components/admin/LocalTime";
 
 export const metadata: Metadata = {
   title: "Visitors · Admin",
@@ -181,9 +182,10 @@ export default async function AdminVisitorsPage({
               {filtered.map((r) => (
                 <tr key={r.session_id} className="hover:bg-paper-soft">
                   <Td>
-                    <span className="font-mono-data text-xs text-ink-muted whitespace-nowrap">
-                      {new Date(r.first_seen_at).toLocaleString()}
-                    </span>
+                    <LocalTime
+                      iso={r.first_seen_at}
+                      className="font-mono-data text-xs text-ink-muted whitespace-nowrap"
+                    />
                   </Td>
                   <Td>
                     <span className="text-xs">
