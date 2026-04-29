@@ -40,10 +40,18 @@ export function PopularStacks() {
             Popular stacks
           </h2>
         </div>
-        <p className="hidden sm:block text-sm text-ink-soft italic max-w-xs text-right" style={{ fontFamily: "var(--font-editorial)" }}>
-          Frequently studied together. One-click add — Stack &amp; Save tier
-          discount applies automatically.
-        </p>
+        <div className="flex flex-col items-end gap-2 max-w-sm">
+          <p className="hidden sm:block text-sm text-ink-soft italic text-right" style={{ fontFamily: "var(--font-editorial)" }}>
+            Frequently studied together. One-click add — Stack &amp; Save tier
+            discount applies automatically.
+          </p>
+          <Link
+            href="/catalogue/stacks/build"
+            className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-display uppercase tracking-[0.12em] text-wine border-b border-wine hover:text-gold-dark hover:border-gold-dark transition-colors"
+          >
+            Or build your own →
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">

@@ -220,6 +220,25 @@ export interface RaffleEntryRow {
   entry_count: number;
 }
 
+/**
+ * Single line inside a saved stack. SKU resolves against the catalog
+ * at load time so a stack pinned to a retired SKU surfaces the
+ * dropped lines to the customer cleanly.
+ */
+export interface SavedStackLine {
+  sku: string;
+  quantity: number;
+}
+
+export interface SavedStackRow {
+  id: string;
+  user_id: string;
+  name: string;
+  lines: SavedStackLine[];
+  created_at: string;
+  updated_at: string;
+}
+
 export type CashPayoutMethod = "zelle" | "wire" | "check";
 
 export interface CashPayoutRow {
