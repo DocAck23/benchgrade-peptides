@@ -187,13 +187,6 @@ export function StackPickerForm({ stackName, lines: initialLines }: StackPickerF
           </ul>
         )}
 
-        <Link
-          href="/catalogue"
-          className="inline-flex items-center gap-2 text-sm text-wine hover:text-gold-dark transition-colors mt-2"
-        >
-          <Plus className="w-4 h-4" strokeWidth={2} />
-          Add another vial from the catalogue
-        </Link>
       </section>
 
       {/* ── Sticky summary ─────────────────────────────────────────────── */}
