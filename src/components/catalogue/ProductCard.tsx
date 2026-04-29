@@ -8,6 +8,13 @@ import { QuickAddButton } from "./QuickAddButton";
 interface ProductCardProps {
   product: CatalogProduct;
   categorySlug: string;
+  /**
+   * Customer's tier-driven own-order discount percent (0–10). When >0,
+   * the card shows a strikethrough on the retail price and the
+   * personalized price next to it. Default 0 (anonymous viewer or
+   * Initiate tier).
+   */
+  tierDiscountPct?: number;
 }
 
 /**
@@ -18,12 +25,27 @@ interface ProductCardProps {
  * area is fixed at aspect-[4/5]; the text area uses fixed-height rows
  * with truncate/line-clamp for variable content.
  */
-export function ProductCard({ product, categorySlug }: ProductCardProps) {
+export function ProductCard({
+  product,
+  categorySlug,
+  tierDiscountPct = 0,
+}: ProductCardProps) {
   const minPrice = getMinPrice(product);
   const maxPrice = getMaxPrice(product);
   const priceRange = minPrice === maxPrice
     ? formatPrice(minPrice * 100)
     : `${formatPrice(minPrice * 100)} – ${formatPrice(maxPrice * 100)}`;
+  const showsPersonalPrice = tierDiscountPct > 0;
+  const personalMin = showsPersonalPrice
+    ? minPrice * (1 - tierDiscountPct / 100)
+    : minPrice;
+  const personalMax = showsPersonalPrice
+    ? maxPrice * (1 - tierDiscountPct / 100)
+    : maxPrice;
+  const personalPriceRange =
+    personalMin === personalMax
+      ? formatPrice(Math.round(personalMin * 100))
+      : `${formatPrice(Math.round(personalMin * 100))} – ${formatPrice(Math.round(personalMax * 100))}`;
   const sizes = product.variants.map((v) => `${v.size_mg}mg`).join(" · ");
 
   return (
@@ -75,7 +97,34 @@ export function ProductCard({ product, categorySlug }: ProductCardProps) {
         {/* Footer — pinned to bottom. Mobile shows just price; sizes
             badge gets squeezed off at 3-per-row so we drop it. */}
         <div className="mt-auto pt-2 sm:pt-4 border-t rule flex items-baseline justify-between gap-1 sm:gap-2">
-          <span className="font-mono-data text-[11px] sm:text-sm text-ink whitespace-nowrap">{priceRange}</span>
+          {/* Personal price = retail × (1 - tier %). Cart-level
+              discounts (Stack & Save, same-SKU multiplier, etc.)
+              compound on top at checkout, so the final cart total is
+              typically lower than what the card shows. We label this
+              as the customer's "tier base" rather than the final
+              checkout price to avoid implying it's locked in. */}
+          <span className="flex items-baseline gap-1.5 whitespace-nowrap">
+            {showsPersonalPrice ? (
+              <>
+                <span
+                  className="font-mono-data text-[11px] sm:text-sm text-ink-muted line-through"
+                  title="Retail price"
+                >
+                  {priceRange}
+                </span>
+                <span
+                  className="font-mono-data text-[11px] sm:text-sm text-gold-dark font-semibold"
+                  title={`Your tier base price — additional cart discounts may apply at checkout`}
+                >
+                  {personalPriceRange}
+                </span>
+              </>
+            ) : (
+              <span className="font-mono-data text-[11px] sm:text-sm text-ink">
+                {priceRange}
+              </span>
+            )}
+          </span>
           <span className="hidden sm:block label-eyebrow text-ink-muted truncate text-xs max-w-[60%] text-right">{sizes}</span>
         </div>
       </div>

@@ -15,6 +15,13 @@ interface Props {
   availableMethods: readonly PaymentMethod[];
   details: PaymentMethodDetails;
   invoiceUrl: string | null;
+  /**
+   * `seamless` drops the wine-bordered cream container and renders
+   * the body inline so the parent surface (e.g. the unified order
+   * card) supplies its own framing. Default `false` keeps the
+   * standalone-card behavior used everywhere else.
+   */
+  seamless?: boolean;
 }
 
 /**
@@ -34,6 +41,7 @@ export function PendingPaymentPanel({
   availableMethods,
   details,
   invoiceUrl,
+  seamless = false,
 }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -57,19 +65,31 @@ export function PendingPaymentPanel({
     });
   };
 
+  // `seamless` strips the wine-bordered cream container so the parent
+  // surface (e.g. the unified order card) supplies its own framing
+  // and the body flows visually with the surrounding content.
+  const containerClass = seamless
+    ? "space-y-5"
+    : "border-2 border-wine bg-paper-soft p-5 sm:p-7 space-y-5";
+
   return (
-    <section className="border-2 border-wine bg-paper-soft p-5 sm:p-7 space-y-5">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <div>
-          <div className="label-eyebrow text-wine font-bold mb-1">Pay your order</div>
-          <h2 className="font-display text-2xl text-ink leading-tight">
-            Awaiting payment — {formatPrice(amountCents)} due
-          </h2>
+    <section className={containerClass}>
+      {/* Section heading is duplicated by the unified card's own
+          headline when `seamless` is set; keep it suppressed there
+          to avoid a stuttered "Awaiting payment" headline. */}
+      {!seamless && (
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <div>
+            <div className="label-eyebrow text-wine font-bold mb-1">Pay your order</div>
+            <h2 className="font-display text-2xl text-ink leading-tight">
+              Awaiting payment — {formatPrice(amountCents)} due
+            </h2>
+          </div>
+          <div className="text-xs text-ink-muted">
+            Order BGP-{orderId.slice(0, 8).toUpperCase()}
+          </div>
         </div>
-        <div className="text-xs text-ink-muted">
-          Order BGP-{orderId.slice(0, 8).toUpperCase()}
-        </div>
-      </div>
+      )}
 
       {/* Memo block — wine-bordered, oversized */}
       {currentMethod !== "crypto" && (

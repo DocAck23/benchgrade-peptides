@@ -73,6 +73,13 @@ const BASE_TABS: Tab[] = [
     attention: "messages",
   },
   {
+    href: "/account/rewards",
+    label: "Rewards",
+    enabled: true,
+    match: (p) =>
+      p === "/account/rewards" || p.startsWith("/account/rewards/"),
+  },
+  {
     href: "/account/referrals",
     label: "Referrals",
     enabled: true,

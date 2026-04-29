@@ -75,6 +75,7 @@ export function AccountMenuDropdown({
     { href: "/account/orders", label: "Orders", badgeCount: attention.orders },
     { href: "/account/subscription", label: "Subscription" },
     { href: "/account/messages", label: "Messages", badgeCount: attention.messages },
+    { href: "/account/rewards", label: "Rewards" },
     { href: "/account/referrals", label: "Referrals" },
     { href: "/account/security", label: "Security" },
     { href: "/account/profile", label: "Profile" },

@@ -31,6 +31,18 @@ interface OrderItem {
   vial_image: string;
 }
 
+interface CustomerSnapshot {
+  name: string;
+  email: string;
+  phone: string | null;
+  institution: string | null;
+  ship_address_1: string;
+  ship_address_2: string | null;
+  ship_city: string;
+  ship_state: string;
+  ship_zip: string;
+}
+
 interface OrderDetail {
   order_id: string;
   invoice_number: number | null;
@@ -48,13 +60,7 @@ interface OrderDetail {
   updated_at: string;
   payment_method: PaymentMethod | null;
   nowpayments_invoice_url: string | null;
-  ship_address: {
-    ship_address_1: string;
-    ship_address_2: string | null;
-    ship_city: string;
-    ship_state: string;
-    ship_zip: string;
-  } | null;
+  customer: CustomerSnapshot | null;
 }
 
 const VALID_CARRIERS: readonly Carrier[] = ["USPS", "UPS", "FedEx", "DHL"];
@@ -107,7 +113,12 @@ function narrow(row: unknown): OrderDetail | null {
     if (sz === 5 || sz === 10) entitlement = { size_mg: sz };
   }
 
-  let ship_address: OrderDetail["ship_address"] = null;
+  // Pull the full customer snapshot off the order so the invoice block
+  // can show name + ship-to address + contact. The JSON is a frozen
+  // record of what the customer typed at checkout — newer profile
+  // edits don't retroactively change a placed order's snapshot, which
+  // is the correct audit-trail behavior.
+  let customer: CustomerSnapshot | null = null;
   const c = r.customer;
   if (c && typeof c === "object") {
     const co = c as Record<string, unknown>;
@@ -117,10 +128,19 @@ function narrow(row: unknown): OrderDetail | null {
       typeof co.ship_state === "string" &&
       typeof co.ship_zip === "string"
     ) {
-      ship_address = {
+      customer = {
+        name: typeof co.name === "string" ? co.name : "",
+        email: typeof co.email === "string" ? co.email : "",
+        phone: typeof co.phone === "string" && co.phone ? co.phone : null,
+        institution:
+          typeof co.institution === "string" && co.institution
+            ? co.institution
+            : null,
         ship_address_1: co.ship_address_1,
         ship_address_2:
-          typeof co.ship_address_2 === "string" ? co.ship_address_2 : null,
+          typeof co.ship_address_2 === "string" && co.ship_address_2
+            ? co.ship_address_2
+            : null,
         ship_city: co.ship_city,
         ship_state: co.ship_state,
         ship_zip: co.ship_zip,
@@ -150,7 +170,7 @@ function narrow(row: unknown): OrderDetail | null {
         : null,
     nowpayments_invoice_url:
       typeof r.nowpayments_invoice_url === "string" ? r.nowpayments_invoice_url : null,
-    ship_address,
+    customer,
   };
 }
 
@@ -210,6 +230,26 @@ function buildTimeline(order: OrderDetail): OrderTimelineEvent[] {
   return [placed, funded, shipped];
 }
 
+const longDateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+});
+
+const timeFormatter = new Intl.DateTimeFormat("en-US", {
+  hour: "numeric",
+  minute: "2-digit",
+  hour12: true,
+});
+
+function formatPlacedAt(iso: string): { date: string; time: string } {
+  const d = new Date(iso);
+  return {
+    date: longDateFormatter.format(d),
+    time: timeFormatter.format(d),
+  };
+}
+
 export default async function CustomerOrderDetailPage({
   params,
 }: {
@@ -239,12 +279,13 @@ export default async function CustomerOrderDetailPage({
     order.invoice_number !== null
       ? formatInvoiceNumber(order.invoice_number)
       : "INV-—";
-  const isCancellable =
+  const isAwaiting =
     order.status === "awaiting_payment" || order.status === "awaiting_wire";
   const shippingFree = subtotal >= FREE_SHIPPING_THRESHOLD * 100;
+  const placed = formatPlacedAt(order.created_at);
 
   return (
-    <article className="space-y-8 max-w-4xl">
+    <article className="space-y-6 max-w-4xl">
       <Link
         href="/account/orders"
         className="font-display uppercase text-[11px] tracking-[0.14em] text-gold-dark hover:text-ink transition-colors duration-200 ease-out"
@@ -252,92 +293,154 @@ export default async function CustomerOrderDetailPage({
         ← All orders
       </Link>
 
-      {/* Single outer card encompassing the whole order. Header strip
-          carries order/invoice numbers + status pill; horizontal
-          timeline reads left-to-right. Manage row sits above items so
-          the customer's actions are within thumb's reach without
-          scrolling. */}
-      <section className="border rule bg-paper">
-        <div className="px-6 lg:px-8 py-6 border-b rule">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 font-display uppercase text-[12px] tracking-[0.18em] text-ink-muted">
-                <span>
-                  Order ·{" "}
-                  <span className="text-ink font-mono-data normal-case tracking-normal">
-                    {orderShort}
-                  </span>
+      {/* Header card — order/invoice numbers, status pill, headline,
+          horizontal timeline. Sits above the unified body card so the
+          customer can scan the timeline at a glance before drilling
+          into payment / items / totals. */}
+      <section className="border rule bg-paper px-6 lg:px-8 py-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 font-display uppercase text-[12px] tracking-[0.18em] text-ink-muted">
+              <span>
+                Order ·{" "}
+                <span className="text-ink font-mono-data normal-case tracking-normal">
+                  {orderShort}
                 </span>
-                <span>
-                  Invoice ·{" "}
-                  <span className="text-ink font-mono-data normal-case tracking-normal">
-                    {invoiceLabel}
-                  </span>
+              </span>
+              <span>
+                Invoice ·{" "}
+                <span className="text-ink font-mono-data normal-case tracking-normal">
+                  {invoiceLabel}
                 </span>
-              </div>
-              <h1
-                className="mt-3 font-editorial italic text-3xl lg:text-4xl text-ink leading-tight"
-                style={{ fontFamily: "var(--font-editorial)" }}
-              >
-                {statusHeadline(order.status)}
-              </h1>
+              </span>
             </div>
-            <OrderStatusPill status={order.status} />
+            <h1
+              className="mt-3 font-editorial italic text-3xl lg:text-4xl text-ink leading-tight"
+              style={{ fontFamily: "var(--font-editorial)" }}
+            >
+              {statusHeadline(order.status)}
+            </h1>
           </div>
-
-          <div className="mt-6">
-            <OrderTimeline
-              events={buildTimeline(order)}
-              orientation="horizontal"
-            />
-          </div>
+          <OrderStatusPill status={order.status} />
         </div>
 
-        {(order.status === "awaiting_payment" || order.status === "awaiting_wire") && (
-          <div className="px-6 lg:px-8 py-6 border-b rule">
-            <PendingPaymentPanel
-              orderId={order.order_id}
-              memo={`BGP-${order.order_id.slice(0, 8).toUpperCase()}`}
-              amountCents={total}
-              currentMethod={order.payment_method}
-              availableMethods={enabledPaymentMethods()}
-              details={getPaymentMethodDetails()}
-              invoiceUrl={order.nowpayments_invoice_url}
-            />
+        <div className="mt-6">
+          <OrderTimeline
+            events={buildTimeline(order)}
+            orientation="horizontal"
+          />
+        </div>
+      </section>
+
+      {/* Manage row — sits ON TOP of the unified body card so the
+          customer's actions are within reach without scrolling past
+          payment instructions or items. Edit/cancel buttons render
+          only while the order is awaiting payment; speak-to-team is
+          available on every order so a customer can ask about a
+          shipped or refunded order without leaving the page. */}
+      <section className="border rule bg-paper px-6 lg:px-8 py-4 flex flex-wrap items-center gap-3">
+        {isAwaiting && order.customer && (
+          <OrderManagePanel
+            orderId={order.order_id}
+            current={{
+              ship_address_1: order.customer.ship_address_1,
+              ship_address_2: order.customer.ship_address_2,
+              ship_city: order.customer.ship_city,
+              ship_state: order.customer.ship_state,
+              ship_zip: order.customer.ship_zip,
+            }}
+            compact
+          />
+        )}
+        <Link
+          href={`/account/messages?order_id=${encodeURIComponent(order.order_id)}`}
+          className="inline-flex items-center justify-center h-10 px-4 bg-ink text-paper font-display uppercase text-[11px] tracking-[0.14em] hover:bg-gold-dark transition-colors duration-200 ease-out sm:ml-auto"
+        >
+          Speak to the team →
+        </Link>
+      </section>
+
+      {/* The unified order body — wine-bordered cream card containing
+          everything the customer needs to know about this order:
+          payment instructions (when awaiting), full invoice details,
+          itemized list, and totals. One card so the visual story
+          reads top-to-bottom without box-in-box stuttering. */}
+      <section className="border-2 border-wine bg-paper-soft p-5 sm:p-7 space-y-7">
+        {isAwaiting && (
+          <PendingPaymentPanel
+            orderId={order.order_id}
+            memo={`BGP-${order.order_id.slice(0, 8).toUpperCase()}`}
+            amountCents={total}
+            currentMethod={order.payment_method}
+            availableMethods={enabledPaymentMethods()}
+            details={getPaymentMethodDetails()}
+            invoiceUrl={order.nowpayments_invoice_url}
+            seamless
+          />
+        )}
+
+        {/* Invoice details — what a printable invoice would show. The
+            customer JSON is the order-time snapshot so this never
+            changes after placement (auditable). */}
+        {order.customer && (
+          <div className="border-t border-wine/30 pt-6 first:border-t-0 first:pt-0 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+            <div>
+              <div className="label-eyebrow text-ink-muted mb-1">Billed to</div>
+              <div className="text-ink">{order.customer.name || "—"}</div>
+              {order.customer.institution && (
+                <div className="text-ink-soft">{order.customer.institution}</div>
+              )}
+              <div className="text-ink-soft mt-1 break-all">
+                {order.customer.email}
+              </div>
+              {order.customer.phone && (
+                <div className="text-ink-soft">{order.customer.phone}</div>
+              )}
+            </div>
+            <div>
+              <div className="label-eyebrow text-ink-muted mb-1">Ship to</div>
+              <div className="text-ink">
+                {order.customer.ship_address_1}
+                {order.customer.ship_address_2 ? (
+                  <>
+                    <br />
+                    {order.customer.ship_address_2}
+                  </>
+                ) : null}
+              </div>
+              <div className="text-ink-soft">
+                {order.customer.ship_city}, {order.customer.ship_state}{" "}
+                {order.customer.ship_zip}
+              </div>
+            </div>
+            <div>
+              <div className="label-eyebrow text-ink-muted mb-1">Placed</div>
+              <div className="text-ink">{placed.date}</div>
+              <div className="text-ink-soft">{placed.time}</div>
+            </div>
+            <div>
+              <div className="label-eyebrow text-ink-muted mb-1">Reference</div>
+              <div className="font-mono-data text-ink">{orderShort}</div>
+              <div className="font-mono-data text-ink-soft">{invoiceLabel}</div>
+            </div>
           </div>
         )}
 
-        {/* Manage row — edit/cancel/speak buttons grouped right above
-            the items list. Speak-to-team lives here too so it's within
-            arm's reach instead of buried at the bottom. */}
-        <div className="px-6 lg:px-8 py-5 border-b rule flex flex-wrap items-center gap-3">
-          {isCancellable && order.ship_address && (
-            <OrderManagePanel
-              orderId={order.order_id}
-              current={order.ship_address}
-              compact
-            />
-          )}
-          <Link
-            href={`/account/messages?order_id=${encodeURIComponent(order.order_id)}`}
-            className="inline-flex items-center justify-center h-10 px-4 bg-ink text-paper font-display uppercase text-[11px] tracking-[0.14em] hover:bg-gold-dark transition-colors duration-200 ease-out sm:ml-auto"
-          >
-            Speak to the team →
-          </Link>
-        </div>
-
-        <div className="px-6 lg:px-8 py-5 border-b rule">
-          <h2 className="font-display uppercase text-[12px] tracking-[0.18em] text-ink mb-4">
+        {/* Items — same vial cards but rendered inline rather than in
+            a separate bordered section. The cream parent supplies the
+            framing; we just show the list. */}
+        <div className="border-t border-wine/30 pt-6">
+          <div className="font-display uppercase text-[12px] tracking-[0.18em] text-ink mb-4">
             Items
-          </h2>
-          <ul className="divide-y rule -mx-6 lg:-mx-8">
+          </div>
+          <ul className="divide-y divide-wine/20">
             {order.items.map((item, idx) => (
               <li
                 key={`${item.sku}-${idx}`}
-                className="px-6 lg:px-8 py-4 flex items-start gap-4"
+                className="py-4 first:pt-0 last:pb-0 flex items-start gap-4"
               >
                 {item.vial_image ? (
-                  <div className="shrink-0 w-16 h-16 bg-paper-soft border rule overflow-hidden relative">
+                  <div className="shrink-0 w-16 h-16 bg-paper border rule overflow-hidden relative">
                     <Image
                       src={item.vial_image}
                       alt=""
@@ -347,7 +450,7 @@ export default async function CustomerOrderDetailPage({
                     />
                   </div>
                 ) : (
-                  <div className="shrink-0 w-16 h-16 bg-paper-soft border rule" aria-hidden="true" />
+                  <div className="shrink-0 w-16 h-16 bg-paper border rule" aria-hidden="true" />
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="text-ink">{item.name}</div>
@@ -368,7 +471,7 @@ export default async function CustomerOrderDetailPage({
           </ul>
         </div>
 
-        <dl className="px-6 lg:px-8 py-5 space-y-2 text-sm">
+        <dl className="border-t border-wine/30 pt-5 space-y-2 text-sm">
           <div className="flex justify-between">
             <dt className="text-ink-muted">Subtotal</dt>
             <dd className="font-mono-data text-ink">{formatPrice(subtotal)}</dd>
@@ -385,7 +488,7 @@ export default async function CustomerOrderDetailPage({
               {shippingFree ? "Free" : "Calculated at fulfillment"}
             </dd>
           </div>
-          <div className="flex justify-between pt-2 border-t rule">
+          <div className="flex justify-between pt-2 border-t border-wine/30">
             <dt className="font-display uppercase text-[12px] tracking-[0.18em] text-ink">Total</dt>
             <dd className="font-mono-data text-base text-ink">{formatPrice(total)}</dd>
           </div>
@@ -422,6 +525,7 @@ export default async function CustomerOrderDetailPage({
         </section>
       )}
 
+      {/* COA notice — bottom of everything per founder request. */}
       <section className="border rule bg-paper-soft p-6">
         <div className="label-eyebrow text-ink-muted mb-2">Certificate of Analysis</div>
         <p className="text-sm text-ink-soft">

@@ -43,6 +43,8 @@ import { sendCryptoPaymentLink } from "@/lib/email/notifications/send-order-emai
 import type { OrderRow } from "@/lib/supabase/types";
 import { claimReferralOnOrder } from "@/app/actions/referrals";
 import { createServerSupabase } from "@/lib/supabase/client";
+import { tierSpec } from "@/lib/rewards/tiers";
+import type { RewardTier } from "@/lib/supabase/types";
 import { escapeLikePattern } from "@/lib/text/like-escape";
 import {
   personalVialDiscount,
@@ -397,6 +399,48 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
   const resolved = resolveCartOnServer(validInput.items);
   if ("error" in resolved) return { ok: false, error: resolved.error };
 
+  // Tier discount (sprint G2, codex review fix A1/A2). PRD §4.6:
+  // tier own-order discount is a Phase 1 *per-line* modifier — it
+  // reduces each line's unit price BEFORE stack & save, affiliate,
+  // and first-time bonus run. Applying it here to each item means
+  // every downstream calculation operates on personal prices and
+  // composes correctly without commutativity gymnastics. Guest
+  // orders (no signed-in user) get tierDiscountPctApplied = 0.
+  let tierDiscountPctApplied = 0;
+  try {
+    const cookieScoped = await createServerSupabase();
+    const {
+      data: { user: signedInUser },
+    } = await cookieScoped.auth.getUser();
+    if (signedInUser) {
+      const { data: rewardsRow } = await cookieScoped
+        .from("user_rewards")
+        .select("tier")
+        .eq("user_id", signedInUser.id)
+        .maybeSingle();
+      const tier = (rewardsRow as { tier?: RewardTier } | null)?.tier ?? "initiate";
+      tierDiscountPctApplied = tierSpec(tier).ownDiscountPct;
+    }
+  } catch (tierErr) {
+    console.error("[submitOrder] tier discount lookup failed:", tierErr);
+    tierDiscountPctApplied = 0;
+  }
+  if (tierDiscountPctApplied > 0) {
+    const tierMult = 1 - tierDiscountPctApplied / 100;
+    // Apply per-line. Round to cent precision to avoid sub-cent drift
+    // between the JSON snapshot stored on the order and downstream
+    // computeCartTotals which works in cents.
+    resolved.items = resolved.items.map((it) => ({
+      ...it,
+      unit_price: Math.round(it.unit_price * tierMult * 100) / 100,
+    }));
+    // resolveCartOnServer's subtotal_cents reflects the full retail
+    // total; compose a tier-adjusted version that keeps the
+    // first-unit-free supply rule intact for downstream code that
+    // reads it directly.
+    resolved.subtotal_cents = Math.round(resolved.subtotal_cents * tierMult);
+  }
+
   // Authoritative discount math — server-side only. Anything the client
   // sent in `discount_cents` / `total_cents` was schema-stripped by Zod
   // upstream; even if they slipped through, we ignore them here. The
@@ -585,10 +629,19 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
           }
         }
         if (isFirstTime) {
-          const retailCents = Math.round(bonusVariant.retail_price * 100);
+          // Apply tier discount to the bonus vial unit price too —
+          // tier is a Phase 1 per-line modifier (PRD §4.6) so the
+          // bonus vial appears in the customer's cart at their
+          // personal price, then the 25% first-time discount
+          // compounds on top in `firstTimeVialDiscountCents`.
+          const tierMult =
+            tierDiscountPctApplied > 0 ? 1 - tierDiscountPctApplied / 100 : 1;
+          const personalUnit =
+            Math.round(bonusVariant.retail_price * tierMult * 100) / 100;
+          const retailCents = Math.round(personalUnit * 100);
           firstTimeVialDiscountCents = Math.round(retailCents * 0.25); // 25%
           firstTimeVialSkuApplied = targetSku;
-          // Append the bonus line at FULL retail price. The 25%
+          // Append the bonus line at full personal price. The 25%
           // discount lives in `firstTimeVialDiscountCents` and is
           // subtracted from `finalTotalCents` below — codex review
           // (Pass 1, HIGH #2) caught a double-count: previously this
@@ -604,7 +657,7 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
             name: bonusProduct.name,
             size_mg: bonusVariant.size_mg,
             pack_size: bonusVariant.pack_size,
-            unit_price: bonusVariant.retail_price, // FULL retail (dollars)
+            unit_price: personalUnit,
             quantity: 1,
             vial_image: bonusProduct.vial_image,
           });
@@ -618,6 +671,13 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
     }
   }
 
+  // Tier discount note: already baked into each line's unit_price by
+  // the per-line apply at the top of submitOrder (PRD §4.6 Phase 1).
+  // The order's `discount_cents` aggregate below therefore captures
+  // only the post-tier discounts (stack & save, affiliate,
+  // first-time bonus); the tier reduction is implicit in the lower
+  // subtotal/total. This matches the receipt math the customer
+  // expects: stated subtotal = sum of personal line prices.
   const finalTotalCents =
     totals.total_cents - affiliateDiscountCents - firstTimeVialDiscountCents;
   const discount_cents =
@@ -626,6 +686,7 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
     affiliateDiscountCents +
     firstTimeVialDiscountCents;
   void firstTimeVialSkuApplied;
+  void tierDiscountPctApplied;
 
   // Certification text + timestamp are stamped from server-side constants,
   // not from the client. The hash binds compound inputs that make the ack

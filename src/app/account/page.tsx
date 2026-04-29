@@ -10,6 +10,8 @@ import { formatPrice } from "@/lib/utils";
 import { getMyAffiliateState } from "@/app/actions/affiliate";
 import { TierBadge } from "@/components/affiliate/TierBadge";
 import type { AffiliateTier } from "@/lib/affiliate/tiers";
+import { tierSpec, nextTierProgress } from "@/lib/rewards/tiers";
+import type { UserRewardsRow } from "@/lib/supabase/types";
 
 export const metadata: Metadata = {
   title: "Account",
@@ -126,6 +128,27 @@ export default async function AccountDashboardPage() {
     affiliateSnapshot = null;
   }
 
+  // Best-effort fetch of the customer's rewards summary for the
+  // welcome banner. RLS scopes to auth.uid(); a missing row (brand-
+  // new account) defaults to Initiate / 0 pts so the badge always
+  // renders something.
+  let rewardsSnapshot: UserRewardsRow | null = null;
+  try {
+    const { data: rRow } = await supa
+      .from("user_rewards")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    rewardsSnapshot = (rRow as UserRewardsRow | null) ?? null;
+  } catch {
+    rewardsSnapshot = null;
+  }
+  const rewardsTier = rewardsSnapshot?.tier ?? "initiate";
+  const rewardsTierPoints = rewardsSnapshot?.tier_points ?? 0;
+  const rewardsBalance = rewardsSnapshot?.available_balance ?? 0;
+  const rewardsTierLabel = tierSpec(rewardsTier).label;
+  const rewardsProgress = nextTierProgress(rewardsTierPoints);
+
   const activeSub: SubscriptionRow | null =
     Array.isArray(subRows) &&
     subRows.length > 0 &&
@@ -186,6 +209,37 @@ export default async function AccountDashboardPage() {
         <p className="mt-3 font-editorial text-lg text-ink-soft" style={{ fontFamily: "var(--font-editorial)" }}>
           Track your bench supply, review past lots, and prep your next run.
         </p>
+
+        {/* Tier badge + points snapshot — links into the full rewards
+            page. Visible on every dashboard load so the customer
+            sees their status the moment they land. */}
+        <Link
+          href="/account/rewards"
+          className="mt-6 inline-flex items-center gap-3 sm:gap-4 border rule bg-paper-soft pl-4 pr-3 sm:pr-5 py-3 hover:border-gold transition-colors duration-200 ease-out group"
+          aria-label={`Rewards — ${rewardsTierLabel}, ${rewardsTierPoints.toLocaleString()} points`}
+        >
+          <span className="font-display uppercase text-[10px] tracking-[0.18em] text-gold-dark">
+            Rewards
+          </span>
+          <span className="font-display text-base text-ink">{rewardsTierLabel}</span>
+          <span className="font-mono-data text-sm text-ink-soft">
+            {rewardsTierPoints.toLocaleString()} pts
+          </span>
+          {rewardsBalance > 0 && (
+            <span className="hidden sm:inline-flex items-center justify-center min-w-[1.4rem] h-5 px-1.5 rounded-full bg-wine text-paper text-[10px] font-display font-bold leading-none">
+              {rewardsBalance.toLocaleString()}
+            </span>
+          )}
+          {rewardsProgress && (
+            <span className="hidden sm:inline text-xs text-ink-muted">
+              {rewardsProgress.pointsNeeded.toLocaleString()} to{" "}
+              {rewardsProgress.next.label}
+            </span>
+          )}
+          <span className="font-display uppercase text-[10px] tracking-[0.14em] text-gold-dark group-hover:translate-x-0.5 transition-transform">
+            →
+          </span>
+        </Link>
       </header>
 
       {pending.length > 0 && (

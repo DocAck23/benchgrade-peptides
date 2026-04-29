@@ -5,6 +5,34 @@ import { Breadcrumb } from "@/components/ui";
 import { ProductCard } from "@/components/catalogue/ProductCard";
 import { CATEGORIES, PRODUCTS, getCategoryBySlug } from "@/lib/catalogue/data";
 import { SITE_URL } from "@/lib/site";
+import { createServerSupabase } from "@/lib/supabase/client";
+import { tierSpec } from "@/lib/rewards/tiers";
+import type { RewardTier } from "@/lib/supabase/types";
+
+/**
+ * Resolve the signed-in customer's tier-driven own-order discount
+ * percent so the catalogue can display personalized prices. Anonymous
+ * viewers get 0 (no strikethrough). Errors collapse to 0 — the
+ * catalogue must render even when the rewards backend is in trouble.
+ */
+async function resolveTierDiscountPct(): Promise<number> {
+  try {
+    const supa = await createServerSupabase();
+    const {
+      data: { user },
+    } = await supa.auth.getUser();
+    if (!user) return 0;
+    const { data } = await supa
+      .from("user_rewards")
+      .select("tier")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const tier = (data as { tier?: RewardTier } | null)?.tier ?? "initiate";
+    return tierSpec(tier).ownDiscountPct;
+  } catch {
+    return 0;
+  }
+}
 
 interface PageProps {
   params: Promise<{ category: string }>;
@@ -65,6 +93,7 @@ export default async function CategoryPage({ params }: PageProps) {
   if (!category) notFound();
 
   const products = PRODUCTS.filter((p) => p.category_slug === slug);
+  const tierDiscountPct = await resolveTierDiscountPct();
 
   // BreadcrumbList JSON-LD — mirrors the visual breadcrumb. Lets Google
   // render the SERP card with the category path instead of the bare URL.
@@ -115,7 +144,12 @@ export default async function CategoryPage({ params }: PageProps) {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
             {products.map((product) => (
-              <ProductCard key={product.slug} product={product} categorySlug={category.slug} />
+              <ProductCard
+                key={product.slug}
+                product={product}
+                categorySlug={category.slug}
+                tierDiscountPct={tierDiscountPct}
+              />
             ))}
           </div>
         )}
