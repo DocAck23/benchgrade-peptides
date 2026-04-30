@@ -20,9 +20,10 @@
  */
 
 @theme {
-  /* ---- Brand colors (locked 2026-04-25, spec §16.1) ---- */
+  /* ---- Brand colors (v2 locked 2026-04-29 — sub-project A · Foundation) ---- */
   --color-wine: #4A0E1A;            /* primary brand bg, hero, premium tier surfaces */
   --color-wine-deep: #2E0810;       /* shadow / depth on wine surfaces */
+  --color-brick: #711911;           /* v2 NEW · alternate dark surface; from logo source */
   --color-gold: #B89254;            /* primary accent — wordmarks, rules, signature */
   --color-gold-light: #D4B47A;      /* hover states, soft-emboss highlights */
   --color-gold-dark: #8B6E3F;       /* pressed states, secondary depth */
@@ -31,24 +32,37 @@
   --color-ink: #1A0506;             /* body text on cream — wine-tinged near-black */
   --color-ink-soft: #4A2528;        /* secondary text on cream */
   --color-ink-muted: #6B5350;       /* tertiary, eyebrow labels, fine print */
+  --color-grey: #DFDFDF;            /* v2 NEW · subtle dividers, inactive state, table rules */
   --color-rule: #D4C8A8;            /* hairline dividers on cream surfaces */
   --color-rule-wine: #6E2531;       /* hairline dividers on wine surfaces */
   --color-success: #3F6B47;         /* confirmation states (sparingly used) */
   --color-danger: #7A2128;          /* error / refund / cancel states */
 
-  /* ---- Legacy tokens (deprecated 2026-04-25 — sprint 0 swap) ----
-   * Kept to avoid breaking other components mid-sprint. Wave 2 sweeps these. */
-  /* deprecated 2026-04-25 — sprint 0 swap */
+  /* ---- Semantic v2 aliases (Codex Review #1 fix C2) ----
+   * Sub-projects (B–K) read from these, not from raw palette tokens.
+   * --color-teal stays alive as a deprecation alias mapped to --link
+   * until the codemod sweep (commits 16–19). */
+  --color-link: var(--color-gold);
+  --color-link-hover: var(--color-gold-dark);
+  --color-focus: var(--color-gold);
+  --color-cta: var(--color-gold);
+  --color-status-info: var(--color-wine);
+  --color-status-success: var(--color-success);
+  --color-status-danger: var(--color-danger);
+
+  /* ---- Legacy v1 tokens (Foundation codemod sweeps these) ----
+   * Kept alive until commits 16–19 migrate all consumers to semantic
+   * v2 aliases (--color-link / --color-focus / --color-cta / --color-status-info).
+   * Then removed in commit 19.                                            */
   --color-paper-deep: #e7e0d0;
-  /* deprecated 2026-04-25 — sprint 0 swap */
   --color-rule-strong: #b8b0a1;
-  /* deprecated 2026-04-25 — sprint 0 swap */
   --color-ink-faint: #8a8a8a;
-  /* deprecated 2026-04-25 — sprint 0 swap */
-  --color-teal: #0a5c7d;
-  /* deprecated 2026-04-25 — sprint 0 swap */
-  --color-teal-hover: #084a65;
-  /* deprecated 2026-04-25 — sprint 0 swap */
+  /* DEPRECATED (Foundation): --color-teal* now map to v2 semantic aliases.
+   * Codex Review #1 fix C2: teal currently encodes link / focus / info /
+   * "ready" — codemod classifies each call site and routes it to the
+   * correct semantic alias. Until then, these aliases preserve behavior. */
+  --color-teal: var(--color-link);
+  --color-teal-hover: var(--color-link-hover);
   --color-teal-soft: #e7f0f4;
   /* deprecated 2026-04-25 — sprint 0 swap */
   --color-oxblood: #7a1e1e;
@@ -65,30 +79,79 @@
   --color-background: var(--color-paper);
   --color-foreground: var(--color-ink);
 
-  /* ---- Typography (locked 2026-04-25, spec §16.1) ----
-   * Display:   Cinzel             — Roman-cap headlines, wordmark, virtue marks
-   * Editorial: Cormorant Garamond — email headlines, /why-no-cards prose
-   * UI:        Inter              — nav, forms, body, dashboard
-   * Data:      JetBrains Mono     — prices, lot numbers, COA IDs, SKUs
-   * Variables come from next/font/google in src/app/layout.tsx. */
-  --font-display: var(--font-cinzel), Georgia, "Times New Roman", serif;
-  --font-editorial: var(--font-cormorant), Georgia, "Times New Roman", serif;
-  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* ---- Typography (v2 locked 2026-04-29 — Foundation) ----
+   * Display:   Glacial Indifference  — page titles, hero headlines, wordmark fallback
+   * Editorial: Glacial Indifference  — long-form prose (was Cormorant Garamond in v1)
+   * UI labels: Montserrat tracked    — eyebrows, ALL-CAPS labels, sub-display
+   * Body:      Glacial Indifference  — body copy on cream surfaces
+   * Data:      JetBrains Mono        — prices, lot numbers, CoA IDs, SKUs
+   * Pinyon Script is NOT a webfont — it lives only in the logo image asset.
+   * Variables: --font-glacial / --font-montserrat / --font-jetbrains-mono /
+   * --font-inter come from next/font in src/app/layout.tsx. */
+  --font-display: var(--font-glacial), Arial, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-editorial: var(--font-glacial), Arial, Georgia, "Times New Roman", serif;
+  --font-ui: var(--font-montserrat), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: var(--font-glacial), var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: var(--font-jetbrains-mono), "SF Mono", Menlo, monospace;
-  /* deprecated 2026-04-25 — sprint 0 swap (Geist removed in favor of Cinzel) */
-  --font-geist: var(--font-cinzel);
 
-  /* ---- Radius (tight, premium feel) ---- */
+  /* ---- DEPRECATED v1 font aliases (Foundation codemod commits 18–19) ----
+   * Kept so the 12 files referencing var(--font-cinzel) / var(--font-cormorant)
+   * keep working until codemod 18 sweeps them. */
+  --font-cinzel: var(--font-glacial);
+  --font-cormorant: var(--font-glacial);
+  --font-geist: var(--font-glacial);
+
+  /* ---- Radius (v2 Medium scale 2026-04-29 — Foundation Q3) ----
+   * Bumped from v1 (2/4/8) to soften the "sharp lines everywhere" the user
+   * called out. Medium is the locked default; if components feel too sharp
+   * after Foundation lands, the fallback is Pillow (18/24/32) — see
+   * memory/brand_visual_identity_v2.md revisit flag. Pill stays at 999.
+   * --radius-input (10) is intentionally tighter than --radius-md (16) so
+   * dense forms don't feel bloated (Codex Review #1 fix M3). */
   --radius-none: 0px;
-  --radius-sm: 2px;
-  --radius-md: 4px;
-  --radius-lg: 8px;
+  --radius-input: 10px;            /* form controls — input, select, textarea */
+  --radius-sm: 12px;               /* small cards, chips, tags */
+  --radius-md: 16px;               /* standard cards, callouts, image crops */
+  --radius-lg: 24px;               /* hero cards, modal surfaces, large containers */
+  --radius-pill: 999px;            /* CTAs constant — independent of scale */
 
   /* ---- Motion ---- */
   --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
   --dur-fast: 150ms;
   --dur-med: 250ms;
   --dur-slow: 400ms;
+
+  /* ---- Spacing scale (mobile-first; desktop bumps via @media) ----
+   * v2 Foundation NEW. Locked 2026-04-29. */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 64px;
+
+  /* ---- Type scale (mobile-first defaults) ---- */
+  --font-size-h1: 30px;
+  --font-size-h2: 24px;
+  --font-size-h3: 20px;
+  --font-size-body: 14px;
+  --font-size-small: 12px;
+  --font-size-eyebrow: 11px;
+
+  /* ---- Tap-target floor (Codex Review #1 fix M4) ---- */
+  --tap-target-min: 44px;
+}
+
+/* Desktop type scale ramp — applies at ≥768 px (Foundation mobile-first rule). */
+@media (min-width: 768px) {
+  :root {
+    --font-size-h1: 48px;
+    --font-size-h2: 32px;
+    --font-size-h3: 24px;
+    --font-size-body: 16px;
+  }
 }
 
 /* Wine-surface context — pages or sections that flip to the dark brand surface.
@@ -104,6 +167,8 @@
   color: var(--color-gold-light);
 }
 
+/* v2 Foundation: light-only by design. No dark-mode media query handling
+ * anywhere in the v2 overhaul. Future dark-mode is explicitly deferred. */
 html {
   color-scheme: light;
 }
@@ -111,7 +176,9 @@ html {
 body {
   background: var(--color-paper);
   color: var(--color-ink);
-  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* v2: body face is Glacial Indifference; Inter falls in only as the
+   * adjustFontFallback metric-matched fallback. */
+  font-family: var(--font-glacial), var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-feature-settings: "ss01", "cv11";
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
