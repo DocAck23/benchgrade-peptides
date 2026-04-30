@@ -24,9 +24,14 @@ export const BRAND = {
     "HPLC-verified research peptides. Made in the United States.",
 
   // Asset paths (served from /public/brand)
+  // logoMetallic — primary gold-on-transparent metallic wordmark
+  // logoFlat — wine-tinted flat wordmark for cream surfaces
+  //            (other flat variants follow same naming: logo-{red,cream,black}.png)
+  // monogram — gold variant for wine footer crest (Q5 lock); other
+  //            monogram variants: bg-monogram-{wine,cream,mask}.png
   logoMetallic: "/brand/logo-gold.png",
-  logoFlat: "/brand/logo-flat.svg",
-  monogram: "/brand/bg-monogram.svg",
+  logoFlat: "/brand/logo-wine.png",
+  monogram: "/brand/bg-monogram-gold.png",
   ogImage: "/brand/og-default.png",
 
   // Lockup natural dimensions (used by next/image width/height defaults)

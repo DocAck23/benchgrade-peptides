@@ -18,8 +18,8 @@ describe("BRAND metadata", () => {
 
   it("points at the v2 brand assets", () => {
     expect(BRAND.logoMetallic).toBe("/brand/logo-gold.png");
-    expect(BRAND.logoFlat).toBe("/brand/logo-flat.svg");
-    expect(BRAND.monogram).toBe("/brand/bg-monogram.svg");
+    expect(BRAND.logoFlat).toBe("/brand/logo-wine.png");
+    expect(BRAND.monogram).toBe("/brand/bg-monogram-gold.png");
   });
 
   it("preserves the lockup natural ratio (1709×441)", () => {
@@ -53,11 +53,11 @@ describe("BRAND metadata", () => {
         "description": "Research-grade synthetic peptides. Synthesized in Tampa, vialed in Orlando, HPLC-verified per lot by an independent US laboratory. CoA on every vial. For laboratory research use only.",
         "email": "admin@benchgradepeptides.com",
         "legalName": "Bench Grade Peptides LLC",
-        "logoFlat": "/brand/logo-flat.svg",
+        "logoFlat": "/brand/logo-wine.png",
         "logoHeight": 441,
         "logoMetallic": "/brand/logo-gold.png",
         "logoWidth": 1709,
-        "monogram": "/brand/bg-monogram.svg",
+        "monogram": "/brand/bg-monogram-gold.png",
         "name": "Bench Grade Peptides",
         "ogImage": "/brand/og-default.png",
         "sameAs": [],
