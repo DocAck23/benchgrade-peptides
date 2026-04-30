@@ -36,7 +36,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           aria-invalid={!!error}
           aria-describedby={[helpId, errorId].filter(Boolean).join(" ") || undefined}
           className={cn(
-            "h-11 px-3 rounded-sm bg-paper border border-rule text-ink placeholder:text-ink-muted",
+            // v2 radius: form controls use rounded-input (10px) — tighter than rounded-sm (12px)
+            "h-11 px-3 rounded-input bg-paper border border-rule text-ink placeholder:text-ink-muted",
             "focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold-light focus:ring-offset-0",
             "disabled:bg-paper-soft disabled:text-ink-muted disabled:cursor-not-allowed",
             "transition-[border-color,box-shadow] duration-200 ease-[var(--ease-default)]",
@@ -87,7 +88,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           aria-invalid={!!error}
           aria-describedby={[helpId, errorId].filter(Boolean).join(" ") || undefined}
           className={cn(
-            "px-3 py-2.5 rounded-sm bg-paper border border-rule text-ink placeholder:text-ink-muted resize-y",
+            "px-3 py-2.5 rounded-input bg-paper border border-rule text-ink placeholder:text-ink-muted resize-y",
             "focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold-light focus:ring-offset-0",
             "disabled:bg-paper-soft disabled:text-ink-muted disabled:cursor-not-allowed",
             "transition-[border-color,box-shadow] duration-200 ease-[var(--ease-default)]",

@@ -11,16 +11,17 @@ interface BreadcrumbProps {
 }
 
 /**
- * Locked breadcrumb (spec §16.1):
- *   - Inter sans, ink-muted text, ink on the current page
- *   - gold-dark separator characters (uses a literal "/" glyph rather than
- *     a chevron icon — heritage / editorial feel)
+ * Sub-project A · Foundation, commit 14 of 22.
+ *
+ * v2: Montserrat tracked (font-ui), separator glyph "›" (was "/" in v1
+ * for editorial feel; v2 uses a typographic guillemet for the cleaner
+ * Praetorian / MyTide pattern).
  */
 export function Breadcrumb({ items }: BreadcrumbProps) {
   return (
     <nav
       aria-label="Breadcrumb"
-      className="flex items-center gap-2 text-xs font-sans"
+      className="flex items-center gap-2 text-xs font-ui tracking-[0.04em]"
     >
       {items.map((item, idx) => {
         const isLast = idx === items.length - 1;
@@ -38,7 +39,7 @@ export function Breadcrumb({ items }: BreadcrumbProps) {
             )}
             {!isLast && (
               <span aria-hidden="true" className="text-gold-dark select-none">
-                /
+                ›
               </span>
             )}
           </Fragment>
