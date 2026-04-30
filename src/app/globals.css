@@ -50,20 +50,11 @@
   --color-status-success: var(--color-success);
   --color-status-danger: var(--color-danger);
 
-  /* ---- Legacy v1 tokens (Foundation codemod sweeps these) ----
-   * Kept alive until commits 16–19 migrate all consumers to semantic
-   * v2 aliases (--color-link / --color-focus / --color-cta / --color-status-info).
-   * Then removed in commit 19.                                            */
+  /* ---- Legacy v1 tokens kept (still referenced by older components
+   * outside the Foundation scope; sub-projects B–K may sweep further). */
   --color-paper-deep: #e7e0d0;
   --color-rule-strong: #b8b0a1;
   --color-ink-faint: #8a8a8a;
-  /* DEPRECATED (Foundation): --color-teal* now map to v2 semantic aliases.
-   * Codex Review #1 fix C2: teal currently encodes link / focus / info /
-   * "ready" — codemod classifies each call site and routes it to the
-   * correct semantic alias. Until then, these aliases preserve behavior. */
-  --color-teal: var(--color-link);
-  --color-teal-hover: var(--color-link-hover);
-  --color-teal-soft: #e7f0f4;
   /* deprecated 2026-04-25 — sprint 0 swap */
   --color-oxblood: #7a1e1e;
   /* deprecated 2026-04-25 — sprint 0 swap */
@@ -94,11 +85,10 @@
   --font-sans: var(--font-glacial), var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: var(--font-jetbrains-mono), "SF Mono", Menlo, monospace;
 
-  /* ---- DEPRECATED v1 font aliases (Foundation codemod commits 18–19) ----
-   * Kept so the 12 files referencing var(--font-cinzel) / var(--font-cormorant)
-   * keep working until codemod 18 sweeps them. */
-  --font-cinzel: var(--font-glacial);
-  --font-cormorant: var(--font-glacial);
+  /* ---- v1 font alias (kept) ----
+   * --font-geist still referenced by .brief-prose admin styles for h1/h2/h3.
+   * That's an admin-only surface — sub-project F may decide whether to
+   * sweep these or leave them on the v1 token. */
   --font-geist: var(--font-glacial);
 
   /* ---- Radius (v2 Medium scale 2026-04-29 — Foundation Q3) ----

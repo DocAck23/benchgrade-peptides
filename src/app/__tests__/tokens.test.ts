@@ -57,9 +57,12 @@ describe("globals.css design tokens (sub-project A · Foundation)", () => {
     expect(css).toMatch(/--color-status-info\s*:\s*var\(--color-wine\)/);
   });
 
-  // ---- Deprecation aliases (kept until codemod commits 16–19) ----
-  it("--color-teal is preserved as a deprecation alias to --color-link", () => {
-    expect(css).toMatch(/--color-teal\s*:\s*var\(--color-link\)/);
+  // ---- Deprecation aliases removed in commit 17 ----
+  it("--color-teal deprecation alias has been removed (commit 17)", () => {
+    expect(css).not.toMatch(/--color-teal\s*:/);
+  });
+  it("--color-teal-hover deprecation alias has been removed (commit 17)", () => {
+    expect(css).not.toMatch(/--color-teal-hover\s*:/);
   });
 
   // ---- Typography (v2: Glacial Indifference replaces Cinzel + Cormorant) ----
@@ -76,12 +79,12 @@ describe("globals.css design tokens (sub-project A · Foundation)", () => {
     expect(css).toMatch(/--font-mono\s*:\s*[^;]*--font-jetbrains-mono/);
   });
 
-  // ---- Deprecation font aliases (kept until codemod commit 18) ----
-  it("--font-cinzel is preserved as a deprecation alias to --font-glacial", () => {
-    expect(css).toMatch(/--font-cinzel\s*:\s*var\(--font-glacial\)/);
+  // ---- v1 font aliases removed in commit 17 ----
+  it("--font-cinzel deprecation alias has been removed (commit 17)", () => {
+    expect(css).not.toMatch(/--font-cinzel\s*:/);
   });
-  it("--font-cormorant is preserved as a deprecation alias to --font-glacial", () => {
-    expect(css).toMatch(/--font-cormorant\s*:\s*var\(--font-glacial\)/);
+  it("--font-cormorant deprecation alias has been removed (commit 17)", () => {
+    expect(css).not.toMatch(/--font-cormorant\s*:/);
   });
 
   // ---- Radius (v2 Medium scale: 12 / 16 / 24) ----
