@@ -46,7 +46,7 @@ Status legend: ⬜ pending · 🟡 in progress · ✅ shipped
 
 | # | Sub-project | Status | PRD |
 |---|---|---|---|
-| **A** | Foundation — design tokens, fonts, logo assets, global primitives swap, mobile-first audit | 🟡 PRD draft | `PRD-A-foundation.md` |
+| **A** | Foundation — design tokens, fonts, logo assets, global primitives swap, mobile-first audit | ✅ shipped (pending codex #2 + user review) | `PRD-A-foundation.md` |
 | **B** | Catalog data refactor — drop BAC water + syringes + Liquid category, redistribute liquid SKUs, rename "(Liquid)" out of names, "catalogue"→"catalog", finalize 9–10 categories | ⬜ | `PRD-B-catalog-data.md` |
 | **C** | Catalog UI — Zara-style minimalist list, category color theming, product card refresh, hover animation | ⬜ | `PRD-C-catalog-ui.md` |
 | **D** | Product detail page — Praetorian-style stepper, layout reorder, persistent add-to-cart | ⬜ | `PRD-D-product-detail.md` |
@@ -92,3 +92,31 @@ No shortcuts. No "just ship it." Every sub-project closes the loop.
 - **Border-radius scale** — Medium chosen, but Pillow is the fallback if Medium feels too sharp once components ship.
 - **True-vector logo** — current assets are raster-derived. SVG conversion deferred until a designer can deliver a true-vector wordmark.
 - **QR placement on vial labels** — three options on the table; decide during sub-project K.
+- **Semantic-token migration debt** — Foundation commit 16 took the pragmatic teal → gold codemod path. Future code should prefer `text-link / bg-cta / ring-focus / text-status-info` where the role is more specific than "the gold accent." Sub-projects B–K should consume the semantic aliases directly.
+- **Glacial Indifference italic** — only Regular + Bold downloaded; if a future surface needs italic, source the italic woff2 first.
+- **Browser-DOM test harness** — Playwright + vitest-jsdom deferred from Foundation to a tooling sub-project. The plan-tests doc has the test inventory ready; consume when the harness lands.
+
+## Foundation completion summary
+
+Foundation landed 22 commits across one PR; all builds green; 662 vitest tests passing. The full atomic commit list:
+
+1. `chore: docs + brand.ts + routes.ts + Glacial Indifference fonts`
+2. `chore: extract-logo-variants.py`
+3. `feat: brand assets to public/brand/`
+4. `feat: convert Glacial Indifference to woff2`
+5. `feat: wire next/font/local + Schema.org BRAND integration`
+6. `feat: v2 design tokens — palette + semantic aliases + radius + spacing`
+7. `feat: useOverlay shared hook + Overlay primitive`
+8. `refactor: migrate Modal + CartDrawer onto useOverlay`
+9. `feat: rebuild <Logo> with v2 variant API`
+10. `feat: rebuild <Button> — gold pill primary, mobile full-width, 44px tap`
+11. `feat: retheme Header — v2 lockup, side-from-left mobile drawer, 44px tap`
+12. `feat: retheme Footer — BG monogram crest, v2 lockup, ROUTES + BRAND`
+13. `feat: retheme RUOBanner in Montserrat`
+14. `feat: retheme Callout / Breadcrumb / Input + r-input rollout`
+15. `feat: <GoldBand> surface-anchor primitive`
+16. `chore: codemod teal → gold across all source files`
+17. `chore: remove deprecated aliases (--color-teal*, --font-cinzel/cormorant)`
+18. `test: GoldBand specs + brand-asset existence assertions`
+19. *(this commit)* `docs: ROADMAP shipped status`
+20-22. Reserved — fold tests/audit/lint/codex-#2 fixes if needed
