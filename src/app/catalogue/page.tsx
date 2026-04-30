@@ -6,7 +6,7 @@ import { PopularStacks } from "@/components/catalogue/PopularStacks";
 import { CATEGORIES, PRODUCTS } from "@/lib/catalogue/data";
 
 export const metadata: Metadata = {
-  title: "Catalogue",
+  title: "Catalog",
   description:
     "Full catalogue of research-grade synthetic peptides. HPLC-verified purity, COA per lot, for laboratory research use only.",
   alternates: { canonical: "/catalogue" },
@@ -29,7 +29,7 @@ export default function CatalogPage() {
   return (
     <div className="bg-paper">
       <div className="max-w-[1480px] mx-auto px-5 sm:px-6 lg:px-10 py-8 sm:py-12 lg:py-16">
-        <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Catalogue" }]} />
+        <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Catalog" }]} />
 
         <header className="mt-4 sm:mt-6 mb-6 sm:mb-12 border-b rule pb-6 sm:pb-12">
           <div className="label-eyebrow text-ink-muted mb-2 sm:mb-4 text-[10px] sm:text-xs">Full catalogue</div>

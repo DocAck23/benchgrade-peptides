@@ -121,7 +121,7 @@ export default async function ProductPage({ params }: PageProps) {
         <Breadcrumb
           items={[
             { label: "Home", href: "/" },
-            { label: "Catalogue", href: "/catalogue" },
+            { label: "Catalog", href: "/catalogue" },
             { label: category.name, href: `/catalogue/${category.slug}` },
             { label: product.name },
           ]}

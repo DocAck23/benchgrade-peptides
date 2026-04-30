@@ -214,21 +214,28 @@ export function QuickAddButton({
         </div>
       </div>
 
-      {/* Full-width Add — primary CTA, never share its row. */}
+      {/* Full-width Add — pill-shaped CTA (Foundation Q3 lock + user
+          direct ask: "Pill sized add to carts"). Confirmation animation:
+          flashes wine pill + scales up briefly + check icon scales in,
+          then resets after 1.8s. */}
       <button
         type="button"
         onClick={onAdd}
         disabled={isPending}
         className={cn(
-          "w-full inline-flex items-center justify-center gap-1.5 bg-wine text-paper font-display uppercase tracking-[0.06em] border border-wine hover:bg-gold hover:text-ink hover:border-gold transition-colors duration-200 disabled:opacity-60",
+          "w-full relative inline-flex items-center justify-center gap-1.5 rounded-pill font-ui font-semibold uppercase tracking-[0.10em]",
+          "transition-all duration-300 ease-out disabled:opacity-60",
+          confirmed
+            ? "bg-wine text-paper border border-wine scale-[1.02] shadow-[0_8px_18px_-4px_rgba(74,14,26,0.45)]"
+            : "bg-gold text-wine border border-gold hover:bg-gold-light hover:scale-[1.01] active:scale-[0.99] shadow-[0_6px_14px_rgba(184,146,84,0.30)]",
           isSm ? "px-3 py-2 text-[11px]" : "px-3.5 py-2.5 text-xs",
         )}
         aria-label={`Add ${quantity} × ${product.name} ${variant.size_mg}mg to cart`}
       >
         {confirmed ? (
           <>
-            <Check className="w-3 h-3" strokeWidth={2.5} aria-hidden />
-            <span>Added</span>
+            <Check className="w-3.5 h-3.5 animate-[scaleIn_220ms_ease-out]" strokeWidth={2.5} aria-hidden />
+            <span>Added to cart</span>
           </>
         ) : (
           <>

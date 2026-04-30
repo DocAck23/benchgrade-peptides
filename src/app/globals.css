@@ -144,6 +144,24 @@
   }
 }
 
+/* ---- Animations (v2) ----
+ * Keep the keyframes here so any consumer can use the matching
+ * `animate-[scaleIn_220ms_ease-out]` arbitrary class without re-declaring. */
+@keyframes scaleIn {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes pulseGold {
+  0%, 100% { box-shadow: 0 6px 14px rgba(184, 146, 84, 0.30); }
+  50% { box-shadow: 0 10px 22px rgba(184, 146, 84, 0.55); }
+}
+
 /* Wine-surface context — pages or sections that flip to the dark brand surface.
    Apply via `<section data-surface="wine">` or `<html data-surface="wine">`. */
 [data-surface="wine"] {

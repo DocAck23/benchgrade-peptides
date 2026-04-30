@@ -56,7 +56,7 @@ export function AddStackToCartButton({ resolved }: { resolved: ResolvedPopularSt
       ) : (
         <>
           <Plus className="w-4 h-4" strokeWidth={2.5} aria-hidden />
-          <span>Add stack to cart</span>
+          <span>Add to cart</span>
         </>
       )}
     </Button>

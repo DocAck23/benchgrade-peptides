@@ -694,10 +694,10 @@ export function StackBuilder({
               type="button"
               onClick={onAddToCart}
               disabled={stackLines.length === 0 || pending}
-              className="w-full inline-flex items-center justify-center gap-2 bg-wine text-paper font-display uppercase tracking-[0.1em] text-xs px-4 py-3 border border-wine hover:bg-gold-dark hover:border-gold-dark transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full inline-flex items-center justify-center gap-2 bg-gold text-wine font-ui font-semibold uppercase tracking-[0.1em] text-xs px-4 py-3 rounded-pill border border-gold hover:bg-gold-light active:scale-[0.99] shadow-[0_6px_14px_rgba(184,146,84,0.30)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="w-4 h-4" strokeWidth={2.5} />
-              Add stack to cart
+              Add to cart
             </button>
             <button
               type="button"

@@ -102,7 +102,7 @@ export default async function CategoryPage({ params }: PageProps) {
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
-      { "@type": "ListItem", position: 2, name: "Catalogue", item: `${SITE_URL}/catalogue` },
+      { "@type": "ListItem", position: 2, name: "Catalog", item: `${SITE_URL}/catalogue` },
       { "@type": "ListItem", position: 3, name: category.name, item: `${SITE_URL}/catalogue/${category.slug}` },
     ],
   };
@@ -121,7 +121,7 @@ export default async function CategoryPage({ params }: PageProps) {
         <Breadcrumb
           items={[
             { label: "Home", href: "/" },
-            { label: "Catalogue", href: "/catalogue" },
+            { label: "Catalog", href: "/catalogue" },
             { label: category.name },
           ]}
         />

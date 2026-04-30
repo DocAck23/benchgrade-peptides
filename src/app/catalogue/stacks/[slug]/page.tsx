@@ -69,7 +69,7 @@ export default async function StackPickerPage({ params }: RouteParams) {
         <Breadcrumb
           items={[
             { label: "Home", href: "/" },
-            { label: "Catalogue", href: "/catalogue" },
+            { label: "Catalog", href: "/catalogue" },
             { label: "Stacks", href: "/catalogue#popular-stacks" },
             { label: stack.name },
           ]}
