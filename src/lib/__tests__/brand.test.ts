@@ -56,6 +56,13 @@ describe("BRAND metadata", () => {
         "logoFlat": "/brand/logo-wine.png",
         "logoHeight": 441,
         "logoMetallic": "/brand/logo-gold.png",
+        "logoVariants": {
+          "black": "/brand/logo-black.png",
+          "cream": "/brand/logo-cream.png",
+          "gold": "/brand/logo-gold.png",
+          "red": "/brand/logo-red.png",
+          "wine": "/brand/logo-wine.png",
+        },
         "logoWidth": 1709,
         "monogram": "/brand/bg-monogram-gold.png",
         "name": "Bench Grade Peptides",

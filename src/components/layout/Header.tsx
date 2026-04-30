@@ -63,6 +63,25 @@ export function Header({ accountSlot }: { accountSlot?: ReactNode }) {
     trapFocus: true,
   });
 
+  // Codex adversarial review #2 fix P1: when the viewport widens past
+  // the md breakpoint (≥768 px), the drawer + scrim are visually hidden
+  // by md:hidden but mobileOpen doesn't change — useOverlay then keeps
+  // body scroll locked + focus trapped while the hamburger and close
+  // controls are no longer visible, leaving the user stuck. Listen for
+  // the breakpoint crossing and force the drawer closed.
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(min-width: 768px)");
+    const onChange = (e: MediaQueryListEvent) => {
+      if (e.matches) setMobileOpen(false);
+    };
+    // Defensive: if we mount with md+ already true, ensure we don't
+    // start with the drawer in a stuck-open state.
+    if (mq.matches) setMobileOpen(false);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
   const tapTarget =
     "min-w-[44px] min-h-[44px] inline-flex items-center justify-center";
 

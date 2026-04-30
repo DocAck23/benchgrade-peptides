@@ -12,13 +12,20 @@
  * Rule: every internal route reference in the codebase reads from `ROUTES`.
  * Hardcoded paths in components are CI-blocked.
  */
+// Catalog base lives separately from the const object because builders
+// below close over it. Sub-project B renames the value here in one place;
+// CATEGORY / PRODUCT / STACKS / STACK derive their URLs from it (Codex
+// adversarial review #2 fix P2 — builders no longer hard-code /catalogue
+// and stay synchronized with CATALOG).
+const CATALOG = "/catalogue";
+
 export const ROUTES = {
   HOME: "/",
-  CATALOG: "/catalogue", // sub-project B will change this string only
-  CATEGORY: (slug: string) => `/catalogue/${slug}`,
-  PRODUCT: (cat: string, slug: string) => `/catalogue/${cat}/${slug}`,
-  STACKS: "/catalogue/stacks",
-  STACK: (slug: string) => `/catalogue/stacks/${slug}`,
+  CATALOG,
+  CATEGORY: (slug: string) => `${CATALOG}/${slug}`,
+  PRODUCT: (cat: string, slug: string) => `${CATALOG}/${cat}/${slug}`,
+  STACKS: `${CATALOG}/stacks`,
+  STACK: (slug: string) => `${CATALOG}/stacks/${slug}`,
 
   RESEARCH: "/research",
   ARTICLE: (slug: string) => `/research/${slug}`,

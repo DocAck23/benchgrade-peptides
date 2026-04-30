@@ -110,9 +110,11 @@ function resolveWidthPx(size: LogoSize | undefined): number {
 }
 
 function variantSrc(variant: LogoVariantV2): string {
-  // brand.ts owns the gold path; flat variants follow the same naming.
-  if (variant === "gold") return BRAND.logoMetallic;
-  return `/brand/logo-${variant}.png`;
+  // brand.ts owns ALL variant paths via BRAND.logoVariants.
+  // Codex adversarial review #2 fix P3: previously this hard-coded
+  // /brand/logo-${variant}.png for the flat variants, breaking the
+  // single-source-of-truth contract whenever an asset path moved.
+  return BRAND.logoVariants[variant];
 }
 
 export function Logo({

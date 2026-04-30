@@ -25,12 +25,22 @@ export const BRAND = {
 
   // Asset paths (served from /public/brand)
   // logoMetallic — primary gold-on-transparent metallic wordmark
-  // logoFlat — wine-tinted flat wordmark for cream surfaces
-  //            (other flat variants follow same naming: logo-{red,cream,black}.png)
+  // logoFlat — wine-tinted flat wordmark for cream surfaces (default flat)
+  // logoVariants — full map of wordmark colorway → asset path. Used by
+  //            <Logo> to render any variant; consumers should NEVER
+  //            hard-code /brand/logo-*.png paths directly (Codex
+  //            adversarial review #2 fix P3 — single source of truth).
   // monogram — gold variant for wine footer crest (Q5 lock); other
   //            monogram variants: bg-monogram-{wine,cream,mask}.png
   logoMetallic: "/brand/logo-gold.png",
   logoFlat: "/brand/logo-wine.png",
+  logoVariants: {
+    gold: "/brand/logo-gold.png",
+    wine: "/brand/logo-wine.png",
+    red: "/brand/logo-red.png",
+    cream: "/brand/logo-cream.png",
+    black: "/brand/logo-black.png",
+  },
   monogram: "/brand/bg-monogram-gold.png",
   ogImage: "/brand/og-default.png",
 
