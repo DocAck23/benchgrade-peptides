@@ -128,8 +128,24 @@ export function StackPickerForm({ stackName, lines: initialLines }: StackPickerF
             {lines.map((l) => (
               <li
                 key={l.id}
-                className="border border-rule bg-paper-soft p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-[1fr_auto_auto_auto] gap-3 sm:gap-4 items-center"
+                className="border border-rule bg-paper-soft rounded-md p-3 sm:p-4 grid grid-cols-[64px_1fr] sm:grid-cols-[80px_1fr_auto_auto_auto] gap-3 sm:gap-4 items-center"
               >
+                {/* Vial thumbnail — gives every line a visual anchor instead
+                    of the spreadsheet rows the user called out. */}
+                <Link
+                  href={`/catalogue/${l.product.category_slug}/${l.product.slug}`}
+                  className="row-span-2 sm:row-span-1 block w-16 sm:w-20 aspect-square bg-paper rounded-md overflow-hidden border border-rule"
+                  aria-hidden="true"
+                  tabIndex={-1}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={l.product.vial_image}
+                    alt=""
+                    loading="lazy"
+                    className="w-full h-full object-contain"
+                  />
+                </Link>
                 <div className="min-w-0">
                   <Link
                     href={`/catalogue/${l.product.category_slug}/${l.product.slug}`}
@@ -137,7 +153,9 @@ export function StackPickerForm({ stackName, lines: initialLines }: StackPickerF
                   >
                     {l.product.name}
                   </Link>
-                  <p className="text-xs text-ink-muted truncate font-mono-data">{l.variant.sku}</p>
+                  <p className="text-xs text-ink-muted truncate font-mono-data">
+                    {l.variant.sku} · {formatPrice(l.variant.retail_price * 100)} / vial
+                  </p>
                 </div>
 
                 {/* Variant select */}

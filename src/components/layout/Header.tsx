@@ -102,9 +102,12 @@ export function Header({ accountSlot }: { accountSlot?: ReactNode }) {
       )}
     >
       <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4 md:gap-8 pl-3 pr-3 lg:pl-5 lg:pr-5 py-1 md:py-1.5">
-        {/* Logo: v2 nav size = 180 px. Mobile container caps to min(140px,38vw)
-            so it never overflows on 320 px viewports. */}
-        <span className="block w-[min(140px,38vw)] sm:w-[180px]">
+        {/* Logo: bumped to 260 px (was 180) per user direct ask: "make
+            the bench grade peptides logo larger inside of the menu bar.
+            I would like it to be more fuller inside of the menu bar."
+            Mobile cap raised from 140→170 so it grows on small screens
+            too without overflowing 320 px viewports. */}
+        <span className="block w-[min(170px,42vw)] sm:w-[220px] lg:w-[260px]">
           <Logo size="nav" surface="wine" priority />
         </span>
 

@@ -24,7 +24,7 @@ import { BRAND } from "@/lib/brand";
  * API (v2):
  *   <Logo variant="gold" />               — explicit variant
  *   <Logo surface="wine" />               — surface auto-picks the variant
- *   <Logo size="nav" />                   — 180 px (header)
+ *   <Logo size="nav" />                   — 260 px (header)
  *   <Logo size="footer" />                — 280 px
  *   <Logo size="hero" priority />         — 320 px
  *   <Logo size={240} />                   — explicit numeric width
@@ -62,7 +62,7 @@ interface LogoProps {
 
 // v2 named sizes (locked Foundation Q2): 180 / 280 / 320
 const NAMED_SIZE_PX: Record<LogoSizeV2 | LogoSizeLegacy, number> = {
-  nav: 180,
+  nav: 260,
   footer: 280,
   hero: 320,
   sm: 64,
@@ -158,12 +158,16 @@ export function Logo({
     );
   }
 
+  // Width: parent wrapper controls the rendered width via Tailwind
+  // (so it can be responsive). `widthPx` from `size` prop is the
+  // FALLBACK when no parent width is set — applied as max-width so
+  // a smaller parent can still shrink the logo.
   const node = (
     <span
       data-logo-surface={surface ?? "cream"}
       data-logo-variant={resolved}
-      className={cn("inline-block align-middle", className)}
-      style={{ width: widthPx, lineHeight: 0 }}
+      className={cn("inline-block align-middle w-full", className)}
+      style={{ maxWidth: widthPx, lineHeight: 0 }}
     >
       <Image
         src={variantSrc(resolved)}
