@@ -583,7 +583,7 @@ export function StackBuilder({
         ) : (
           <ul
             key={`${selectedCategory ?? "all"}|${query}`}
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4"
+            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4"
             aria-label="Compounds available to add"
           >
             {filteredProducts.map((product, idx) => (
@@ -669,6 +669,17 @@ export function StackBuilder({
                   key={line.sku}
                   className="flex items-center gap-2 text-sm group"
                 >
+                  {/* Praetorian-style line thumbnail in the basket — gives
+                      every entry a visual anchor instead of text-only rows. */}
+                  <div className="shrink-0 w-10 h-10 bg-paper-soft rounded-md overflow-hidden border border-rule">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={product.vial_image}
+                      alt=""
+                      loading="lazy"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-ink truncate">{product.name}</div>
                     <div className="font-mono-data text-[10px] text-ink-muted">
