@@ -29,7 +29,7 @@ export function MarkFundedButton({ orderId }: { orderId: string }) {
       <button
         type="button"
         onClick={() => setConfirming(true)}
-        className="text-xs px-2 py-1 border border-teal text-teal hover:bg-teal hover:text-paper transition-colors"
+        className="text-xs px-2 py-1 border border-gold text-gold hover:bg-gold hover:text-paper transition-colors"
       >
         Mark funded
       </button>
@@ -52,7 +52,7 @@ export function MarkFundedButton({ orderId }: { orderId: string }) {
             router.refresh();
           })
         }
-        className="text-xs px-2 py-1 bg-teal text-paper hover:bg-teal-dark disabled:opacity-50"
+        className="text-xs px-2 py-1 bg-gold text-paper hover:bg-gold-dark disabled:opacity-50"
       >
         {pending ? "Marking…" : "Confirm"}
       </button>

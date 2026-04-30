@@ -47,7 +47,7 @@ export default function CatalogPage() {
           All products on this catalogue are supplied for laboratory research use only. Not for human or
           veterinary use. Not a drug, supplement, or medical device. Customer certification is required at
           checkout per our{" "}
-          <Link href="/terms" className="text-teal underline">Terms of Sale</Link>.
+          <Link href="/terms" className="text-gold underline">Terms of Sale</Link>.
         </Callout>
 
         {/* Browser: sticky sidebar search + checkbox filters + 5-per-row

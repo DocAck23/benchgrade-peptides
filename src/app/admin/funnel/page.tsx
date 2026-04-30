@@ -135,7 +135,7 @@ export default async function AdminFunnelPage({
                           next === 0
                             ? "text-ink-muted"
                             : here > 0 && next / here >= 0.5
-                              ? "text-teal"
+                              ? "text-gold"
                               : "text-ink"
                         }
                       >

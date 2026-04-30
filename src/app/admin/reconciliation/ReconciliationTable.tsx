@@ -202,7 +202,7 @@ export function ReconciliationTable({ rows, mode }: Props) {
                             type="button"
                             disabled={pending && busyId === r.order_id}
                             onClick={() => onMarkFunded(r.order_id)}
-                            className="text-xs h-8 px-3 bg-ink text-paper hover:bg-teal transition-colors disabled:opacity-60"
+                            className="text-xs h-8 px-3 bg-ink text-paper hover:bg-gold transition-colors disabled:opacity-60"
                           >
                             {busyId === r.order_id ? "Marking…" : "Mark funded"}
                           </button>
@@ -210,7 +210,7 @@ export function ReconciliationTable({ rows, mode }: Props) {
                         {mode === "funded" && (
                           <Link
                             href={`/admin/orders/${r.order_id}`}
-                            className="text-xs h-8 px-3 inline-flex items-center bg-ink text-paper hover:bg-teal transition-colors"
+                            className="text-xs h-8 px-3 inline-flex items-center bg-ink text-paper hover:bg-gold transition-colors"
                           >
                             Ship →
                           </Link>

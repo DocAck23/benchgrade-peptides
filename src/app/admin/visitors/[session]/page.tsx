@@ -61,7 +61,7 @@ export default async function VisitorPathPage({
         </div>
         <Link
           href="/admin/visitors"
-          className="text-sm text-teal hover:underline"
+          className="text-sm text-gold hover:underline"
         >
           ← Back to visitors
         </Link>
@@ -133,7 +133,7 @@ function eventClass(name: string): string {
     case "order_submitted":
     case "order_funded":
     case "subscription_started":
-      return "bg-teal/10 text-teal";
+      return "bg-gold/10 text-gold";
     case "checkout_start":
     case "checkout_step":
       return "bg-oxblood/10 text-oxblood";

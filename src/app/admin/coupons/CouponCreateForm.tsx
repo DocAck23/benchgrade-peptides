@@ -197,7 +197,7 @@ export function CouponCreateForm() {
       <div className="md:col-span-2 lg:col-span-3 flex items-center justify-between gap-4 pt-2">
         <div className="text-sm">
           {error && <span className="text-danger">{error}</span>}
-          {success && <span className="text-teal">{success}</span>}
+          {success && <span className="text-gold">{success}</span>}
         </div>
         <button
           type="submit"

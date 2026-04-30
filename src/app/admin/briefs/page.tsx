@@ -39,7 +39,7 @@ export default async function BriefsIndexPage() {
   return (
     <article className="max-w-3xl mx-auto px-6 lg:px-10 py-10">
       <div className="mb-8">
-        <Link href="/admin" className="text-xs text-teal hover:underline">
+        <Link href="/admin" className="text-xs text-gold hover:underline">
           ← Admin
         </Link>
         <div className="label-eyebrow text-ink-muted mt-4 mb-1">Briefs</div>
@@ -63,7 +63,7 @@ export default async function BriefsIndexPage() {
                   <p className="text-sm text-ink-soft mt-1">{b.description}</p>
                 </div>
                 {b.priority && (
-                  <span className="label-eyebrow text-teal text-[10px]">Read first</span>
+                  <span className="label-eyebrow text-gold text-[10px]">Read first</span>
                 )}
               </div>
             </Link>

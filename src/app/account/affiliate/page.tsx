@@ -155,7 +155,7 @@ export default async function AffiliateDashboardPage() {
               {!onboarding.agreement_signed ? (
                 <Link
                   href="/account/affiliate-onboarding"
-                  className="text-xs text-teal hover:underline"
+                  className="text-xs text-gold hover:underline"
                 >
                   Complete onboarding →
                 </Link>
@@ -186,7 +186,7 @@ export default async function AffiliateDashboardPage() {
               ) : !onboarding.w9_uploaded ? (
                 <Link
                   href="/account/affiliate-onboarding"
-                  className="text-xs text-teal hover:underline"
+                  className="text-xs text-gold hover:underline"
                 >
                   Upload →
                 </Link>

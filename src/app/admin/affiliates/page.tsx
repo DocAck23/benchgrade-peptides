@@ -25,7 +25,7 @@ export default async function AdminAffiliatesPage() {
             Generate one-time invite links and review signed agreements + W9s.
           </p>
         </div>
-        <a href="/admin" className="text-sm text-teal hover:underline">
+        <a href="/admin" className="text-sm text-gold hover:underline">
           ← Back to orders
         </a>
       </div>
@@ -85,7 +85,7 @@ export default async function AdminAffiliatesPage() {
                     <Td>
                       <Link
                         href={`/admin/affiliates/${r.user_id}`}
-                        className="text-xs text-teal hover:underline"
+                        className="text-xs text-gold hover:underline"
                       >
                         Open →
                       </Link>
@@ -117,7 +117,7 @@ function Pill({ on, children }: { on: boolean; children: React.ReactNode }) {
   return (
     <span
       className={`inline-block px-2 py-0.5 text-[10px] font-mono-data uppercase ${
-        on ? "bg-teal/10 text-teal" : "bg-ink-muted/20 text-ink-muted"
+        on ? "bg-gold/10 text-gold" : "bg-ink-muted/20 text-ink-muted"
       }`}
     >
       {children}

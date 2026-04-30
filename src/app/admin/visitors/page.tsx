@@ -125,7 +125,7 @@ export default async function AdminVisitorsPage({
             {totalSessions.toLocaleString()} sessions in the last {windowDays} days.
           </p>
         </div>
-        <a href="/admin" className="text-sm text-teal hover:underline">
+        <a href="/admin" className="text-sm text-gold hover:underline">
           ← Back to orders
         </a>
       </header>
@@ -210,7 +210,7 @@ export default async function AdminVisitorsPage({
                   </Td>
                   <Td>
                     {r.customer_email_lower ? (
-                      <span className="text-xs text-teal">
+                      <span className="text-xs text-gold">
                         {r.customer_email_lower}
                       </span>
                     ) : (
@@ -223,7 +223,7 @@ export default async function AdminVisitorsPage({
                   <Td>
                     <Link
                       href={`/admin/visitors/${r.session_id}`}
-                      className="text-teal text-xs hover:underline"
+                      className="text-gold text-xs hover:underline"
                     >
                       Path →
                     </Link>
@@ -269,7 +269,7 @@ function Badge({
 }) {
   const cls =
     tone === "ok"
-      ? "bg-teal/10 text-teal"
+      ? "bg-gold/10 text-gold"
       : tone === "warn"
         ? "bg-oxblood/10 text-oxblood"
         : "bg-ink-muted/15 text-ink-muted";

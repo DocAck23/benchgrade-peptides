@@ -148,7 +148,7 @@ export function CatalogueBrowser({
                   allOn ? new Set() : new Set(categories.map((c) => c.slug)),
                 )
               }
-              className="text-[11px] text-teal hover:underline"
+              className="text-[11px] text-gold hover:underline"
             >
               {allOn ? "Clear all" : "Select all"}
             </button>
@@ -228,7 +228,7 @@ export function CatalogueBrowser({
                 </div>
                 <Link
                   href={`/catalogue/${category.slug}`}
-                  className="inline-flex items-center min-h-11 px-2 text-xs sm:text-sm text-teal hover:underline whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal"
+                  className="inline-flex items-center min-h-11 px-2 text-xs sm:text-sm text-gold hover:underline whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
                 >
                   {matches.length} →
                 </Link>

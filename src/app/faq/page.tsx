@@ -27,7 +27,7 @@ const SECTIONS: Array<{ title: string; items: QA[] }> = [
             experimental use, and are not dietary supplements. By accepting delivery you
             certify research-only intent and assume full responsibility for compliant
             handling. See our{" "}
-            <Link href="/compliance" className="text-teal underline">
+            <Link href="/compliance" className="text-gold underline">
               Compliance &amp; RUO
             </Link>{" "}
             page for the full statement.
@@ -51,7 +51,7 @@ const SECTIONS: Array<{ title: string; items: QA[] }> = [
           <>
             Every lot is HPLC-verified and traceable to a per-lot Certificate of
             Analysis. Email{" "}
-            <a href="mailto:admin@benchgradepeptides.com" className="text-teal underline">
+            <a href="mailto:admin@benchgradepeptides.com" className="text-gold underline">
               admin@benchgradepeptides.com
             </a>{" "}
             for any other COA-related question. The per-lot Certificate of
@@ -83,7 +83,7 @@ const SECTIONS: Array<{ title: string; items: QA[] }> = [
             close accounts without warning. Operating bank-rail-only keeps the storefront
             stable and lets us pass the savings (no card-processing fees) to lower
             sticker prices. See{" "}
-            <Link href="/why-no-cards" className="text-teal underline">
+            <Link href="/why-no-cards" className="text-gold underline">
               /why-no-cards
             </Link>{" "}
             for the longer version.
@@ -107,7 +107,7 @@ const SECTIONS: Array<{ title: string; items: QA[] }> = [
         a: (
           <>
             Yes — sign in at{" "}
-            <Link href="/login" className="text-teal underline">
+            <Link href="/login" className="text-gold underline">
               /login
             </Link>
             , open the order, and use the &ldquo;Change method&rdquo; button. You can
@@ -155,7 +155,7 @@ const SECTIONS: Array<{ title: string; items: QA[] }> = [
         a: (
           <>
             Email{" "}
-            <a href="mailto:admin@benchgradepeptides.com" className="text-teal underline">
+            <a href="mailto:admin@benchgradepeptides.com" className="text-gold underline">
               admin@benchgradepeptides.com
             </a>{" "}
             with your order memo and a photo of the damage within 7 days of delivery.
@@ -175,7 +175,7 @@ const SECTIONS: Array<{ title: string; items: QA[] }> = [
             No. Checkout works as a guest. After you submit, we email a one-click magic
             link that signs you in to view, edit, or pay for the order — no password
             required. You can set a password later under{" "}
-            <Link href="/account/security" className="text-teal underline">
+            <Link href="/account/security" className="text-gold underline">
               Account → Security
             </Link>{" "}
             if you prefer.
@@ -236,7 +236,7 @@ export default function FaqPage() {
 
       <div className="mt-16 pt-8 border-t rule text-sm text-ink-muted">
         Didn&rsquo;t find what you need? Email{" "}
-        <a href="mailto:admin@benchgradepeptides.com" className="text-teal underline">
+        <a href="mailto:admin@benchgradepeptides.com" className="text-gold underline">
           admin@benchgradepeptides.com
         </a>{" "}
         — we typically respond within one business day.

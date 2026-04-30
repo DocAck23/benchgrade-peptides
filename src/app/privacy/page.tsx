@@ -59,7 +59,7 @@ export default function PrivacyPage() {
             Order records and research-use-only acknowledgments are retained as part of our compliance
             documentation. Account data is retained for the life of the account. You may request
             deletion of non-legally-required data by emailing{" "}
-            <a href="mailto:admin@benchgradepeptides.com" className="text-teal underline">
+            <a href="mailto:admin@benchgradepeptides.com" className="text-gold underline">
               admin@benchgradepeptides.com
             </a>.
           </p>
@@ -69,7 +69,7 @@ export default function PrivacyPage() {
           <h2 className="font-display text-2xl text-ink mb-3">5. Contact</h2>
           <p>
             Privacy questions:{" "}
-            <a href="mailto:admin@benchgradepeptides.com" className="text-teal underline">
+            <a href="mailto:admin@benchgradepeptides.com" className="text-gold underline">
               admin@benchgradepeptides.com
             </a>
           </p>

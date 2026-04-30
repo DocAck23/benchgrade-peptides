@@ -173,7 +173,7 @@ export function RaffleMonthCard({
               type="button"
               onClick={onSave}
               disabled={pending}
-              className="text-xs h-9 px-4 bg-ink text-paper hover:bg-teal transition-colors disabled:opacity-60"
+              className="text-xs h-9 px-4 bg-ink text-paper hover:bg-gold transition-colors disabled:opacity-60"
             >
               {pending ? "Saving…" : "Save"}
             </button>

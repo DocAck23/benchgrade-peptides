@@ -120,7 +120,7 @@ export default function TermsPage() {
           <h2 className="font-display text-2xl text-ink mb-3">10. Contact</h2>
           <p>
             Questions about these Terms:{" "}
-            <a href="mailto:admin@benchgradepeptides.com" className="text-teal underline">
+            <a href="mailto:admin@benchgradepeptides.com" className="text-gold underline">
               admin@benchgradepeptides.com
             </a>
           </p>

@@ -214,7 +214,7 @@ export default async function CheckoutSuccessPage({ searchParams }: PageProps) {
         </Link>
         <a
           href={`mailto:admin@benchgradepeptides.com?subject=Order%20${memo}`}
-          className="text-teal hover:underline"
+          className="text-gold hover:underline"
         >
           Questions? Email us
         </a>

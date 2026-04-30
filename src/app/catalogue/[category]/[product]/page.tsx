@@ -159,7 +159,7 @@ export default async function ProductPage({ params }: PageProps) {
 
               <Callout variant="ruo" title="Research use only">
                 {RUO_STATEMENTS.product} By purchasing, customer certifies research use per our{" "}
-                <Link href="/terms" className="text-teal underline">Terms of Sale</Link>.
+                <Link href="/terms" className="text-gold underline">Terms of Sale</Link>.
               </Callout>
             </div>
           </div>
@@ -167,7 +167,7 @@ export default async function ProductPage({ params }: PageProps) {
           {/* Right column — compound info + molecular data + purchase */}
           <aside className="lg:sticky lg:top-8 h-fit space-y-8">
             <div>
-              <div className="label-eyebrow text-teal mb-3">{category.taxonomy_label}</div>
+              <div className="label-eyebrow text-gold mb-3">{category.taxonomy_label}</div>
               <h1 className="font-display text-4xl lg:text-5xl text-ink leading-[1.1] mb-3">
                 {product.name}
               </h1>
