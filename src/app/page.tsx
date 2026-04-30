@@ -4,6 +4,8 @@ import Image from "next/image";
 import { Flag, QrCode, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { GoldBand } from "@/components/brand/GoldBand";
+import { RevealOnScroll } from "@/components/ui/RevealOnScroll";
+import { QuickAddButton } from "@/components/catalogue/QuickAddButton";
 import { PRODUCTS } from "@/lib/catalogue/data";
 import { ROUTES } from "@/lib/routes";
 import { BRAND } from "@/lib/brand";
@@ -55,29 +57,35 @@ const FEATURED_SLUGS = ["glp3r", "glp2t", "bpc-157", "tb-500", "cjc-1295-no-dac"
 function FeaturedTile({ slug }: { slug: string }) {
   const product = PRODUCTS.find((p) => p.slug === slug);
   if (!product) return null;
-  const lowestPriceCents = Math.round((product.variants[0]?.retail_price ?? 0) * 100);
   return (
-    <Link
-      href={ROUTES.PRODUCT(product.category_slug, product.slug)}
-      className="group flex flex-col bg-paper rounded-md border rule overflow-hidden transition-all duration-300 hover:shadow-[0_18px_40px_-20px_rgba(74,14,26,0.30)] hover:-translate-y-1 hover:border-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2"
-    >
-      <div className="relative aspect-square bg-paper-soft overflow-hidden">
-        <Image
-          src={product.vial_image}
-          alt={`${product.name} research vial`}
-          fill
-          sizes="(min-width: 1024px) 16vw, (min-width: 768px) 33vw, 50vw"
-          className="object-cover scale-[1.05] transition-transform duration-500 ease-out group-hover:scale-[1.12]"
-        />
+    <article className="group flex flex-col bg-paper rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-gold focus-within:ring-offset-2">
+      <Link
+        href={ROUTES.PRODUCT(product.category_slug, product.slug)}
+        className="flex flex-col focus-visible:outline-none"
+      >
+        {/* Smaller, edge-to-edge photo on a soft surface — no card border. */}
+        <div className="relative aspect-square bg-paper-soft overflow-hidden rounded-md">
+          <Image
+            src={product.vial_image}
+            alt={`${product.name} research vial`}
+            fill
+            sizes="(min-width: 1024px) 14vw, (min-width: 640px) 22vw, 45vw"
+            className="object-contain scale-[1.0] transition-transform duration-500 ease-out group-hover:scale-[1.06]"
+          />
+        </div>
+        <div className="pt-3 px-1 flex flex-col gap-0.5">
+          <h3 className="font-display text-sm sm:text-base text-ink leading-tight line-clamp-2 min-h-[2.4em]">
+            {product.name}
+          </h3>
+        </div>
+      </Link>
+      {/* Add-to-cart UNDER the tile, sibling to the Link so it doesn't
+          trigger navigation. Shown on every breakpoint per direct user
+          ask: "give them an add to cart button under them". */}
+      <div className="mt-2 px-1">
+        <QuickAddButton product={product} size="sm" />
       </div>
-      <div className="p-4 sm:p-5 flex flex-col gap-1">
-        <h3 className="font-display text-base sm:text-lg text-ink leading-tight">{product.name}</h3>
-        <span className="font-mono-data text-sm text-ink font-semibold">
-          ${(lowestPriceCents / 100).toFixed(2)}
-          <span className="text-ink-muted text-[11px] font-normal ml-1">from</span>
-        </span>
-      </div>
-    </Link>
+    </article>
   );
 }
 
@@ -159,26 +167,27 @@ export default function Home() {
       {/* ── Featured grid — replaces the v1 carousel ─────────────────── */}
       <section className="bg-paper">
         <div className="max-w-[1280px] mx-auto px-5 sm:px-6 lg:px-10 py-16 sm:py-20">
-          <div className="flex items-end justify-between mb-8 sm:mb-12 gap-4">
-            <div>
-              <div className="font-ui uppercase text-[11px] sm:text-xs tracking-[0.22em] font-bold text-gold-dark mb-2">
-                The Catalog
-              </div>
-              <h2 className="font-display font-semibold text-3xl sm:text-4xl lg:text-5xl text-wine tracking-tight">
-                Six compounds. The benchmark.
-              </h2>
+          {/* Eyebrow only — user removed the "Six compounds. The benchmark."
+              h2. The grid speaks for itself; "See all →" sits opposite. */}
+          <div className="flex items-end justify-between mb-8 sm:mb-10 gap-4">
+            <div className="font-ui uppercase text-[11px] sm:text-xs tracking-[0.22em] font-bold text-gold-dark">
+              The Catalog
             </div>
             <Link
               href={ROUTES.CATALOG}
-              className="hidden sm:inline-flex items-center text-sm tracking-[0.04em] font-ui font-semibold text-wine hover:text-gold-dark transition-colors"
+              className="inline-flex items-center text-sm tracking-[0.04em] font-ui font-semibold text-wine hover:text-gold-dark transition-colors"
             >
               See all →
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-5 lg:gap-6">
-            {FEATURED_SLUGS.map((slug) => (
-              <FeaturedTile key={slug} slug={slug} />
+          {/* Tighter grid → smaller tiles. 3 / 4 / 6 across breakpoints
+              so the row reads as a stripe, not a hero block. */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 lg:gap-5">
+            {FEATURED_SLUGS.map((slug, idx) => (
+              <RevealOnScroll key={slug} delay={idx * 70}>
+                <FeaturedTile slug={slug} />
+              </RevealOnScroll>
             ))}
           </div>
 
