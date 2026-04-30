@@ -596,17 +596,16 @@ export function StackBuilder({
                     >
                       <Minus className="w-3 h-3" strokeWidth={2} />
                     </button>
-                    <input
-                      type="number"
-                      min={1}
-                      max={MAX_QTY}
-                      value={line.quantity}
-                      onChange={(e) =>
-                        setLineQuantity(line.sku, parseInt(e.target.value, 10))
-                      }
-                      className="w-9 text-center bg-transparent text-ink font-mono-data text-[12px] focus-visible:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      aria-label="Quantity"
-                    />
+                    {/* User direct ask: "get rid of typing option in
+                        quantity". Read-only count display; +/- buttons
+                        are the only way to change qty. */}
+                    <span
+                      className="w-9 text-center bg-transparent text-ink font-mono-data text-[12px] select-none"
+                      aria-live="polite"
+                      aria-label={`Quantity: ${line.quantity}`}
+                    >
+                      {line.quantity}
+                    </span>
                     <button
                       type="button"
                       onClick={() => upsertLine(line.sku, line.size_mg, 1)}

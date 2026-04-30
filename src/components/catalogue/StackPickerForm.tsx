@@ -157,20 +157,39 @@ export function StackPickerForm({ stackName, lines: initialLines }: StackPickerF
                   </select>
                 </label>
 
-                {/* Quantity */}
-                <label className="text-[11px] uppercase tracking-[0.08em] text-ink-muted font-display">
+                {/* Quantity stepper — user direct ask: "get rid of typing
+                    option in quantity". Stepper buttons only; no number
+                    input. Step bounds 1..100 to match prior cap. */}
+                <div className="text-[11px] uppercase tracking-[0.08em] text-ink-muted font-ui font-bold">
                   <span className="block mb-1">Qty</span>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    max={100}
-                    value={l.quantity}
-                    onChange={(e) => setLineQuantity(l.id, e.target.value)}
-                    className="block w-20 bg-paper border border-rule text-ink px-3 py-2 font-mono-data text-sm hover:border-gold-dark focus:outline-none focus:ring-2 focus:ring-gold-light"
-                    aria-label={`Quantity of ${l.product.name}`}
-                  />
-                </label>
+                  <div className="inline-flex items-stretch border border-rule rounded-input bg-paper">
+                    <button
+                      type="button"
+                      onClick={() => setLineQuantity(l.id, String(Math.max(1, l.quantity - 1)))}
+                      disabled={l.quantity <= 1}
+                      className="px-3 py-2 text-ink-muted hover:text-ink hover:bg-paper-soft disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+                      aria-label={`Decrease quantity of ${l.product.name}`}
+                    >
+                      −
+                    </button>
+                    <span
+                      className="inline-flex items-center justify-center min-w-[2.25rem] font-mono-data text-sm text-ink select-none"
+                      aria-live="polite"
+                      aria-label={`Quantity of ${l.product.name}`}
+                    >
+                      {l.quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setLineQuantity(l.id, String(Math.min(100, l.quantity + 1)))}
+                      disabled={l.quantity >= 100}
+                      className="px-3 py-2 text-ink-muted hover:text-ink hover:bg-paper-soft disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+                      aria-label={`Increase quantity of ${l.product.name}`}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
 
                 {/* Remove */}
                 <button
@@ -212,23 +231,41 @@ export function StackPickerForm({ stackName, lines: initialLines }: StackPickerF
           ))}
         </ul>
 
-        <label className="block">
+        <div className="block">
           <span className="block label-eyebrow text-ink-muted mb-1.5">How many of this stack?</span>
-          <input
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={10}
-            value={stackQty}
-            onChange={(e) => setStackQuantity(e.target.value)}
-            className="block w-full bg-paper border border-rule text-ink px-3 py-2 font-mono-data text-sm hover:border-gold-dark focus:outline-none focus:ring-2 focus:ring-gold-light"
-            aria-label="Number of stacks to order"
-          />
+          {/* Stepper, not a number input — same UX as the per-line qty above. */}
+          <div className="inline-flex items-stretch border border-rule rounded-input bg-paper">
+            <button
+              type="button"
+              onClick={() => setStackQuantity(String(Math.max(1, stackQty - 1)))}
+              disabled={stackQty <= 1}
+              className="px-4 py-2 text-ink-muted hover:text-ink hover:bg-paper-soft disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+              aria-label="Decrease stack quantity"
+            >
+              −
+            </button>
+            <span
+              className="inline-flex items-center justify-center min-w-[3rem] font-mono-data text-sm text-ink select-none"
+              aria-live="polite"
+              aria-label="Number of stacks to order"
+            >
+              {stackQty}
+            </span>
+            <button
+              type="button"
+              onClick={() => setStackQuantity(String(Math.min(10, stackQty + 1)))}
+              disabled={stackQty >= 10}
+              className="px-4 py-2 text-ink-muted hover:text-ink hover:bg-paper-soft disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+              aria-label="Increase stack quantity"
+            >
+              +
+            </button>
+          </div>
           <p className="text-[11px] text-ink-muted mt-1">
             {totalVials} vial{totalVials === 1 ? "" : "s"} total · Stack &amp; Save tier discount
             applies in cart at 3+ vials
           </p>
-        </label>
+        </div>
 
         <div className="border-t border-rule pt-4 flex items-baseline justify-between">
           <span className="text-sm text-ink-soft">Subtotal</span>
