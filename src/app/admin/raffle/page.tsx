@@ -39,7 +39,7 @@ export default async function AdminRafflePage() {
             missed, and confirm winners before prize side-effects fire.
           </p>
         </div>
-        <a href="/admin" className="text-sm text-teal hover:underline">
+        <a href="/admin" className="text-sm text-gold hover:underline">
           ← Back to orders
         </a>
       </header>

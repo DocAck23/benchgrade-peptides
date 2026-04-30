@@ -141,7 +141,7 @@ export default async function AdminAccountsPage() {
           >
             Export CSV
           </a>
-          <a href="/admin" className="text-sm text-teal hover:underline">
+          <a href="/admin" className="text-sm text-gold hover:underline">
             ← Back to orders
           </a>
         </div>
@@ -182,7 +182,7 @@ export default async function AdminAccountsPage() {
                     <Td className="font-mono text-xs">
                       <a
                         href={`/admin?q=${encodeURIComponent(r.email)}`}
-                        className="text-teal hover:underline"
+                        className="text-gold hover:underline"
                       >
                         {r.email}
                       </a>
@@ -198,7 +198,7 @@ export default async function AdminAccountsPage() {
                     <Td>{r.last_order_at ? <LocalTime iso={r.last_order_at} /> : "—"}</Td>
                     <Td>
                       {r.confirmed ? (
-                        <span className="text-teal">confirmed</span>
+                        <span className="text-gold">confirmed</span>
                       ) : (
                         <span className="text-ink-muted">pending</span>
                       )}

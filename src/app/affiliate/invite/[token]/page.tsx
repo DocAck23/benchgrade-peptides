@@ -64,7 +64,7 @@ export default async function AffiliateInviteLandingPage({
       </p>
       <Link
         href="/account"
-        className="inline-flex items-center text-sm text-teal hover:underline"
+        className="inline-flex items-center text-sm text-gold hover:underline"
       >
         Go to my account →
       </Link>

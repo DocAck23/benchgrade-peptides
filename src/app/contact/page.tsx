@@ -30,14 +30,14 @@ export default function ContactPage() {
       <div className="space-y-8 text-base text-ink-soft leading-relaxed">
         <section>
           <h2 className="label-eyebrow text-ink-muted mb-3">General &amp; orders</h2>
-          <a href="mailto:admin@benchgradepeptides.com" className="text-xl text-teal underline">
+          <a href="mailto:admin@benchgradepeptides.com" className="text-xl text-gold underline">
             admin@benchgradepeptides.com
           </a>
         </section>
 
         <section>
           <h2 className="label-eyebrow text-ink-muted mb-3">Regulatory &amp; compliance</h2>
-          <a href="mailto:admin@benchgradepeptides.com" className="text-xl text-teal underline">
+          <a href="mailto:admin@benchgradepeptides.com" className="text-xl text-gold underline">
             admin@benchgradepeptides.com
           </a>
         </section>

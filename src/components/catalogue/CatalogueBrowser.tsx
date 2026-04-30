@@ -148,7 +148,7 @@ export function CatalogueBrowser({
                   allOn ? new Set() : new Set(categories.map((c) => c.slug)),
                 )
               }
-              className="text-[11px] text-teal hover:underline"
+              className="text-[11px] text-gold hover:underline"
             >
               {allOn ? "Clear all" : "Select all"}
             </button>
@@ -190,6 +190,50 @@ export function CatalogueBrowser({
 
       {/* Right column — popular stacks slot on top, then filtered grid */}
       <div>
+        {/* Section nav chips — quick-jump to each catalogue section.
+            User direct ask: "we can also have catalog buttons to be
+            able to go through the different sections of the catalogue.
+            we can scroll all the way through, and we can also click on
+            'popular stacks', 'build your own stack', 'growth hormone
+            axis', etc". Horizontal scroll on mobile, wraps on desktop.
+            All anchor IDs match the section IDs rendered below + in
+            <PopularStacks />. */}
+        <nav
+          aria-label="Catalogue sections"
+          className="mb-6 sm:mb-8 -mx-1 sm:mx-0"
+        >
+          <ul className="flex flex-nowrap sm:flex-wrap gap-2 sm:gap-2.5 overflow-x-auto sm:overflow-visible px-1 sm:px-0 pb-2 sm:pb-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            {topSlot && (
+              <li>
+                <a
+                  href="#popular-stacks"
+                  className="inline-flex items-center whitespace-nowrap rounded-pill border border-gold-dark/40 bg-paper-soft text-wine px-3.5 py-1.5 text-[11px] sm:text-xs font-ui font-bold uppercase tracking-[0.10em] hover:bg-gold/15 hover:border-gold transition-colors"
+                >
+                  Popular stacks
+                </a>
+              </li>
+            )}
+            <li>
+              <Link
+                href="/catalogue/stacks/build"
+                className="inline-flex items-center whitespace-nowrap rounded-pill border border-gold-dark/40 bg-paper-soft text-wine px-3.5 py-1.5 text-[11px] sm:text-xs font-ui font-bold uppercase tracking-[0.10em] hover:bg-gold/15 hover:border-gold transition-colors"
+              >
+                Build your own
+              </Link>
+            </li>
+            {filteredByCategory.map(({ category }) => (
+              <li key={category.slug}>
+                <a
+                  href={`#cat-${category.slug}`}
+                  className="inline-flex items-center whitespace-nowrap rounded-pill border border-rule bg-paper text-ink-soft px-3.5 py-1.5 text-[11px] sm:text-xs font-ui font-medium hover:text-wine hover:border-gold transition-colors"
+                >
+                  {category.name}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
         {topSlot}
         {filteredByCategory.length === 0 ? (
           <div className="border rule bg-paper-soft p-8 text-center">
@@ -211,8 +255,9 @@ export function CatalogueBrowser({
           filteredByCategory.map(({ category, matches }) => (
             <section
               key={category.slug}
-              className="mb-12 sm:mb-16"
-              aria-labelledby={`cat-${category.slug}`}
+              id={`cat-${category.slug}`}
+              className="mb-12 sm:mb-16 scroll-mt-24"
+              aria-labelledby={`cat-${category.slug}-h`}
             >
               <div className="flex items-end justify-between gap-3 sm:gap-4 mb-4 sm:mb-6 border-b rule pb-3 sm:pb-4">
                 <div>
@@ -220,7 +265,7 @@ export function CatalogueBrowser({
                     {category.taxonomy_label}
                   </div>
                   <h2
-                    id={`cat-${category.slug}`}
+                    id={`cat-${category.slug}-h`}
                     className="font-display text-xl sm:text-2xl lg:text-3xl text-ink leading-tight"
                   >
                     {category.name}
@@ -228,7 +273,7 @@ export function CatalogueBrowser({
                 </div>
                 <Link
                   href={`/catalogue/${category.slug}`}
-                  className="inline-flex items-center min-h-11 px-2 text-xs sm:text-sm text-teal hover:underline whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal"
+                  className="inline-flex items-center min-h-11 px-2 text-xs sm:text-sm text-gold hover:underline whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
                 >
                   {matches.length} →
                 </Link>

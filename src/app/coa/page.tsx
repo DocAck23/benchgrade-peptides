@@ -53,7 +53,7 @@ export default function COAPage() {
             After your order ships, you'll receive a tracking email with a link to the Certificate of
             Analysis for the lot you received. The COA link is also available in your order record
             once you create an account. For past orders or archived COAs, email{" "}
-            <a href="mailto:admin@benchgradepeptides.com" className="text-teal underline">
+            <a href="mailto:admin@benchgradepeptides.com" className="text-gold underline">
               admin@benchgradepeptides.com
             </a>{" "}
             with your order number.

@@ -85,7 +85,7 @@ const STATUS_LABELS: Record<string, string> = {
 const STATUS_CLASSES: Record<string, string> = {
   awaiting_payment: "bg-oxblood/10 text-oxblood",
   awaiting_wire: "bg-oxblood/10 text-oxblood",
-  funded: "bg-teal/10 text-teal",
+  funded: "bg-gold/10 text-gold",
   shipped: "bg-ink/10 text-ink",
   cancelled: "bg-ink-muted/20 text-ink-muted",
   refunded: "bg-ink-muted/20 text-ink-muted",
@@ -265,7 +265,7 @@ export default async function AdminPage({
                         )}
                         <Link
                           href={`/admin/orders/${o.order_id}`}
-                          className="text-teal text-xs hover:underline"
+                          className="text-gold text-xs hover:underline"
                         >
                           Open →
                         </Link>

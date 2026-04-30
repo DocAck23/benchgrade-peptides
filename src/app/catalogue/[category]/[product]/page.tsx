@@ -121,17 +121,22 @@ export default async function ProductPage({ params }: PageProps) {
         <Breadcrumb
           items={[
             { label: "Home", href: "/" },
-            { label: "Catalogue", href: "/catalogue" },
+            { label: "Catalog", href: "/catalogue" },
             { label: category.name, href: `/catalogue/${category.slug}` },
             { label: product.name },
           ]}
         />
 
+        {/* User direct ask: "make the molecular data section below product
+            photo, move up the cart option". Layout reflects that:
+              LEFT  : photo → MolecularDataPanel → summary → research context → RUO
+              RIGHT : compound name + CAS + VariantPicker (cart at eye level) + fine print
+            Cart now sits high on the right; molecular details live calmly below
+            the photo for the curious researcher. */}
         <div className="mt-8 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_420px] gap-12 lg:gap-16">
-          {/* Left column — photo + description + research context */}
+          {/* LEFT — photo + molecular data + summary + research context */}
           <div>
-            {/* Vial photograph */}
-            <div className="relative aspect-[4/5] bg-paper-soft border rule overflow-hidden max-w-lg">
+            <div className="relative aspect-[4/5] bg-paper-soft rounded-md overflow-hidden max-w-lg">
               <Image
                 src={product.vial_image}
                 alt={`${product.name} research vial`}
@@ -142,15 +147,25 @@ export default async function ProductPage({ params }: PageProps) {
               />
             </div>
 
+            {/* Molecular data — moved here from the right column. Sits below
+                the photo where the curious researcher lands first. */}
+            <div className="mt-8 max-w-lg">
+              <MolecularDataPanel product={product} />
+            </div>
+
             <div className="mt-12 max-w-2xl space-y-8">
               <section>
-                <h2 className="label-eyebrow text-ink-muted mb-4">Summary</h2>
+                <h2 className="font-ui uppercase text-[11px] tracking-[0.22em] font-bold text-gold-dark mb-4">
+                  Summary
+                </h2>
                 <p className="text-base text-ink leading-relaxed">{product.summary}</p>
               </section>
 
               {product.research_context && (
                 <section>
-                  <h2 className="label-eyebrow text-ink-muted mb-4">Research context</h2>
+                  <h2 className="font-ui uppercase text-[11px] tracking-[0.22em] font-bold text-gold-dark mb-4">
+                    Research context
+                  </h2>
                   <p className="text-sm text-ink-soft leading-relaxed">
                     {product.research_context}
                   </p>
@@ -159,16 +174,18 @@ export default async function ProductPage({ params }: PageProps) {
 
               <Callout variant="ruo" title="Research use only">
                 {RUO_STATEMENTS.product} By purchasing, customer certifies research use per our{" "}
-                <Link href="/terms" className="text-teal underline">Terms of Sale</Link>.
+                <Link href="/terms" className="text-gold underline">Terms of Sale</Link>.
               </Callout>
             </div>
           </div>
 
-          {/* Right column — compound info + molecular data + purchase */}
+          {/* RIGHT (sticky) — name + cart at eye level. */}
           <aside className="lg:sticky lg:top-8 h-fit space-y-8">
             <div>
-              <div className="label-eyebrow text-teal mb-3">{category.taxonomy_label}</div>
-              <h1 className="font-display text-4xl lg:text-5xl text-ink leading-[1.1] mb-3">
+              <div className="font-ui uppercase text-[10px] tracking-[0.22em] font-bold text-gold-dark mb-3">
+                {category.taxonomy_label}
+              </div>
+              <h1 className="font-display text-4xl lg:text-5xl text-wine leading-[1.1] mb-3 font-semibold tracking-tight">
                 {product.name}
               </h1>
               {product.cas_number && (
@@ -177,8 +194,6 @@ export default async function ProductPage({ params }: PageProps) {
                 </div>
               )}
             </div>
-
-            <MolecularDataPanel product={product} />
 
             <VariantPicker product={product} />
 

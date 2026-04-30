@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Flag, ShieldCheck, QrCode, Snowflake, Check, Pencil } from "lucide-react";
+import { Flag, ShieldCheck, QrCode, Snowflake, Check, Pencil, Package, Trash2 } from "lucide-react";
 import { useCart } from "@/lib/cart/CartContext";
 import { RUOGate, type RUOAcknowledgmentPayload } from "@/components/compliance/RUOGate";
 import {
@@ -603,7 +603,7 @@ export function CheckoutPageClient({
                 />
               </Section>
 
-              <Section title="Coupon (optional)">
+              <Section title="Coupon (optional)" anchorId="coupon">
                 <label className="flex flex-col gap-1.5">
                   <span className="text-[10px] uppercase tracking-[0.1em] text-ink-muted">
                     Coupon code
@@ -713,58 +713,82 @@ export function CheckoutPageClient({
           </StepShell>
         </div>
 
-        <aside className="lg:sticky lg:top-8 h-fit border rule bg-paper-soft p-6 space-y-4">
+        <aside className="lg:sticky lg:top-8 h-fit border rule rounded-md bg-paper-soft p-5 sm:p-6 space-y-4">
           <div>
-            <div className="label-eyebrow text-ink-muted mb-3">Order summary</div>
+            <div className="flex items-baseline justify-between mb-3">
+              <div className="label-eyebrow text-ink-muted">Order summary</div>
+              <span className="font-mono-data text-[11px] text-ink-muted">
+                {itemCount} {itemCount === 1 ? "item" : "items"}
+              </span>
+            </div>
             <ul className="space-y-3 text-sm">
               {items.map((item) => (
                 <li
                   key={item.sku}
-                  className="flex flex-col gap-1.5 pb-2 border-b rule last:border-b-0 last:pb-0"
+                  className="flex gap-3 pb-3 border-b rule last:border-b-0 last:pb-0"
                 >
-                  <div className="flex justify-between gap-2">
-                    <span className="text-ink leading-snug min-w-0">
-                      <span className="font-mono-data text-ink-muted">
-                        {item.quantity} ×
-                      </span>{" "}
-                      {item.name}
-                      {item.pack_size > 0 ? ` · ${item.pack_size}-vial pack` : ""}
-                    </span>
-                    <span className="font-mono-data text-ink shrink-0">
-                      {formatPrice(item.unit_price * item.quantity * 100)}
-                    </span>
+                  {/* 48 px thumb — small enough to keep the aside compact
+                      (user direct ask: "checkout pictures … smaller").
+                      Supplies (BAC/syringes/needles) get a Package glyph
+                      instead of the broken-image '?' tile from the screenshot. */}
+                  <div className="shrink-0 w-12 h-12 rounded-md border border-rule bg-paper overflow-hidden">
+                    {item.is_supply ? (
+                      <div className="w-full h-full flex items-center justify-center text-gold-dark/70">
+                        <Package className="w-5 h-5" strokeWidth={1.5} aria-hidden />
+                      </div>
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={item.vial_image}
+                        alt=""
+                        loading="lazy"
+                        className="w-full h-full object-contain"
+                      />
+                    )}
                   </div>
-                  <div className="flex items-center justify-between gap-2 text-xs">
-                    <div className="inline-flex items-center border rule bg-paper">
-                      <button
-                        type="button"
-                        aria-label={`Decrease quantity of ${item.name}`}
-                        onClick={() => updateQuantity(item.sku, item.quantity - 1)}
-                        className="w-7 h-7 inline-flex items-center justify-center text-ink hover:bg-paper-soft disabled:text-ink-muted disabled:cursor-not-allowed"
-                        disabled={item.quantity <= 1}
-                      >
-                        −
-                      </button>
-                      <span className="w-7 h-7 inline-flex items-center justify-center font-mono-data text-ink border-x rule select-none">
-                        {item.quantity}
+                  <div className="flex-1 min-w-0 flex flex-col gap-1">
+                    <div className="flex justify-between gap-2">
+                      <span className="text-ink leading-snug min-w-0 truncate">
+                        {item.name}
+                        {item.pack_size > 0 ? ` · ${item.pack_size}-vial` : ""}
                       </span>
+                      <span className="font-mono-data text-ink shrink-0 text-[13px]">
+                        {formatPrice(item.unit_price * item.quantity * 100)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 text-xs">
+                      <div className="inline-flex items-center border rule rounded-pill bg-paper overflow-hidden">
+                        <button
+                          type="button"
+                          aria-label={`Decrease quantity of ${item.name}`}
+                          onClick={() => updateQuantity(item.sku, item.quantity - 1)}
+                          className="w-7 h-7 inline-flex items-center justify-center text-ink hover:bg-paper-soft disabled:text-ink-muted disabled:cursor-not-allowed"
+                          disabled={item.quantity <= 1}
+                        >
+                          −
+                        </button>
+                        <span className="w-8 h-7 inline-flex items-center justify-center font-mono-data text-ink select-none">
+                          {item.quantity}
+                        </span>
+                        <button
+                          type="button"
+                          aria-label={`Increase quantity of ${item.name}`}
+                          onClick={() => updateQuantity(item.sku, item.quantity + 1)}
+                          className="w-7 h-7 inline-flex items-center justify-center text-ink hover:bg-paper-soft"
+                        >
+                          +
+                        </button>
+                      </div>
                       <button
                         type="button"
-                        aria-label={`Increase quantity of ${item.name}`}
-                        onClick={() => updateQuantity(item.sku, item.quantity + 1)}
-                        className="w-7 h-7 inline-flex items-center justify-center text-ink hover:bg-paper-soft"
+                        aria-label={`Remove ${item.name}`}
+                        onClick={() => removeItem(item.sku)}
+                        className="text-ink-muted hover:text-wine"
+                        title="Remove from order"
                       >
-                        +
+                        <Trash2 className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden />
                       </button>
                     </div>
-                    <button
-                      type="button"
-                      aria-label={`Remove ${item.name}`}
-                      onClick={() => removeItem(item.sku)}
-                      className="text-ink-muted hover:text-wine underline-offset-2 hover:underline"
-                    >
-                      Remove
-                    </button>
                   </div>
                 </li>
               ))}
@@ -1288,9 +1312,19 @@ function NextStepsTimeline() {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+  anchorId,
+}: {
+  title: string;
+  children: React.ReactNode;
+  /** Anchor used by external scroll-targets (cart drawer's "Apply →"
+      link points to /checkout#coupon, which lands on this section). */
+  anchorId?: string;
+}) {
   return (
-    <section className="space-y-4">
+    <section id={anchorId} className="space-y-4 scroll-mt-24">
       <h2 className="label-eyebrow text-ink-muted">{title}</h2>
       {children}
     </section>

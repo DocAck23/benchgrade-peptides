@@ -23,7 +23,7 @@ export default async function AdminCouponsPage() {
           <div className="label-eyebrow text-ink-muted mb-2">Admin</div>
           <h1 className="font-display text-4xl text-ink">Coupons</h1>
         </div>
-        <a href="/admin" className="text-sm text-teal hover:underline">
+        <a href="/admin" className="text-sm text-gold hover:underline">
           ← Back to orders
         </a>
       </div>
@@ -78,7 +78,7 @@ export default async function AdminCouponsPage() {
                         <span
                           className={`ml-2 inline-block px-2 py-0.5 text-[10px] font-mono-data uppercase ${
                             status === "active"
-                              ? "bg-teal/10 text-teal"
+                              ? "bg-gold/10 text-gold"
                               : "bg-ink-muted/20 text-ink-muted"
                           }`}
                         >

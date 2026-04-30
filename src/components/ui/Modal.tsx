@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useOverlay } from "@/components/ui/Overlay";
 
 interface ModalProps {
   open: boolean;
@@ -24,102 +25,25 @@ const SIZE_CLASSES = {
 } as const;
 
 /**
- * Module-level modal stack.
- *
- * Tracks open dialogs so we correctly manage body scroll lock (unlock only
- * when the last modal closes) and Escape handling (only the topmost modal
- * responds).
- */
-const modalStack: { id: string; blocking: boolean; close?: () => void }[] = [];
-let savedBodyOverflow: string | null = null;
-
-function pushModal(id: string, blocking: boolean, close?: () => void) {
-  if (modalStack.length === 0) {
-    savedBodyOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-  }
-  modalStack.push({ id, blocking, close });
-}
-
-function popModal(id: string) {
-  const idx = modalStack.findIndex((m) => m.id === id);
-  if (idx >= 0) modalStack.splice(idx, 1);
-  if (modalStack.length === 0 && savedBodyOverflow !== null) {
-    document.body.style.overflow = savedBodyOverflow;
-    savedBodyOverflow = null;
-  }
-}
-
-function isTopmost(id: string): boolean {
-  return modalStack[modalStack.length - 1]?.id === id;
-}
-
-const FOCUSABLE_SELECTOR =
-  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-/**
  * Modal dialog with full focus trap, scroll lock, Escape handling, and focus
  * return. `blocking` mode disables backdrop click and Escape — used for the
  * RUO gate where the user must make an explicit choice.
+ *
+ * Foundation commit 8 of 22: migrated from a bespoke pushModal/popModal
+ * stack onto the shared `useOverlay` primitive (Codex Review #1 fix H1).
+ * Behavior is preserved (ref-counted scroll lock, topmost-only Escape,
+ * focus trap, focus restore); the duplicated infrastructure is gone.
  */
 export function Modal({ open, onClose, blocking = false, title, description, children, size = "md", className }: ModalProps) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
-  const modalId = useId();
   const titleId = useId();
   const descId = useId();
-
-  useEffect(() => {
-    if (!open) return;
-
-    // Stack bookkeeping + body scroll lock
-    pushModal(modalId, blocking, onClose);
-    previouslyFocusedRef.current = (document.activeElement as HTMLElement) ?? null;
-
-    // Focus the first focusable element inside the dialog
-    const firstFocusable = dialogRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
-    firstFocusable?.focus();
-
-    function handleKey(e: KeyboardEvent) {
-      if (!isTopmost(modalId)) return;
-      if (e.key === "Escape" && !blocking && onClose) {
-        e.preventDefault();
-        onClose();
-        return;
-      }
-      if (e.key === "Tab") {
-        // Focus-trap loop
-        const focusables = dialogRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
-        if (!focusables || focusables.length === 0) {
-          e.preventDefault();
-          return;
-        }
-        const first = focusables[0];
-        const last = focusables[focusables.length - 1];
-        const active = document.activeElement as HTMLElement | null;
-        if (e.shiftKey) {
-          if (active === first || !dialogRef.current?.contains(active)) {
-            e.preventDefault();
-            last?.focus();
-          }
-        } else {
-          if (active === last || !dialogRef.current?.contains(active)) {
-            e.preventDefault();
-            first?.focus();
-          }
-        }
-      }
-    }
-
-    document.addEventListener("keydown", handleKey);
-
-    return () => {
-      document.removeEventListener("keydown", handleKey);
-      popModal(modalId);
-      // Return focus to whatever opened us
-      previouslyFocusedRef.current?.focus?.();
-    };
-  }, [open, blocking, onClose, modalId]);
+  const { containerRef } = useOverlay<HTMLDivElement>(open, {
+    closeOnEscape: !blocking,
+    onClose,
+    restoreFocus: true,
+    lockScroll: true,
+    trapFocus: true,
+  });
 
   if (!open) return null;
 
@@ -139,7 +63,7 @@ export function Modal({ open, onClose, blocking = false, title, description, chi
       />
       {/* Dialog */}
       <div
-        ref={dialogRef}
+        ref={containerRef}
         className={cn(
           "relative w-full bg-paper border border-gold-dark rounded-md shadow-none",
           "max-h-[calc(100vh-2rem)] overflow-y-auto",

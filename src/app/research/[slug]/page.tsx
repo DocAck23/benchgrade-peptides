@@ -174,7 +174,7 @@ export default async function ResearchArticlePage({ params }: PageProps) {
                   </div>
                   <Link
                     href={`/catalogue/${p.category_slug}/${p.slug}`}
-                    className="text-sm text-teal hover:underline whitespace-nowrap"
+                    className="text-sm text-gold hover:underline whitespace-nowrap"
                   >
                     View product →
                   </Link>
@@ -210,7 +210,7 @@ export default async function ResearchArticlePage({ params }: PageProps) {
         )}
 
         <div className="mt-10">
-          <Link href="/research" className="text-sm text-teal hover:underline">
+          <Link href="/research" className="text-sm text-gold hover:underline">
             ← Back to research index
           </Link>
         </div>

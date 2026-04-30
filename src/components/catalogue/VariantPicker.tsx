@@ -100,46 +100,52 @@ export function VariantPicker({ product }: VariantPickerProps) {
         </div>
       )}
 
+      {/* Praetorian-style PDP quantity: pill-shaped stepper, no typed
+          input. User direct ask: "quantity button needs to be like
+          praetorianpeptides.com". One pill control with -/readout/+,
+          48px tall to align with the gold Add-to-cart pill below. */}
       <div>
         <div className="flex items-baseline justify-between mb-3">
-          <span className="label-eyebrow text-ink-muted">Quantity</span>
+          <span className="font-ui uppercase text-[11px] tracking-[0.18em] font-bold text-gold-dark">Quantity</span>
           <span className="font-mono-data text-xs text-ink-muted">
             {QTY_MIN}–{QTY_MAX} {unitNoun}s
           </span>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            aria-label="decrease quantity"
-            onClick={() => setQuantity((q) => clampQty(q - 1))}
-            className="w-10 h-10 border rule bg-paper hover:bg-paper-soft text-ink font-mono-data transition-colors"
-          >
-            −
-          </button>
-          <input
-            type="number"
-            min={QTY_MIN}
-            max={QTY_MAX}
-            value={quantity}
-            onChange={(e) => setQuantity(clampQty(parseInt(e.target.value, 10)))}
-            className="w-20 h-10 text-center border rule bg-paper text-ink font-mono-data focus-visible:outline-none focus-visible:border-ink"
-            aria-label="quantity"
-          />
-          <button
-            type="button"
-            aria-label="increase quantity"
-            onClick={() => setQuantity((q) => clampQty(q + 1))}
-            className="w-10 h-10 border rule bg-paper hover:bg-paper-soft text-ink font-mono-data transition-colors"
-          >
-            +
-          </button>
-          <span className="font-mono-data text-xs text-ink-muted ml-2">
+        <div className="flex items-stretch gap-3">
+          <div className="inline-flex items-stretch border border-rule rounded-pill bg-paper overflow-hidden">
+            <button
+              type="button"
+              aria-label="decrease quantity"
+              onClick={() => setQuantity((q) => clampQty(q - 1))}
+              disabled={quantity <= QTY_MIN}
+              className="w-12 h-12 text-ink-muted hover:text-ink hover:bg-paper-soft disabled:opacity-40 disabled:hover:bg-transparent transition-colors text-lg font-ui font-semibold"
+            >
+              −
+            </button>
+            <span
+              className="w-14 h-12 inline-flex items-center justify-center font-mono-data text-base text-ink select-none"
+              aria-live="polite"
+              aria-label={`Quantity: ${quantity}`}
+            >
+              {quantity}
+            </span>
+            <button
+              type="button"
+              aria-label="increase quantity"
+              onClick={() => setQuantity((q) => clampQty(q + 1))}
+              disabled={quantity >= QTY_MAX}
+              className="w-12 h-12 text-ink-muted hover:text-ink hover:bg-paper-soft disabled:opacity-40 disabled:hover:bg-transparent transition-colors text-lg font-ui font-semibold"
+            >
+              +
+            </button>
+          </div>
+          <span className="self-center font-mono-data text-xs text-ink-muted">
             ×&nbsp;{formatPrice(selectedVariant.retail_price * 100)}
           </span>
         </div>
       </div>
 
-      <Button size="lg" onClick={() => addItem(product, selectedVariant, quantity)}>
+      <Button variant="primary" size="lg" onClick={() => addItem(product, selectedVariant, quantity)}>
         Add to cart — {formatPrice(totalCents)}
       </Button>
     </div>

@@ -110,9 +110,9 @@ export function AffiliateOnboardingFlow({
       </Step>
 
       {status.agreement_signed && status.w9_uploaded ? (
-        <div className="border rule bg-teal/10 p-5 text-sm text-ink">
+        <div className="border rule bg-gold/10 p-5 text-sm text-ink">
           Onboarding complete. Your dashboard is ready at{" "}
-          <a href="/account/affiliate" className="text-teal underline">
+          <a href="/account/affiliate" className="text-gold underline">
             /account/affiliate
           </a>
           .
@@ -143,7 +143,7 @@ function Step({
         <span
           className={`inline-flex h-7 w-7 items-center justify-center rounded-full font-mono-data text-xs ${
             done
-              ? "bg-teal text-paper"
+              ? "bg-gold text-paper"
               : active
                 ? "bg-wine text-paper"
                 : "bg-paper-soft text-ink-muted border rule"

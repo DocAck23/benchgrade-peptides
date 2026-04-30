@@ -45,7 +45,7 @@ export default function PaymentsPage() {
           We do not store any banking credentials on this site, and we do not process cards.
           Once payment clears, your order enters processing and ships within the timeframe listed
           on the Shipping page. Detailed step-by-step for ACH:{" "}
-          <Link href="/payments/ach" className="text-teal underline">
+          <Link href="/payments/ach" className="text-gold underline">
             adding Bench Grade Peptides as an ACH recipient
           </Link>
           .
@@ -56,7 +56,7 @@ export default function PaymentsPage() {
           <p>
             Research institutions, universities, and laboratories with recurring purchasing needs can
             request a net-30 account. Contact{" "}
-            <a href="mailto:admin@benchgradepeptides.com" className="text-teal underline">
+            <a href="mailto:admin@benchgradepeptides.com" className="text-gold underline">
               admin@benchgradepeptides.com
             </a>{" "}
             with your institutional details for review.

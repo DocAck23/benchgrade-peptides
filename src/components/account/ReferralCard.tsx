@@ -166,7 +166,7 @@ export async function ReferralCard({ siteUrl }: ReferralCardProps = {}) {
             in a moment, or email{" "}
             <a
               href="mailto:admin@benchgradepeptides.com"
-              className="text-teal underline"
+              className="text-gold underline"
             >
               admin@benchgradepeptides.com
             </a>{" "}

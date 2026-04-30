@@ -41,7 +41,7 @@ export default async function AdminAffiliateDetailPage({
         </h1>
         <Link
           href="/admin/affiliates"
-          className="text-sm text-teal hover:underline"
+          className="text-sm text-gold hover:underline"
         >
           ← All affiliates
         </Link>

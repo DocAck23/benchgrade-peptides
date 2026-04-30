@@ -58,7 +58,7 @@ export function StatusControls({ orderId, current }: { orderId: string; current:
 
   const variantClass = (v: Variant) =>
     v === "primary"
-      ? "bg-ink text-paper border-ink hover:bg-teal hover:border-teal"
+      ? "bg-ink text-paper border-ink hover:bg-gold hover:border-gold"
       : v === "destructive"
       ? "rule bg-paper text-oxblood hover:bg-oxblood/5"
       : "rule bg-paper text-ink hover:bg-paper-soft";

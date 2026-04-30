@@ -43,7 +43,7 @@ export default async function BriefPage({
   return (
     <article className="max-w-3xl mx-auto px-5 sm:px-6 lg:px-10 py-8 sm:py-10">
       <div className="mb-6">
-        <Link href="/admin/briefs" className="text-xs text-teal hover:underline">
+        <Link href="/admin/briefs" className="text-xs text-gold hover:underline">
           ← All briefs
         </Link>
       </div>

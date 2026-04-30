@@ -60,7 +60,7 @@ export default function AboutPage() {
           <h2 className="font-display text-2xl text-ink mb-4">Contact</h2>
           <p>
             Email:{" "}
-            <a href="mailto:admin@benchgradepeptides.com" className="text-teal underline">
+            <a href="mailto:admin@benchgradepeptides.com" className="text-gold underline">
               admin@benchgradepeptides.com
             </a>
           </p>

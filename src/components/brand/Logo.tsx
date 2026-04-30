@@ -1,154 +1,194 @@
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { BRAND } from "@/lib/brand";
 
 /**
  * `<Logo>` — surface-aware brand mark for Bench Grade Peptides.
  *
- * Asset reality (2026-04-25 brand pivot):
- *   public/brand/logo-mark.svg   — wine `#5C1A1A` mark on transparent.
- *                                  Designed for cream surfaces; the only
- *                                  SVG variant on disk today.
+ * Sub-project A · Foundation, commit 9 of 22. Replaces the v1 laurel-logo
+ * component with the v2 Pinyon-script wordmark lockup. The Pinyon Script
+ * font itself is brand-rule reserved to the image asset (see
+ * memory/brand_visual_identity_v2.md) — never loaded as a webfont.
  *
- * Future asset slots (referenced in spec §16.1, not yet on disk):
- *   logo-mark-gold-on-cream.svg  — proper gold detail on cream
- *   logo-mark-cream-on-wine.svg  — cream/gold mark for wine surfaces
- *   wordmark-only.svg            — wordmark glyphs only
- *   seal-mark.svg                — laurel seal without wordmark
+ * Asset reality:
+ *   public/brand/logo-gold.png   — metallic gradient on transparent (primary)
+ *   public/brand/logo-wine.png   — alpha-tinted wine flat
+ *   public/brand/logo-red.png    — alpha-tinted brick-red flat
+ *   public/brand/logo-cream.png  — alpha-tinted cream flat
+ *   public/brand/logo-black.png  — alpha-tinted black flat
  *
- * Until those land, every image variant resolves to logo-mark.svg and we
- * lean on surface-aware CSS (the `[data-logo-surface="wine"]` wrapper) to
- * invert the mark on wine backgrounds. `variant="wordmark"` skips the SVG
- * entirely and renders Cinzel uppercase text — works on either surface by
- * inheriting the surrounding `color`.
+ * Asset paths come from BRAND.logoMetallic / BRAND.logoFlat — sub-projects
+ * never reach for raw paths (see FOUNDATION-CONTRACT Rule 2).
  *
- * The legacy `size` + `asStatic` API used by `<Header>` / `<Footer>` is
- * preserved verbatim so Sprint 0 Task 3 owns consumer migration on its own
- * timeline. Existing callers (e.g. `<Logo size="xl" priority />`) keep
- * working with no source change.
+ * API (v2):
+ *   <Logo variant="gold" />               — explicit variant
+ *   <Logo surface="wine" />               — surface auto-picks the variant
+ *   <Logo size="nav" />                   — 260 px (header)
+ *   <Logo size="footer" />                — 280 px
+ *   <Logo size="hero" priority />         — 320 px
+ *   <Logo size={240} />                   — explicit numeric width
+ *   <Logo asStatic />                     — render without Link wrapper
  *
- * TODO: replace the wine-surface CSS recolor with a proper
- *   `logo-mark-cream-on-wine.svg` once the asset lands.
- * TODO: wire `variant="full"` and `variant="seal"` to their dedicated SVGs
- *   once they exist; today they fall back to `logo-mark.svg`.
+ * Legacy v1 props (preserved for back-compat through the codemod sweep):
+ *   variant="mark"        → resolves via surface (cream→wine, wine→gold)
+ *   variant="wordmark"    → text fallback (deprecated; kept silently working)
+ *   variant="full"|"seal" → falls back to "mark" behavior
+ *   size="sm"|"md"|"lg"|"xl" → maps to numeric widths
  */
 
-const MARK_SRC = "/brand/logo-mark.svg";
-// Gold-on-transparent variant — used on wine surfaces (Header, Footer, RUOBanner,
-// premium tier callouts) where the wine fill of MARK_SRC would disappear.
-const MARK_GOLD_SRC = "/brand/logo-mark-gold.svg";
-// Native bbox of the traced mark — preserved from the F6 vector trace.
-const MARK_WIDTH = 918;
-const MARK_HEIGHT = 654;
-const ASPECT = MARK_WIDTH / MARK_HEIGHT; // ≈ 1.40 : 1
+// ---- v2 variants (transparent PNGs in /public/brand) ----
+type LogoVariantV2 = "gold" | "wine" | "red" | "cream" | "black";
+// ---- v1 variants (kept as accepted prop values; mapped internally) ----
+type LogoVariantLegacy = "full" | "mark" | "wordmark" | "seal";
+export type LogoVariant = LogoVariantV2 | LogoVariantLegacy;
 
-export type LogoVariant = "full" | "mark" | "wordmark" | "seal";
-export type LogoSurface = "cream" | "wine";
-export type LogoSize = "sm" | "md" | "lg" | "xl";
+export type LogoSurface = "cream" | "wine" | "red" | "gold" | "black";
+
+export type LogoSizeV2 = "nav" | "footer" | "hero";
+export type LogoSizeLegacy = "sm" | "md" | "lg" | "xl";
+export type LogoSize = LogoSizeV2 | LogoSizeLegacy | number;
 
 interface LogoProps {
-  /** Asset variant. Defaults to `"mark"`. */
   variant?: LogoVariant;
-  /** Surface context. Drives CSS recolor on wine backgrounds. Defaults to `"cream"`. */
   surface?: LogoSurface;
-  /** Legacy size tier. Used by `<Header>` (`size="xl"`). */
   size?: LogoSize;
-  /** Render plain (no `<Link>` wrapper). Footer wraps the logo in its own link. */
+  /** Render without the `<Link href="/">` wrapper (Footer wraps it in its own link). */
   asStatic?: boolean;
-  /** Apply `priority` loading. Use on the primary header logo. */
+  /** Apply Next/Image priority hint. Use sparingly — only for the LCP element. */
   priority?: boolean;
   className?: string;
 }
 
-const WIDTH_CLASSES: Record<LogoSize, string> = {
-  sm: "w-16",
-  md: "w-28",
-  lg: "w-40",
-  // Mobile: small enough that cart + hamburger have breathing room.
-  // sm+ steps back up to the editorial-sized mark.
-  xl: "w-28 sm:w-44 md:w-60 lg:w-[280px]",
+// v2 named sizes (locked Foundation Q2): 180 / 280 / 320
+const NAMED_SIZE_PX: Record<LogoSizeV2 | LogoSizeLegacy, number> = {
+  nav: 260,
+  footer: 280,
+  hero: 320,
+  sm: 64,
+  md: 180, // legacy md ≈ v2 nav
+  lg: 280, // legacy lg ≈ v2 footer
+  xl: 320, // legacy xl ≈ v2 hero
 };
 
-function srcFor(variant: LogoVariant, surface: LogoSurface): string {
-  // Surface-aware routing: wine surfaces get the gold-on-transparent SVG
-  // so the mark stands against the wine background; cream surfaces get
-  // the wine-on-transparent SVG (the original).
-  switch (variant) {
-    case "full":
-    case "mark":
-    case "seal":
-    default:
-      return surface === "wine" ? MARK_GOLD_SRC : MARK_SRC;
+// Surface → variant auto-pick. Picks the wordmark colorway that has the
+// best contrast against the surface.
+const SURFACE_VARIANT: Record<LogoSurface, LogoVariantV2> = {
+  wine: "gold",
+  cream: "wine",
+  black: "gold",
+  red: "gold",
+  gold: "wine",
+};
+
+const ASSET_RATIO = BRAND.logoWidth / BRAND.logoHeight; // 1709 / 441
+
+function resolveVariant(
+  variant: LogoVariant | undefined,
+  surface: LogoSurface | undefined
+): LogoVariantV2 | "wordmark" {
+  // v2 explicit variant wins
+  if (
+    variant === "gold" ||
+    variant === "wine" ||
+    variant === "red" ||
+    variant === "cream" ||
+    variant === "black"
+  ) {
+    return variant;
   }
+  // v1 wordmark — kept as text fallback for back-compat
+  if (variant === "wordmark") return "wordmark";
+  // v1 mark / full / seal — resolve via surface
+  return surface ? SURFACE_VARIANT[surface] : "gold";
+}
+
+function resolveWidthPx(size: LogoSize | undefined): number {
+  if (typeof size === "number") return size;
+  if (size && size in NAMED_SIZE_PX) return NAMED_SIZE_PX[size];
+  return 180; // default = nav
+}
+
+function variantSrc(variant: LogoVariantV2): string {
+  // brand.ts owns ALL variant paths via BRAND.logoVariants.
+  // Codex adversarial review #2 fix P3: previously this hard-coded
+  // /brand/logo-${variant}.png for the flat variants, breaking the
+  // single-source-of-truth contract whenever an asset path moved.
+  return BRAND.logoVariants[variant];
 }
 
 export function Logo({
-  variant = "mark",
-  surface = "cream",
-  size = "md",
+  variant,
+  surface,
+  size = "nav",
   asStatic = false,
   priority = false,
   className,
 }: LogoProps) {
-  const sizingClass = WIDTH_CLASSES[size];
+  const resolved = resolveVariant(variant, surface);
+  const widthPx = resolveWidthPx(size);
+  const heightPx = Math.round(widthPx / ASSET_RATIO);
 
-  // Wordmark path: inline Cinzel text. Inherits color from context, so a
-  // cream surface gets wine glyphs and a wine surface gets cream glyphs
-  // (provided the parent sets `color` via `[data-surface="wine"]`).
-  if (variant === "wordmark") {
-    const wordmark = (
+  // Legacy "wordmark" text-only path. v2 brand rule says lockup is an
+  // image, but the Header/Footer might still pass variant="wordmark"
+  // through prior code paths until the codemod sweep. Render text so
+  // builds don't break; the image variants are the canonical path.
+  if (resolved === "wordmark") {
+    const node = (
       <span
-        data-logo-surface={surface}
+        data-logo-surface={surface ?? "cream"}
         className={cn(
           "inline-block align-middle font-display uppercase tracking-[0.18em] leading-none",
-          sizingClass,
-          className,
+          className
         )}
+        style={{ width: widthPx }}
       >
-        BENCH GRADE PEPTIDES
+        {BRAND.shortName}
       </span>
     );
-    if (asStatic) return wordmark;
+    if (asStatic) return node;
     return (
-      <Link href="/" aria-label="Bench Grade Peptides — home" className="inline-block">
-        {wordmark}
+      <Link
+        href="/"
+        aria-label={`${BRAND.name} — home`}
+        className="inline-block"
+      >
+        {node}
       </Link>
     );
   }
 
-  const src = srcFor(variant, surface);
-
-  const imageEl = (
-    <Image
-      src={src}
-      alt="Bench Grade Peptides"
-      width={MARK_WIDTH}
-      height={MARK_HEIGHT}
-      priority={priority}
-      unoptimized
-      className="h-auto w-full select-none"
-    />
-  );
-
-  // `data-logo-surface` is the hook for surface-aware CSS: on
-  // `surface="wine"`, a global `filter`/`color` rule recolors the wine SVG
-  // toward cream until a proper cream-on-wine asset ships.
-  // TODO: replace with proper gold-on-wine SVG once asset lands.
-  const wrapped = (
+  // Width: parent wrapper controls the rendered width via Tailwind
+  // (so it can be responsive). `widthPx` from `size` prop is the
+  // FALLBACK when no parent width is set — applied as max-width so
+  // a smaller parent can still shrink the logo.
+  const node = (
     <span
-      data-logo-surface={surface}
-      className={cn("inline-block align-middle", sizingClass, className)}
-      style={{ aspectRatio: `${ASPECT}` }}
+      data-logo-surface={surface ?? "cream"}
+      data-logo-variant={resolved}
+      className={cn("inline-block align-middle w-full", className)}
+      style={{ maxWidth: widthPx, lineHeight: 0 }}
     >
-      {imageEl}
+      <Image
+        src={variantSrc(resolved)}
+        alt={BRAND.name}
+        width={BRAND.logoWidth}
+        height={BRAND.logoHeight}
+        priority={priority}
+        sizes={`${widthPx}px`}
+        className="h-auto w-full select-none"
+      />
     </span>
   );
 
-  if (asStatic) return wrapped;
-
+  if (asStatic) return node;
   return (
-    <Link href="/" aria-label="Bench Grade Peptides — home" className="inline-block">
-      {wrapped}
+    <Link
+      href="/"
+      aria-label={`${BRAND.name} — home`}
+      className="inline-block"
+    >
+      {node}
     </Link>
   );
 }

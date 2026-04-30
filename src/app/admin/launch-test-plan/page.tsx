@@ -25,7 +25,7 @@ export default async function LaunchTestPlanPage() {
           control before flipping DNS to public. Each flow has explicit STEPS and
           EXPECTED OUTCOMES — if reality and expectation diverge, that's a launch
           blocker. For a build-status overview see{" "}
-          <Link href="/admin/launch-status" className="text-teal underline">
+          <Link href="/admin/launch-status" className="text-gold underline">
             /admin/launch-status
           </Link>.
         </p>
@@ -519,7 +519,7 @@ export default async function LaunchTestPlanPage() {
           launch-ready. Walk{" "}
           <Link
             href="https://github.com/DocAck23/benchgrade-peptides/blob/main/docs/LAUNCH-CHECKLIST.md"
-            className="text-teal underline"
+            className="text-gold underline"
           >
             docs/LAUNCH-CHECKLIST.md
           </Link>{" "}

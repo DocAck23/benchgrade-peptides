@@ -56,7 +56,8 @@ export function Callout({ variant = "info", title, children, className }: Callou
       role="note"
       data-surface={surface}
       className={cn(
-        "p-5 flex gap-4 rounded-sm",
+        // v2 radius scale (Foundation Q3): rounded-md = 16px
+        "p-5 flex gap-4 rounded-md",
         containerClasses,
         className
       )}

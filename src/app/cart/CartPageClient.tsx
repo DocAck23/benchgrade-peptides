@@ -23,7 +23,7 @@ export function CartPageClient() {
           </p>
           <Link
             href="/catalogue"
-            className="inline-flex items-center h-12 px-8 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-teal transition-colors"
+            className="inline-flex items-center h-12 px-8 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-gold transition-colors"
           >
             Browse the catalogue
           </Link>
@@ -56,7 +56,7 @@ export function CartPageClient() {
                 <div className="flex items-baseline justify-between gap-2">
                   <Link
                     href={`/catalogue/${item.category_slug}/${item.product_slug}`}
-                    className="font-display text-lg text-ink hover:text-teal truncate"
+                    className="font-display text-lg text-ink hover:text-gold truncate"
                   >
                     {item.name}
                   </Link>
@@ -144,7 +144,7 @@ export function CartPageClient() {
           </div>
           <Link
             href="/checkout"
-            className="flex items-center justify-center w-full h-12 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-teal transition-colors"
+            className="flex items-center justify-center w-full h-12 bg-ink text-paper text-sm tracking-[0.04em] hover:bg-gold transition-colors"
           >
             Proceed to checkout
           </Link>

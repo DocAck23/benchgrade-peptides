@@ -102,7 +102,7 @@ export default async function CategoryPage({ params }: PageProps) {
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
-      { "@type": "ListItem", position: 2, name: "Catalogue", item: `${SITE_URL}/catalogue` },
+      { "@type": "ListItem", position: 2, name: "Catalog", item: `${SITE_URL}/catalogue` },
       { "@type": "ListItem", position: 3, name: category.name, item: `${SITE_URL}/catalogue/${category.slug}` },
     ],
   };
@@ -121,13 +121,13 @@ export default async function CategoryPage({ params }: PageProps) {
         <Breadcrumb
           items={[
             { label: "Home", href: "/" },
-            { label: "Catalogue", href: "/catalogue" },
+            { label: "Catalog", href: "/catalogue" },
             { label: category.name },
           ]}
         />
 
         <header className="mt-6 mb-12 border-b rule pb-12">
-          <div className="label-eyebrow text-teal mb-4">{category.taxonomy_label}</div>
+          <div className="label-eyebrow text-gold mb-4">{category.taxonomy_label}</div>
           <h1 className="font-display text-5xl lg:text-6xl text-ink leading-[1.05] mb-6">
             {category.name}
           </h1>

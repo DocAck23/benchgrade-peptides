@@ -115,7 +115,7 @@ export function OrderManagePanel({ orderId, current, compact = false }: Props) {
                 <Field label="State (2 letters)" name="ship_state" defaultValue={current.ship_state} required disabled={pending} maxLength={2} pattern="[A-Za-z]{2}" autoCapitalize="characters" />
                 <Field label="ZIP" name="ship_zip" defaultValue={current.ship_zip} required disabled={pending} pattern="\d{5}(-\d{4})?" />
                 <div className="sm:col-span-2 flex gap-2">
-                  <button type="submit" disabled={pending} className="text-xs h-9 px-4 bg-ink text-paper hover:bg-teal transition-colors disabled:opacity-60">
+                  <button type="submit" disabled={pending} className="text-xs h-9 px-4 bg-ink text-paper hover:bg-gold transition-colors disabled:opacity-60">
                     {pending ? "Saving…" : "Save address"}
                   </button>
                   <button type="button" disabled={pending} onClick={() => { setEditOpen(false); setError(null); }} className="text-xs h-9 px-4 border rule bg-paper hover:bg-paper-soft text-ink transition-colors">
@@ -191,7 +191,7 @@ export function OrderManagePanel({ orderId, current, compact = false }: Props) {
             <button
               type="submit"
               disabled={pending}
-              className="text-xs h-9 px-4 bg-ink text-paper hover:bg-teal transition-colors disabled:opacity-60"
+              className="text-xs h-9 px-4 bg-ink text-paper hover:bg-gold transition-colors disabled:opacity-60"
             >
               {pending ? "Saving…" : "Save address"}
             </button>

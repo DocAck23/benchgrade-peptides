@@ -159,7 +159,7 @@ export default async function ReconciliationPage({
           <div className="label-eyebrow text-ink-muted mb-1">Admin</div>
           <h1 className="font-display text-3xl text-ink">Reconciliation</h1>
         </div>
-        <Link href="/admin" className="text-xs text-teal hover:underline">
+        <Link href="/admin" className="text-xs text-gold hover:underline">
           ← All orders
         </Link>
       </div>

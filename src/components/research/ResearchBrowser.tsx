@@ -129,7 +129,7 @@ export function ResearchBrowser({ articles }: ResearchBrowserProps) {
               onClick={() =>
                 setEnabled(allOn ? new Set() : new Set(CLASS_ORDER))
               }
-              className="text-[11px] text-teal hover:underline"
+              className="text-[11px] text-gold hover:underline"
             >
               {allOn ? "Clear all" : "Select all"}
             </button>
@@ -249,7 +249,7 @@ function ArticleCard({ article }: { article: ResearchArticle }) {
       <div className="mt-auto flex items-center justify-between pt-3 border-t rule">
         <Link
           href={`/research/${article.slug}`}
-          className="text-xs text-teal hover:underline"
+          className="text-xs text-gold hover:underline"
         >
           Read citation →
         </Link>

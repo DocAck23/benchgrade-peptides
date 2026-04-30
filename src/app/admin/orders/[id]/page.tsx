@@ -199,7 +199,7 @@ export default async function AdminOrderPage({
   return (
     <article className="max-w-4xl mx-auto px-6 lg:px-10 py-10 space-y-10">
       <div>
-        <Link href="/admin" className="text-xs text-teal hover:underline">
+        <Link href="/admin" className="text-xs text-gold hover:underline">
           ← All orders
         </Link>
         <div className="mt-4 flex items-baseline justify-between gap-4">
@@ -211,7 +211,7 @@ export default async function AdminOrderPage({
               <LocalTime iso={order.updated_at} />
             </div>
             {order.payment_method && (
-              <div className="font-mono-data text-xs text-teal mt-2 uppercase tracking-wider">
+              <div className="font-mono-data text-xs text-gold mt-2 uppercase tracking-wider">
                 Payment method: {order.payment_method}
               </div>
             )}
@@ -233,7 +233,7 @@ export default async function AdminOrderPage({
           <Dd>{order.customer.name}</Dd>
           <Dt>Email</Dt>
           <Dd>
-            <a href={`mailto:${order.customer.email}`} className="text-teal hover:underline">
+            <a href={`mailto:${order.customer.email}`} className="text-gold hover:underline">
               {order.customer.email}
             </a>
           </Dd>

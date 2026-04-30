@@ -80,7 +80,7 @@ export default async function AdminWaitlistPage() {
           >
             Export CSV
           </a>
-          <a href="/admin" className="text-sm text-teal hover:underline">
+          <a href="/admin" className="text-sm text-gold hover:underline">
             ← Back to orders
           </a>
         </div>
@@ -124,7 +124,7 @@ export default async function AdminWaitlistPage() {
                       {r.first_order_id ? (
                         <a
                           href={`/admin?q=${encodeURIComponent(r.email_lower)}`}
-                          className="text-teal hover:underline"
+                          className="text-gold hover:underline"
                         >
                           ordered
                         </a>
@@ -136,7 +136,7 @@ export default async function AdminWaitlistPage() {
                       {r.unsubscribed_at ? (
                         <span className="text-ink-muted">unsubscribed</span>
                       ) : r.first_order_id ? (
-                        <span className="text-teal">converted</span>
+                        <span className="text-gold">converted</span>
                       ) : r.welcome_sent_at ? (
                         <span className="text-ink">on list</span>
                       ) : (

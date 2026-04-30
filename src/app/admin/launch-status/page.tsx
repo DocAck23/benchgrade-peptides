@@ -22,7 +22,7 @@ export default async function LaunchStatusPage() {
         </h1>
         <p className="text-base text-ink-soft max-w-prose leading-relaxed">
           Every workstream landed on this codebase, in one place. Use the
-          companion <Link href="/admin/launch-test-plan" className="text-teal underline">test plan</Link> to walk
+          companion <Link href="/admin/launch-test-plan" className="text-gold underline">test plan</Link> to walk
           each customer-facing flow before flipping DNS.
         </p>
       </header>
@@ -272,7 +272,7 @@ export default async function LaunchStatusPage() {
 
       <Section title="Needs your attention before launch" status="needs-you">
         <Item label="Vercel env vars">
-          Walk <Link href="https://github.com/DocAck23/benchgrade-peptides/blob/main/docs/LAUNCH-CHECKLIST.md" className="text-teal underline">docs/LAUNCH-CHECKLIST.md</Link> §A1.
+          Walk <Link href="https://github.com/DocAck23/benchgrade-peptides/blob/main/docs/LAUNCH-CHECKLIST.md" className="text-gold underline">docs/LAUNCH-CHECKLIST.md</Link> §A1.
           Required: <code>ADMIN_PASSWORD</code> (change from dev placeholder),
           all Supabase keys, Resend, NOWPayments (if crypto), Sentry. Wire instructions
           for the 4 payment methods, Zelle ID, AgeRecode email.
@@ -288,17 +288,17 @@ export default async function LaunchStatusPage() {
         </Item>
         <Item label="Supabase Storage: create the affiliate-w9 bucket">
           PRIVATE bucket. RLS policies are already applied via migration 0022.
-          Walkthrough at <Link href="https://github.com/DocAck23/benchgrade-peptides/blob/main/docs/AFFILIATE-PORTAL-MANUAL.md" className="text-teal underline">docs/AFFILIATE-PORTAL-MANUAL.md</Link>.
+          Walkthrough at <Link href="https://github.com/DocAck23/benchgrade-peptides/blob/main/docs/AFFILIATE-PORTAL-MANUAL.md" className="text-gold underline">docs/AFFILIATE-PORTAL-MANUAL.md</Link>.
         </Item>
         <Item label="Smoke-order end-to-end test">
-          Per the <Link href="/admin/launch-test-plan" className="text-teal underline">test plan</Link>
+          Per the <Link href="/admin/launch-test-plan" className="text-gold underline">test plan</Link>
           {" "}— one full order against the production deploy with a real email address you
           control. Confirms every payment method's instruction email, the
           account-claim magic link, status-transition emails, and the AgeRecode
           fulfillment handoff all wire up correctly.
         </Item>
         <Item label="Codex pass 2 deferred items">
-          4 issues documented in <Link href="https://github.com/DocAck23/benchgrade-peptides/blob/main/docs/MANUAL-ATTENTION.md" className="text-teal underline">docs/MANUAL-ATTENTION.md</Link> —
+          4 issues documented in <Link href="https://github.com/DocAck23/benchgrade-peptides/blob/main/docs/MANUAL-ATTENTION.md" className="text-gold underline">docs/MANUAL-ATTENTION.md</Link> —
           two HIGH (financial-state lost-update races on affiliate balance / payout)
           and two MEDIUM. Each needs a transactional Postgres RPC. Not blocking
           the small-volume launch but should land before scale.
@@ -328,7 +328,7 @@ export default async function LaunchStatusPage() {
 
       <footer className="border-t rule pt-6 text-sm text-ink-muted">
         Last updated by the build-status page generator on the latest commit.
-        For runtime test instructions, see <Link href="/admin/launch-test-plan" className="text-teal underline">/admin/launch-test-plan</Link>.
+        For runtime test instructions, see <Link href="/admin/launch-test-plan" className="text-gold underline">/admin/launch-test-plan</Link>.
       </footer>
     </article>
   );
@@ -344,7 +344,7 @@ function Section({
   children: React.ReactNode;
 }) {
   const tone = {
-    ready: { label: "READY", cls: "bg-teal/10 text-teal border-teal/40" },
+    ready: { label: "READY", cls: "bg-gold/10 text-gold border-gold/40" },
     "ready-with-manual": {
       label: "READY · MANUAL STEP NEEDED",
       cls: "bg-gold-dark/10 text-gold-dark border-gold-dark/40",

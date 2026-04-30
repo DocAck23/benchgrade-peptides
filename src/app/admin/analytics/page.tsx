@@ -81,7 +81,7 @@ export default async function AdminAnalyticsPage() {
             and <code className="font-mono-data text-xs">orders</code>.
           </p>
         </div>
-        <a href="/admin" className="text-sm text-teal hover:underline">
+        <a href="/admin" className="text-sm text-gold hover:underline">
           ← Back to orders
         </a>
       </header>

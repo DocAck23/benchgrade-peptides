@@ -50,13 +50,13 @@ export default function CompliancePage() {
         <section>
           <h2 className="font-display text-2xl text-ink mb-4">Customer certification requirement</h2>
           <p>Every customer is required to certify at checkout that:</p>
-          <blockquote className="border-l-4 border-teal pl-6 py-2 my-6 italic text-ink-soft">
+          <blockquote className="border-l-4 border-gold pl-6 py-2 my-6 italic text-ink-soft">
             {RUO_STATEMENTS.certification}
           </blockquote>
           <p>
             This certification is timestamped and retained with the corresponding order record as part of our
             compliance documentation. See our{" "}
-            <Link href="/terms" className="text-teal underline">
+            <Link href="/terms" className="text-gold underline">
               Terms of Sale
             </Link>{" "}
             for the full customer warranty.
@@ -85,7 +85,7 @@ export default function CompliancePage() {
           <h2 className="font-display text-2xl text-ink mb-4">Contact</h2>
           <p>
             Regulatory and compliance inquiries:{" "}
-            <a href="mailto:admin@benchgradepeptides.com" className="text-teal underline">
+            <a href="mailto:admin@benchgradepeptides.com" className="text-gold underline">
               admin@benchgradepeptides.com
             </a>
           </p>

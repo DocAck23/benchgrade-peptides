@@ -26,6 +26,7 @@ import type {
 } from "@/lib/catalogue/data";
 import { useCart } from "@/lib/cart/CartContext";
 import { formatPrice, cn } from "@/lib/utils";
+import { RevealOnScroll } from "@/components/ui/RevealOnScroll";
 import {
   saveStack,
   deleteSavedStack,
@@ -157,10 +158,13 @@ export function StackBuilder({
   }, [draft, hydrated]);
 
   // ── Filter UI state ────────────────────────────────────────────────────
+  // User direct ask (Praetorian /subscriptions reference): "have it so
+  // the categories are to the left, and when you click them the
+  // products and the pictures animate in." Single-select model with
+  // null = "All compounds". Switching re-keys the product grid below
+  // so RevealOnScroll fires fresh stagger on every category change.
   const [query, setQuery] = useState("");
-  const [enabledCategories, setEnabledCategories] = useState<Set<string>>(
-    () => new Set(categories.map((c) => c.slug)),
-  );
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   // ── Dialog / inline state ──────────────────────────────────────────────
   const [editingName, setEditingName] = useState(false);
@@ -189,7 +193,7 @@ export function StackBuilder({
   const filteredProducts = useMemo(() => {
     const q = query.trim().toLowerCase();
     return products.filter((p) => {
-      if (!enabledCategories.has(p.category_slug)) return false;
+      if (selectedCategory && p.category_slug !== selectedCategory) return false;
       if (!q) return true;
       return (
         p.name.toLowerCase().includes(q) ||
@@ -198,7 +202,17 @@ export function StackBuilder({
         p.variants.some((v) => v.sku.toLowerCase().includes(q))
       );
     });
-  }, [products, enabledCategories, query]);
+  }, [products, selectedCategory, query]);
+
+  const productCountByCategory = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of products) m.set(p.category_slug, (m.get(p.category_slug) ?? 0) + 1);
+    return m;
+  }, [products]);
+
+  const selectedCategoryName = selectedCategory
+    ? (categories.find((c) => c.slug === selectedCategory)?.name ?? "Compounds")
+    : "All compounds";
 
   // ── Derived: stack details ─────────────────────────────────────────────
   const stackLines = useMemo(() => {
@@ -422,97 +436,175 @@ export function StackBuilder({
     setSavedStacks(initialSavedStacks);
   }, [initialSavedStacks]);
 
-  const toggleCategory = (slug: string) => {
-    setEnabledCategories((prev) => {
-      const next = new Set(prev);
-      if (next.has(slug)) next.delete(slug);
-      else next.add(slug);
-      return next;
-    });
-  };
+  // Category list with an "All" pseudo-entry on top. Counts mirror the
+  // sidebar's "12" hint so the user knows how many compounds live behind
+  // each click before clicking.
+  const categoryNavItems: { slug: string | null; name: string; count: number }[] = [
+    { slug: null, name: "All compounds", count: products.length },
+    ...categories
+      .map((c) => ({
+        slug: c.slug,
+        name: c.name,
+        count: productCountByCategory.get(c.slug) ?? 0,
+      }))
+      .filter((c) => c.count > 0),
+  ];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_22rem] gap-6 lg:gap-10">
-      {/* ============ Left: browser ============ */}
-      <section aria-label="Catalogue browser">
-        {/* Search + filters */}
-        <div className="border rule bg-paper-soft p-4 mb-5">
-          <label className="block">
-            <span className="label-eyebrow text-ink-muted mb-2 block text-[10px]">
-              Search compounds
-            </span>
-            <div className="relative">
-              <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted pointer-events-none"
-                strokeWidth={1.5}
-              />
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="GLP-1, BPC-157, IGF-1…"
-                className="w-full h-10 pl-9 pr-9 border rule bg-paper text-sm text-ink placeholder:text-ink-muted focus-visible:outline-none focus-visible:border-ink"
-              />
-              {query && (
+    <div className="grid grid-cols-1 lg:grid-cols-[200px_minmax(0,1fr)_22rem] gap-6 lg:gap-8">
+      {/* ============ Left: vertical category nav (Praetorian-style) ====== */}
+      <aside
+        aria-label="Stack builder categories"
+        className="lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto"
+      >
+        <div className="label-eyebrow text-ink-muted text-[10px] mb-3 hidden lg:block">
+          Categories
+        </div>
+        {/* Desktop: vertical list. Mobile: horizontal scroll chip rail. */}
+        <ul
+          className="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-visible -mx-1 lg:mx-0 px-1 lg:px-0 pb-2 lg:pb-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {categoryNavItems.map((item) => {
+            const isActive =
+              (item.slug === null && selectedCategory === null) ||
+              item.slug === selectedCategory;
+            return (
+              <li key={item.slug ?? "_all"} className="shrink-0 lg:shrink">
                 <button
                   type="button"
-                  aria-label="Clear search"
-                  onClick={() => setQuery("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 inline-flex items-center justify-center text-ink-muted hover:text-ink"
-                >
-                  <X className="w-3.5 h-3.5" strokeWidth={1.75} />
-                </button>
-              )}
-            </div>
-          </label>
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {categories.map((c) => {
-              const active = enabledCategories.has(c.slug);
-              return (
-                <button
-                  key={c.slug}
-                  type="button"
-                  onClick={() => toggleCategory(c.slug)}
+                  onClick={() => setSelectedCategory(item.slug)}
+                  aria-pressed={isActive}
                   className={cn(
-                    "text-[11px] px-2.5 py-1 border transition-colors duration-150",
-                    active
-                      ? "bg-ink text-paper border-ink"
-                      : "bg-paper text-ink-muted border-rule hover:text-ink",
+                    "w-full text-left whitespace-nowrap lg:whitespace-normal flex items-baseline justify-between gap-2 transition-all duration-200",
+                    "rounded-pill lg:rounded-md px-3.5 lg:px-3 py-1.5 lg:py-2.5",
+                    "border lg:border-l-2 lg:border-r-0 lg:border-t-0 lg:border-b-0",
+                    isActive
+                      ? "bg-wine text-paper border-wine lg:bg-paper-soft lg:text-wine lg:border-l-wine font-bold"
+                      : "bg-paper text-ink-soft border-rule lg:border-l-transparent hover:text-wine hover:lg:bg-paper-soft hover:lg:border-l-gold-dark",
                   )}
                 >
-                  {c.name}
+                  <span className="text-[12px] lg:text-sm font-ui">{item.name}</span>
+                  <span
+                    className={cn(
+                      "font-mono-data text-[10px] lg:text-[11px] tabular-nums",
+                      isActive ? "opacity-90 lg:text-ink-muted" : "text-ink-muted",
+                    )}
+                  >
+                    {item.count}
+                  </span>
                 </button>
-              );
-            })}
+              </li>
+            );
+          })}
+        </ul>
+      </aside>
+
+      {/* ============ Middle: search + animated product grid ============== */}
+      <section aria-label="Compounds">
+        {/* Search row — slimmed; no chip filter, the sidebar handles
+            category narrowing now. */}
+        <div className="mb-5 flex items-center gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted pointer-events-none"
+              strokeWidth={1.5}
+            />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={`Search ${selectedCategoryName.toLowerCase()}…`}
+              className="w-full h-11 pl-9 pr-9 border rule rounded-pill bg-paper text-sm text-ink placeholder:text-ink-muted focus-visible:outline-none focus-visible:border-gold-dark focus-visible:ring-2 focus-visible:ring-gold/30"
+            />
+            {query && (
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={() => setQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 inline-flex items-center justify-center text-ink-muted hover:text-ink rounded-full"
+              >
+                <X className="w-3.5 h-3.5" strokeWidth={1.75} />
+              </button>
+            )}
+          </div>
+          <span className="hidden sm:block font-mono-data text-[11px] text-ink-muted">
+            {filteredProducts.length} shown
+          </span>
+        </div>
+
+        {/* Section heading reflects the selected category — gives the
+            click a visible reaction on top of the animated cards. */}
+        <div className="mb-4 sm:mb-5 flex items-end justify-between gap-4">
+          <div>
+            <div className="label-eyebrow text-gold-dark text-[10px] sm:text-[11px] mb-1">
+              {selectedCategory ? "Filtered to" : "Browse"}
+            </div>
+            <h2 className="font-display text-2xl sm:text-3xl text-wine leading-tight tracking-tight">
+              {selectedCategoryName}
+            </h2>
           </div>
         </div>
 
-        {/* Product grid — visual cards with vial photos. Auto-fits 2
-            columns on narrow viewports up to 4 on wide screens so the
-            cards stay readable without bloating the row. */}
+        {/* Praetorian-style progress strip — tells the user how their
+            in-flight stack is shaping up, sitting right above the grid
+            so each "Add" reads as visible momentum. */}
+        <div className="mb-5 sm:mb-6 border rule rounded-md bg-paper-soft px-4 py-3 flex items-baseline justify-between gap-4">
+          <div className="flex items-baseline gap-2">
+            <span className="font-mono-data text-[11px] uppercase tracking-[0.12em] text-ink-muted">
+              In your stack
+            </span>
+            <span className="font-mono-data text-sm text-ink font-semibold tabular-nums">
+              {stackLines.length}
+              <span className="text-ink-muted font-normal"> / {MAX_LINES} compounds</span>
+            </span>
+          </div>
+          <span className="font-mono-data text-xs text-ink-muted tabular-nums">
+            {totalVials} vial{totalVials === 1 ? "" : "s"} · {formatPrice(subtotalCents)}
+          </span>
+        </div>
+
+        {/* Re-keyed grid — changing the key on the wrapper unmounts and
+            remounts every BrowserRow inside, which re-fires each card's
+            RevealOnScroll fade-up. The result reads as "products animate
+            in" on every category click. */}
         {filteredProducts.length === 0 ? (
-          <div className="border rule bg-paper-soft p-6 text-sm text-ink-muted text-center">
-            No compounds match the current filters.
+          <div className="border rule rounded-md bg-paper-soft p-8 text-sm text-ink-muted text-center">
+            No compounds match {query ? `"${query}"` : "this filter"}.
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="ml-2 underline text-wine hover:text-gold-dark"
+              >
+                Clear search
+              </button>
+            )}
           </div>
         ) : (
           <ul
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-3"
+            key={`${selectedCategory ?? "all"}|${query}`}
+            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4"
             aria-label="Compounds available to add"
           >
-            {filteredProducts.map((product) => (
-              <BrowserRow
+            {filteredProducts.map((product, idx) => (
+              <RevealOnScroll
                 key={product.slug}
-                product={product}
-                inStackQty={
-                  draft.lines.find((l) => {
-                    const v = product.variants.find((v) => v.sku === l.sku);
-                    return Boolean(v);
-                  })?.quantity ?? 0
-                }
-                onAdd={(variant, delta) =>
-                  upsertLine(variant.sku, variant.size_mg, delta)
-                }
-              />
+                delay={Math.min(idx * 55, 600)}
+                className="h-full"
+              >
+                <BrowserRow
+                  product={product}
+                  inStackQty={
+                    draft.lines.find((l) => {
+                      const v = product.variants.find((v) => v.sku === l.sku);
+                      return Boolean(v);
+                    })?.quantity ?? 0
+                  }
+                  onAdd={(variant, delta) =>
+                    upsertLine(variant.sku, variant.size_mg, delta)
+                  }
+                />
+              </RevealOnScroll>
             ))}
           </ul>
         )}
@@ -577,6 +669,17 @@ export function StackBuilder({
                   key={line.sku}
                   className="flex items-center gap-2 text-sm group"
                 >
+                  {/* Praetorian-style line thumbnail in the basket — gives
+                      every entry a visual anchor instead of text-only rows. */}
+                  <div className="shrink-0 w-10 h-10 bg-paper-soft rounded-md overflow-hidden border border-rule">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={product.vial_image}
+                      alt=""
+                      loading="lazy"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-ink truncate">{product.name}</div>
                     <div className="font-mono-data text-[10px] text-ink-muted">
@@ -596,17 +699,16 @@ export function StackBuilder({
                     >
                       <Minus className="w-3 h-3" strokeWidth={2} />
                     </button>
-                    <input
-                      type="number"
-                      min={1}
-                      max={MAX_QTY}
-                      value={line.quantity}
-                      onChange={(e) =>
-                        setLineQuantity(line.sku, parseInt(e.target.value, 10))
-                      }
-                      className="w-9 text-center bg-transparent text-ink font-mono-data text-[12px] focus-visible:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      aria-label="Quantity"
-                    />
+                    {/* User direct ask: "get rid of typing option in
+                        quantity". Read-only count display; +/- buttons
+                        are the only way to change qty. */}
+                    <span
+                      className="w-9 text-center bg-transparent text-ink font-mono-data text-[12px] select-none"
+                      aria-live="polite"
+                      aria-label={`Quantity: ${line.quantity}`}
+                    >
+                      {line.quantity}
+                    </span>
                     <button
                       type="button"
                       onClick={() => upsertLine(line.sku, line.size_mg, 1)}
@@ -694,10 +796,10 @@ export function StackBuilder({
               type="button"
               onClick={onAddToCart}
               disabled={stackLines.length === 0 || pending}
-              className="w-full inline-flex items-center justify-center gap-2 bg-wine text-paper font-display uppercase tracking-[0.1em] text-xs px-4 py-3 border border-wine hover:bg-gold-dark hover:border-gold-dark transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full inline-flex items-center justify-center gap-2 bg-gold text-wine font-ui font-semibold uppercase tracking-[0.1em] text-xs px-4 py-3 rounded-pill border border-gold hover:bg-gold-light active:scale-[0.99] shadow-[0_6px_14px_rgba(184,146,84,0.30)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="w-4 h-4" strokeWidth={2.5} />
-              Add stack to cart
+              Add to cart
             </button>
             <button
               type="button"
@@ -838,30 +940,32 @@ function BrowserRow({
   return (
     <li
       className={cn(
-        "relative border bg-paper transition-colors flex flex-col p-2.5 hover:bg-paper-soft",
-        inStack ? "border-gold-dark ring-1 ring-gold-light" : "border-rule",
+        "relative bg-paper rounded-md border-2 transition-all duration-200 flex flex-col p-3 h-full",
+        inStack
+          ? "border-wine bg-wine/[0.04] shadow-[0_8px_22px_-12px_rgba(74,14,26,0.40)]"
+          : "border-rule hover:border-gold-dark hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-14px_rgba(74,14,26,0.25)]",
       )}
     >
-      {/* "In your stack" badge — top-right when this product has at
-          least one vial in the stack already. */}
+      {/* Praetorian-style filled checkmark dot in the corner when the
+          card is in the stack — a calmer signal than the v1 gold
+          ribbon. Sized large enough to read at a glance. */}
       {inStack && (
         <span
-          className="absolute top-1 right-1 z-10 inline-flex items-center gap-0.5 bg-gold text-ink font-display uppercase tracking-[0.08em] text-[9px] px-1.5 py-0.5 border border-gold-dark"
+          className="absolute -top-2 -right-2 z-10 inline-flex items-center justify-center w-7 h-7 rounded-full bg-wine text-paper border-2 border-paper shadow-sm"
           aria-label={`${inThisVariant} in your stack`}
         >
-          <Check className="w-2.5 h-2.5" strokeWidth={2.5} aria-hidden />
-          {inThisVariant}
+          <Check className="w-3.5 h-3.5" strokeWidth={3} aria-hidden />
         </span>
       )}
 
       {/* Vial photograph */}
-      <div className="relative aspect-square bg-paper-soft border rule mb-2 overflow-hidden">
+      <div className="relative aspect-square bg-paper-soft rounded-md mb-2 overflow-hidden">
         <Image
           src={product.vial_image}
           alt={`${product.name} vial`}
           fill
           sizes="(min-width: 1280px) 200px, (min-width: 640px) 220px, 45vw"
-          className="object-cover scale-[1.1] [object-position:60%_50%]"
+          className="object-cover scale-[1.05] [object-position:60%_50%] transition-transform duration-500 ease-out group-hover:scale-[1.10]"
         />
       </div>
 
@@ -872,13 +976,13 @@ function BrowserRow({
 
       {/* Size selector + Add button. Stacks vertically inside the
           narrow card so the size dropdown and Add CTA each get a full
-          row. */}
-      <div className="mt-auto pt-1.5 border-t border-rule/60 flex flex-col gap-1.5">
+          row. Pill-rounded controls match the v2 surface language. */}
+      <div className="mt-auto pt-2 border-t border-rule/60 flex flex-col gap-1.5">
         {product.variants.length > 1 ? (
           <select
             value={variantSku}
             onChange={(e) => setVariantSku(e.target.value)}
-            className="w-full px-2 py-1 text-[11px] font-mono-data bg-paper border rule text-ink hover:border-gold-dark focus-visible:outline-none"
+            className="w-full px-2.5 py-1.5 text-[11px] font-mono-data bg-paper border rule rounded-input text-ink hover:border-gold-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/30"
             aria-label={`Vial size for ${product.name}`}
           >
             {product.variants.map((v) => (
@@ -888,14 +992,19 @@ function BrowserRow({
             ))}
           </select>
         ) : (
-          <span className="block w-full px-2 py-1 text-[11px] font-mono-data bg-paper-soft border rule text-ink-muted text-center">
+          <span className="block w-full px-2.5 py-1.5 text-[11px] font-mono-data bg-paper-soft border rule rounded-input text-ink-muted text-center">
             {variant.size_mg}mg · {formatPrice(variant.retail_price * 100)}
           </span>
         )}
         <button
           type="button"
           onClick={() => onAdd(variant, 1)}
-          className="w-full inline-flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] bg-ink text-paper font-display uppercase tracking-[0.08em] hover:bg-wine transition-colors"
+          className={cn(
+            "w-full inline-flex items-center justify-center gap-1 px-2 py-2 rounded-pill text-[11px] font-ui font-bold uppercase tracking-[0.10em] transition-all duration-200 active:scale-[0.98]",
+            inStack
+              ? "bg-paper text-wine border border-wine hover:bg-wine/10"
+              : "bg-gold text-wine border border-gold hover:bg-gold-light shadow-[0_4px_10px_rgba(184,146,84,0.25)]",
+          )}
           aria-label={`Add ${product.name} ${variant.size_mg}mg to stack`}
         >
           <Plus className="w-3 h-3" strokeWidth={2.5} aria-hidden />

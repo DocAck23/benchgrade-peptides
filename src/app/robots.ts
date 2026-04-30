@@ -3,9 +3,11 @@ import { SITE_URL } from "@/lib/site";
 
 // Private + consumer-facing paths that must not be indexed. The cart,
 // checkout, account, affiliate, login, and auth surfaces all surface
-// purchase-flow language ("dose", "stack", "subscribe") that risks
-// drug-claim association in search snippets. Blog/news is also blocked
-// pre-launch until copy is reviewed for B2B/researcher framing.
+// purchase-flow language that risks drug-claim association in search
+// snippets.
+//
+// /news/ removed in the v2 overhaul (per founder direction — no blog
+// surface in the v2 brand).
 const PRIVATE_PATHS = [
   "/admin",
   "/admin/",
@@ -22,8 +24,6 @@ const PRIVATE_PATHS = [
   "/auth",
   "/auth/",
   "/api/",
-  "/news",
-  "/news/",
   "/coa",
   "/coa/",
 ];
