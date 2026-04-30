@@ -1,10 +1,6 @@
 import type { Metadata } from "next";
-import {
-  Cinzel,
-  Cormorant_Garamond,
-  Inter,
-  JetBrains_Mono,
-} from "next/font/google";
+import { Inter, JetBrains_Mono, Montserrat } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
 import { RUOBanner } from "@/components/layout/RUOBanner";
@@ -20,28 +16,48 @@ import { PrelaunchPopup } from "@/components/prelaunch/PrelaunchPopup";
 import { Suspense } from "react";
 import { headers } from "next/headers";
 import { SITE_URL } from "@/lib/site";
+import { BRAND } from "@/lib/brand";
+import { ROUTES } from "@/lib/routes";
 
-/** Cinzel — Roman-cap display face. Used for the wordmark, hero headlines,
- *  virtue marks, premium-tier titles. Closest free analogue to the
- *  monumental capitals on the finalized Bench Grade logo. */
-const cinzel = Cinzel({
-  variable: "--font-cinzel",
-  subsets: ["latin"],
+/** Glacial Indifference — v2 display + body face. Self-hosted (SIL OFL).
+ *  Replaces Cinzel (display) and Cormorant Garamond (editorial) from v1.
+ *  See public/fonts/glacial-indifference/LICENSE.txt and
+ *  scripts/convert-fonts-to-woff2.py for the conversion recipe.
+ *
+ *  font-display: swap allows a fallback-to-final font shift; the
+ *  adjustFallback="Arial" keeps CLS ≤ 0.05 on the swap. */
+const glacial = localFont({
+  src: [
+    {
+      path: "../../public/fonts/glacial-indifference/GlacialIndifference-Regular.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../../public/fonts/glacial-indifference/GlacialIndifference-Bold.woff2",
+      weight: "700",
+      style: "normal",
+    },
+  ],
+  variable: "--font-glacial",
   display: "swap",
-  weight: ["400", "500", "600", "700"],
+  adjustFontFallback: "Arial",
+  preload: true,
 });
 
-/** Cormorant Garamond — transitional editorial serif. Used for email
- *  headlines, /why-no-cards prose, and longer editorial copy. */
-const cormorant = Cormorant_Garamond({
-  variable: "--font-cormorant",
+/** Montserrat — sub-display / labels / eyebrows / ALL-CAPS UI text.
+ *  Tracked wide. Weights 200/500/700 cover thin-tracked sub-lines,
+ *  default UI weight, and bold gold-on-cream eyebrows (per Q6 rule). */
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
   subsets: ["latin"],
   display: "swap",
-  weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
+  weight: ["200", "300", "500", "600", "700"],
 });
 
-/** Inter — UI sans for navigation, forms, transactional body, dashboards. */
+/** Inter — kept as a transitional UI sans during the Foundation codemod.
+ *  Existing components reference it via classes; removing it would break
+ *  intermediate commits. Removed (or aliased) in commit 18+. */
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
@@ -58,28 +74,27 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Bench Grade Peptides — Research-grade synthetic peptides",
-    template: "%s · Bench Grade Peptides",
+    default: `${BRAND.name} — ${BRAND.shortDescription}`,
+    template: `%s · ${BRAND.name}`,
   },
-  description:
-    "Research-grade synthetic peptides for laboratory use. HPLC-verified, COA-per-lot, cold-chain shipped. For laboratory research use only.",
+  description: BRAND.description,
   metadataBase: new URL(SITE_URL),
   robots: {
     index: true,
     follow: true,
   },
   openGraph: {
-    title: "Bench Grade Peptides",
-    description: "Research-grade synthetic peptides for laboratory use.",
+    title: BRAND.name,
+    description: BRAND.shortDescription,
     type: "website",
-    siteName: "Bench Grade Peptides",
+    siteName: BRAND.name,
     locale: "en_US",
     url: SITE_URL,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Bench Grade Peptides",
-    description: "Research-grade synthetic peptides for laboratory use.",
+    title: BRAND.name,
+    description: BRAND.shortDescription,
   },
 };
 
@@ -107,7 +122,7 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${cinzel.variable} ${cormorant.variable} ${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${glacial.variable} ${montserrat.variable} ${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[color:var(--color-paper)] text-[color:var(--color-ink)]">
         {/* Schema.org Organization markup — site-wide, gives Google
@@ -120,22 +135,17 @@ export default async function RootLayout({
               "@context": "https://schema.org",
               "@type": "Organization",
               "@id": `${SITE_URL}/#org`,
-              name: "Bench Grade Peptides",
-              legalName: "Bench Grade Peptides LLC",
+              name: BRAND.name,
+              legalName: BRAND.legalName,
               url: SITE_URL,
-              logo: `${SITE_URL}/brand/logo-mark-gold.png`,
-              email: "admin@benchgradepeptides.com",
+              logo: `${SITE_URL}${BRAND.logoMetallic}`,
+              email: BRAND.email,
               address: {
                 "@type": "PostalAddress",
-                streetAddress: "8 The Green",
-                addressLocality: "Dover",
-                addressRegion: "DE",
-                postalCode: "19901",
-                addressCountry: "US",
+                ...BRAND.address,
               },
-              sameAs: [],
-              description:
-                "Research-grade synthetic peptides. HPLC-verified, COA per lot, cold-chain shipped. Sold for laboratory research use only.",
+              sameAs: BRAND.sameAs,
+              description: BRAND.description,
             }),
           }}
         />
@@ -151,13 +161,13 @@ export default async function RootLayout({
               "@type": "WebSite",
               "@id": `${SITE_URL}/#website`,
               url: SITE_URL,
-              name: "Bench Grade Peptides",
+              name: BRAND.name,
               publisher: { "@id": `${SITE_URL}/#org` },
               potentialAction: {
                 "@type": "SearchAction",
                 target: {
                   "@type": "EntryPoint",
-                  urlTemplate: `${SITE_URL}/catalogue?q={search_term_string}`,
+                  urlTemplate: `${SITE_URL}${ROUTES.CATALOG}?q={search_term_string}`,
                 },
                 "query-input": "required name=search_term_string",
               },
